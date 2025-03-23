@@ -30,10 +30,19 @@ class UserController {
             //check if Email already exists
             const existingUser = await UserModel.findOne({ email });
             if (existingUser) {
+                // If user exists but not verified, send new OTP
+                if (!existingUser.is_verified) {
+                    await sendEmailVerifyOTP(req, existingUser);
+                    return res.status(409).json({ 
+                        status: "failed", 
+                        message: "Email exists but not verified. New verification code has been sent to your email." 
+                    });
+                }
+                // If user exists and is verified, return error
                 return res.status(409).json({ status: "failed", message: "Email already exists" });
             }
 
-            // Genereate salt and hash password
+            // Generate salt and hash password
             const salt = await bcrypt.genSalt(Number(process.env.SALT));
             const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -45,7 +54,7 @@ class UserController {
             //send success response
             res.status(201).json({
                 status: "success",
-                message: "Registation Success",
+                message: "Registration Success",
                 user: { id: newUser._id, email: newUser.email }
             });
 
@@ -190,7 +199,7 @@ class UserController {
     static changePassword = async (req,res) => {
         try {
             const {password, password_confirmation} = req.body;
-
+            console.log(req.body);
             if(!password || !password_confirmation){
                 return res.status(400).json({status:"failed", message:"New and Confirm Password are requried!"})
             }
@@ -203,7 +212,7 @@ class UserController {
             const  newHashPassword = await bcrypt.hash(password, salt);
 
             await UserModel.findByIdAndUpdate(req.user._id, {$set: { password: newHashPassword }});
-
+            console.log(UserModel);
             res.status(200).json({status:"success", message:"Password Changed successfully!"});
             
         } catch (error) {
@@ -248,16 +257,17 @@ class UserController {
         }
     }
     //Password Reset
-    static  userPasswordReset = async (req, res) => {
+    static userPasswordReset = async (req, res) => {
         try {
             const { password, password_confirmation} = req.body;
             const { id, token } = req.params;
-
+            
             // Find user by ID
             const user = await UserModel.findById(id);
             if(!user) {
-                res.status(404).json({status:"failed", message:"User Not Found!"})
+                return res.status(404).json({status:"failed", message:"User Not Found!"})  // Added return
             }
+            
             // Validate Token
             const new_secret = user._id + process.env.JWT_ACCESS_TOKEN_SECRET_KEY;
             jwt.verify(token, new_secret);
@@ -272,17 +282,16 @@ class UserController {
             }
 
             const salt = await bcrypt.genSalt(10);
-            const  newHashPassword = await bcrypt.hash(password, salt);
+            const newHashPassword = await bcrypt.hash(password, salt);
 
-            await UserModel.findByIdAndUpdate(req.user._id, {$set: { password: newHashPassword }});
+            await UserModel.findByIdAndUpdate(user._id, {$set: { password: newHashPassword }});
 
             res.status(200).json({status:"success", message:"Password Changed successfully!"});
 
-
         } catch (error) {
+            console.error(error);  // Add error logging
             if (error.name === "TokenExpiredError"){
-            return res.status(400).json({status:"failed", message:"Token expired, Please request a new password reset link."})
-
+                return res.status(400).json({status:"failed", message:"Token expired, Please request a new password reset link."})
             }
             return res.status(500).json({status:"failed", message:"Unable to reset password, Please Try again later!"})
         }
