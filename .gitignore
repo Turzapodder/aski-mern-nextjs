@@ -40,3 +40,4 @@ Thumbs.db
 *.cache
 __pycache__/
 
+.env
