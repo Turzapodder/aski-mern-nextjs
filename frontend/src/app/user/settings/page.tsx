@@ -70,7 +70,7 @@ const SettingsPage = () => {
   )
   
   return (
-    <DashboardLayout>
+    <div>
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -346,7 +346,7 @@ const SettingsPage = () => {
           </SettingSection>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }
 

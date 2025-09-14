@@ -45,7 +45,7 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
       title: 'MAIN MENU',
       items: [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
-        { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tasks', active: activeItem === 'tasks' },
+        { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
         { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/projects', active: activeItem === 'projects' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
@@ -72,10 +72,13 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-secondary-200 rounded-lg flex items-center justify-center">
-                <CheckSquare size={16} className="text-gray-800" />
-              </div>
-              <span className="text-2xl font-semibold text-gray-800">Aski</span>
+              <img
+                src="/assets/main-logo.svg"
+                alt="logo"
+                className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${
+                  !isCollapsed && "mr-3"
+                }`}
+              />
             </div>
           )}
           <button
@@ -114,7 +117,11 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
                       }`}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : ''}`}>
+                      <div
+                        className={`flex items-center ${
+                          isCollapsed ? "justify-center w-full" : ""
+                        }`}
+                      >
                         <img
                           src={item.icon}
                           alt={item.name}
@@ -144,9 +151,9 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
           title={isCollapsed ? "Logout" : undefined}
         >
           <img
-            src='/assets/icons/logout.png'
-            alt='/assets/icons/logout.png'
-            className='w-[30px] h-[30px] flex-shrink-0 mr-3'
+            src="/assets/icons/logout.png"
+            alt="/assets/icons/logout.png"
+            className="w-[30px] h-[30px] flex-shrink-0 mr-3"
           />
           {!isCollapsed && <span>Logout</span>}
         </button>

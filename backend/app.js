@@ -65,11 +65,15 @@ app.get('/auth/google/callback',
     passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_HOST}/account/login` }),
     (req, res) => {
       // Access user object and token from req.user
-      const { user, accessToken, refreshToken, accessTokenExp, refreshTokenExp } = req.user;
+      const { user, accessToken, refreshToken, accessTokenExp, refreshTokenExp, isNewTutor } = req.user;
       setTokensCookies(res, accessToken, refreshToken, accessTokenExp, refreshTokenExp, user);
 
-      // Redirect based on role and onboarding status
-      if (user.roles.includes('tutor') && user.onboardingStatus === 'pending') {
+      // Redirect logic:
+      // 1. If it's a new tutor account or an existing user becoming a tutor (isNewTutor=true), 
+      //    redirect to tutor-onboarding
+      // 2. If it's an existing tutor with pending onboarding, redirect to tutor-onboarding
+      // 3. Otherwise, redirect to user profile
+      if ((user.roles.includes('tutor') && user.onboardingStatus === 'pending') || isNewTutor) {
           res.redirect(`${process.env.FRONTEND_HOST}/account/tutor-onboarding`);
       } else {
           res.redirect(`${process.env.FRONTEND_HOST}/user/profile`);

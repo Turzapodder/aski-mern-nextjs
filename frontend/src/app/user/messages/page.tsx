@@ -484,7 +484,6 @@ const RightSidebar = () => {
 const MessagesPageContent = () => {
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar activeItem="messages" />
       <ChatList />
       <MessagesArea />
       <RightSidebar />
@@ -495,11 +494,9 @@ const MessagesPageContent = () => {
 // Main Messages Page with Provider
 const MessagesPage = () => {
   return (
-    <DashboardLayout>
       <ChatProvider>
         <MessagesPageContent />
       </ChatProvider>
-    </DashboardLayout>
   );
 };
 

@@ -43,9 +43,11 @@ const LandingPage = () => {
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-4">
-            <span className="text-gray-900 font-medium">Sign In</span>
+            <a href="/account/login"  rel="noopener noreferrer">
+              <span className="text-gray-900 font-medium">Sign In</span>
+            </a>
             <button className="flex items-center space-x-2 px-10 py-2 bg-black border-2 shadow-xl rounded-xl transition-colors">
-              <span className="font-medium text-white">Join Us</span>
+               <a href="/account/register"  rel="noopener noreferrer"><span className="font-medium text-white">Join Us</span></a>
             </button>
           </div>
         </nav>
@@ -54,7 +56,7 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="relative px-6 py-16 overflow-hidden">
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 gap-12 items-center relative z-10 bg-[url('/assets/bg-image.png')] bg-cover bg-center bg-no-repeat h-[100vh]">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 gap-12 items-center relative z-10 bg-[url('/assets/bg-image.png')] bg-cover bg-center bg-no-repeat ">
           {/* Left Content */}
           <div className="space-y-8 flex items-center justify-center flex-col">
             <a href="#_" className="relative inline-block text-lg group">

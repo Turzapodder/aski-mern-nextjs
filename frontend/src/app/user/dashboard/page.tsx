@@ -8,6 +8,7 @@ import {
   Search, ChevronDown, ChevronLeft, Users, LayoutGrid, ChevronRight, Plus, Edit3, BookOpen, BarChart2, ListChecks, Briefcase, Target, Clock, Bell
 } from 'lucide-react'
 import Image from 'next/image'
+import DashboardComponent from '@/components/DashboardComponent'
 
 // Mock User Data - replace with actual data fetching
 const mockUser = {
@@ -107,151 +108,23 @@ const UserDashboard = () => {
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
   return (
-    <DashboardLayout>
-      <div className="flex h-screen bg-gray-50 font-sans">
-        {/* Reusable Sidebar */}
-        <Sidebar activeItem="dashboard" />
+    <div>
+      <div className="flex h-screen bg-[#f6f6f6] font-sans">
 
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-y-auto">
-        {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800">Welcome back Taylor 👋</h2>
-          </div>
-          <div className="flex items-center space-x-4">
-          </div>
-        </header>
+
 
         {/* Main Layout with Middle Content and Right Sidebar */}
         <div className="flex gap-6">
           {/* Middle Content */}
           <div className="flex-1">
             {/* New Courses Section */}
-            <section className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">New Courses</h3>
-                <a href="#" className="text-sm text-primary-300 hover:underline font-medium">View All</a>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {newCoursesData.map(course => (
-                  <div key={course.id} className="bg-white p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow border">
-                    <div className="flex items-start mb-4">
-                      <div className={`p-3 rounded-xl ${course.bgColor} mr-4`}>
-                        <course.icon size={24} className={course.iconColor} />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 mb-1">{course.title}</h4>
-                        <p className="text-sm text-gray-500">{course.lessons} Lessons</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <span className="text-yellow-400 mr-1">★</span>
-                        <span className="text-sm font-medium text-gray-700">{course.rating.toFixed(1)}</span>
-                      </div>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{course.type}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
 
-            {/* Hours Activity and Daily Schedule Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Hours Activity */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-1">Hours Activity</h3>
-                    <p className="text-sm text-primary-300 font-medium">{hoursActivityData.increase} <span className="text-gray-500 font-normal">{hoursActivityData.lastWeek}</span></p>
-                  </div>
-                  <button className="text-sm text-gray-500 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 flex items-center">
-                    Weekly <ChevronDown size={16} className="ml-1" />
-                  </button>
-                </div>
-                <div className="h-48 flex items-end justify-between space-x-3">
-                  {hoursActivityData.bars.map((bar, index) => (
-                    <div key={bar.day} className="flex flex-col items-center flex-1">
-                      <div className={`w-full max-w-8 ${bar.height} rounded-t-lg transition-colors relative group
-                        ${bar.active ? 'bg-primary-300' : 'bg-gray-200 hover:bg-gray-300'}
-                      `}>
-                        {bar.active && (
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                                {hoursActivityData.current.time}<br/>{hoursActivityData.current.date}
-                            </div>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500 mt-2">{bar.day}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <DashboardComponent />
+            
 
-              {/* Daily Schedule */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Schedule</h3>
-                <div className="space-y-3">
-                  {dailyScheduleData.map(item => (
-                    <div key={item.id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                      <div className={`p-2.5 rounded-lg ${item.bgColor} mr-3`}>
-                        <item.icon size={18} className={item.iconColor} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{item.title}</p>
-                        <p className="text-xs text-gray-500">{item.subtitle}</p>
-                      </div>
-                      <ChevronRight size={16} className="text-gray-400" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* Course You're Taking */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800">Assignments you submitted</h3>
-                    <div className="flex items-center space-x-2">
-                        <button className="text-sm text-gray-500 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 flex items-center">
-                            Active <ChevronDown size={16} className="ml-1" />
-                        </button>
-                        <button className="bg-primary-100 text-primary-600 p-2 rounded-lg hover:bg-primary-200">
-                            <Plus size={18}/>
-                        </button>
-                    </div>
-                </div>
-                <div className="space-y-4">
-                    {coursesTakingData.map(course => (
-                        <div key={course.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center">
-                                <div className={`p-3 rounded-xl ${course.iconBg} mr-4`}>
-                                    <course.icon size={24} className={course.iconColor} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-gray-800 mb-1">{course.title}</p>
-                                    <p className="text-xs text-gray-500">{course.instructor}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-6">
-                                <div className="text-right">
-                                    <p className="text-xs text-gray-500 mb-1">Remaining</p>
-                                    <p className="text-sm font-medium text-gray-700">{course.remaining}</p>
-                                </div>
-                                <div className="relative w-12 h-12">
-                                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                        <path className="text-gray-200" stroke="currentColor" strokeWidth="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path className="text-primary-300" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray={`${course.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                    </svg>
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-semibold text-primary-600">
-                                        {course.progress}%
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
           </div>
 
           {/* Right Sidebar */}
@@ -294,39 +167,12 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            {/* Assignments */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800">Assignments</h3>
-                    <button className="bg-primary-100 text-primary-600 p-2 rounded-lg hover:bg-primary-200">
-                        <Plus size={18}/>
-                    </button>
-                </div>
-                <div className="space-y-3">
-                    {assignmentsData.map(item => (
-                        <div key={item.id} className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                            <div className="flex items-start mb-3">
-                                <div className={`p-2.5 rounded-lg ${item.iconBg} mr-3 mt-0.5`}>
-                                    <item.icon size={18} className={item.iconColor} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-800 mb-1">{item.title}</p>
-                                    <p className="text-xs text-gray-500">{item.date}</p>
-                                </div>
-                            </div>
-                            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg ${item.statusColor}`}>
-                              {item.status}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </div>
           </div>
         </div>
 
         </main>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

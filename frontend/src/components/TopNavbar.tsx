@@ -1,8 +1,19 @@
 "use client";
 import { useState } from "react";
-import { Search, Bell, User, Plus } from "lucide-react";
+import {
+  Search,
+  Bell,
+  User,
+  Plus,
+  ChevronDown,
+  LogOut,
+  Settings,
+} from "lucide-react";
 import Image from "next/image";
 import PostAssignmentModal from "./PostAssignmentModal";
+import { usePathname, useRouter } from "next/navigation";
+import { useGetUserQuery, useLogoutUserMutation } from "@/lib/services/auth";
+import Link from "next/link";
 
 interface TopNavbarProps {
   userName?: string;
@@ -24,7 +35,35 @@ const TopNavbar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   const [showPostModal, setShowPostModal] = useState(false);
+
+  const { data: userData, isLoading } = useGetUserQuery();
+  const [logoutUser] = useLogoutUserMutation();
+
+  const user = userData?.user;
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser({}).unwrap();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return (
+      name
+        ?.split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase() || "U"
+    );
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +88,7 @@ const TopNavbar = ({
         {/* Greeting Section */}
         <div className="flex-1">
           <h1 className="text-2xl font-semibold text-gray-900">
-            {greeting}, {userName}!
+            {greeting}, {user?.name}!
           </h1>
           <p className="text-gray-600 text-sm mt-1">
             Let's make today productive!
@@ -178,20 +217,65 @@ const TopNavbar = ({
           </div>
 
           {/* Profile */}
-          <button
-            onClick={onProfileClick}
-            className="flex items-center space-x-2 p-2 bg-white  text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="w-[30px] h-[30px]  overflow-hidden">
-              <Image
-                src="/assets/6.png"
-                alt="Search"
-                width={30}
-                height={20}
-                className="h-full object-cover"
-              />
+          <div className="relative pr-4">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center space-x-2 p-2 bg-white  text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="w-[30px] h-[30px]  overflow-hidden">
+                <Image
+                  src="/assets/6.png"
+                  alt="Search"
+                  width={30}
+                  height={20}
+                  className="h-full object-cover"
+                />
+              </div>
+              <span className="hidden md:block text-sm font-medium">
+                {user?.name}
+              </span>
+              <ChevronDown size={16} />
+            </button>
+          
+          {showProfileMenu && (
+            <div className="absolute right-0  w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <div className="px-4 py-2 border-b border-gray-200">
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+
+              <Link
+                href="/user/profile"
+                className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setShowProfileMenu(false)}
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </Link>
+
+              <Link
+                href="/user/settings"
+                className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setShowProfileMenu(false)}
+              >
+                <Settings size={16} />
+                <span>Settings</span>
+              </Link>
+
+              <hr className="my-2" />
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+              >
+                <LogOut size={16} />
+                <span>Sign out</span>
+              </button>
             </div>
-          </button>
+          )}
+          </div>
         </div>
       </div>
 

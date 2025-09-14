@@ -23,7 +23,7 @@ const DashboardNavbar = () => {
   const pathname = usePathname()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-    const [showPostModal, setShowPostModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
   
   const { data: userData, isLoading } = useGetUserQuery()
   const [logoutUser] = useLogoutUserMutation()

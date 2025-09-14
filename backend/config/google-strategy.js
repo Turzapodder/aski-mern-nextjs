@@ -18,6 +18,7 @@ passport.use(new GoogleStrategy({
       
       // Check if user already exists in the database
       let user = await UserModel.findOne({ email: profile._json.email });
+      let isNewTutor = false;
       
       if (!user) {
         const lastSixDigitsID = profile.id.substring(profile.id.length - 6);
@@ -30,6 +31,7 @@ passport.use(new GoogleStrategy({
         
         // Set roles based on the role parameter
         const roles = role === 'tutor' ? ['tutor'] : ['user'];
+        const onboardingStatus = role === 'tutor' ? 'pending' : 'completed';
         
         user = await UserModel.create({
           name: profile._json.name,
@@ -37,18 +39,24 @@ passport.use(new GoogleStrategy({
           is_verified: true,
           password: hashedPassword,
           roles: roles,
-          onboardingStatus: 'pending'
+          onboardingStatus: onboardingStatus,
         });
+        
+        // Mark as new tutor if role is tutor
+        if (role === 'tutor') {
+          isNewTutor = true;
+        }
       } else if (role === 'tutor' && !user.roles.includes('tutor')) {
         // If existing user is trying to become a tutor
         user.roles.push('tutor');
         user.onboardingStatus = 'pending';
         await user.save();
+        isNewTutor = true; // This is a new tutor role for an existing user
       }
       
       // Generate JWT tokens
       const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } = await generateTokens(user);
-      return done(null, { user, accessToken, refreshToken, accessTokenExp, refreshTokenExp });
+      return done(null, { user, accessToken, refreshToken, accessTokenExp, refreshTokenExp, isNewTutor });
 
     } catch (error) {
       return done(error);
