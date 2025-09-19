@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app",
-    "dev": "nodemon app"
+    "dev": "nodemon app",
+    "setup:production": "npm run setup:logs && npm run pm2:start",
+    "health": "curl http://localhost:5000/health"
   },
   "keywords": [],
   "author": "",
@@ -18,17 +20,24 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
     "bcrypt": "^5.1.1",
+    "chalk": "^5.6.2",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
+    "figlet": "^1.7.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
+    "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "winston": "^3.17.0"
   }
 }
