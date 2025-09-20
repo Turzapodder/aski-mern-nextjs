@@ -34,14 +34,16 @@ const AssignmentDetails = () => {
   const [progressWidth, setProgressWidth] = useState<string>("25%");
 
   const handleSendProposal = () => {
-    // Scroll to proposal section
-    const proposalSection = document.getElementById("proposal-section");
-    if (proposalSection) {
-      proposalSection.scrollIntoView({ behavior: "smooth" });
-    }
+    // Scroll to bottom of the page where proposal component will be shown
     setShowProposal(true);
-    setActiveStep("proposals");
-    setProgressWidth("25%");
+    
+    // Scroll to the bottom of the page after a short delay to ensure the component is rendered
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth"
+      });
+    }, 100);
   };
 
   const submitProposal = () => {
@@ -242,20 +244,7 @@ const AssignmentDetails = () => {
                 </div>
               )}
               
-              {/* Proposals Component */}
-              {activeStep === "proposals" && (
-                <ProposalsComponent
-                  proposal={proposal}
-                  setProposal={setProposal}
-                  budget={budget}
-                  setBudget={setBudget}
-                  submitProposal={submitProposal}
-                  onCancel={() => {
-                    setShowProposal(false);
-                    setActiveStep("details");
-                  }}
-                />
-              )}
+              {/* We've moved the Proposals Component to the bottom of the page */}
               
               {/* Payment Component */}
               {activeStep === "payment" && (
@@ -534,6 +523,24 @@ const AssignmentDetails = () => {
               </div>
             </div>
           </div>
+          
+          {/* Proposal Component at the bottom of the page */}
+          {showProposal && (
+            <div className="mt-8 w-full">
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <ProposalsComponent
+                  proposal={proposal}
+                  setProposal={setProposal}
+                  budget={budget}
+                  setBudget={setBudget}
+                  submitProposal={submitProposal}
+                  onCancel={() => {
+                    setShowProposal(false);
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

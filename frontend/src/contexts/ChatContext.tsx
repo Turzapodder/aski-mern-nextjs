@@ -256,7 +256,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       // Create a temporary chat object for immediate UI feedback
       const tempChat = {
-        _id: `temp_${tutorId}`,
+        _id: tutorId,
         type: 'direct',
         participants: [
           { _id: tutorId, name: 'Loading...', email: '' }
@@ -268,7 +268,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       };
       
       // Select the temporary chat immediately
-      selectChat(tempChat);
+      selectChat({
+        ...tempChat,
+        creator: tutorId,
+        isActive: true,
+        updatedAt: new Date().toISOString()
+      } as unknown as Chat);
       
       // The actual chat will be created when the first message is sent
       // This is handled in the sendMessage function

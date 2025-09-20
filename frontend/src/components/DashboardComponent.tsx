@@ -3,11 +3,7 @@
 import React from "react";
 import {
   CheckCircle,
-  Clock,
-  AlertTriangle,
-  Rocket,
   ChevronUp,
-  MoreHorizontal,
   MoreVertical,
 } from "lucide-react";
 import Image from "next/image";
@@ -67,7 +63,18 @@ const TopStats = () => {
   );
 };
 
-const TaskItem = ({ task }) => (
+const TaskItem = ({ task }: { task: {
+  icon: React.ReactNode;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  dueDate: string;
+  dueTime: string;
+  avatars: Array<{
+    initials: string;
+    bgColor: string;
+  }>;
+} }) => (
   <div className="flex items-center justify-between gap-2">
     <div className="flex items-center space-x-4 mb-2 p-4 border flex-1 border-gray-100 bg-white rounded-2xl shadow-md shadow-gray-100 hover:shadow-sm transition-shadow">
       <input
@@ -108,8 +115,8 @@ const TaskItem = ({ task }) => (
         {/* Avatars Section */}
         <div className="col-span-1 flex items-center justify-start md:justify-end">
           <div className="flex -space-x-2">
-            {task.avatars.map((avatar, index) => (
-              <div key={index} className="w-[40px] h-[40px] overflow-hidden rounded-full border border-gray-300 border-2">
+            {task.avatars.map((avatar: { initials: string; bgColor: string }, index: number) => (
+              <div key={index} className="w-[40px] h-[40px] overflow-hidden rounded-full  border-gray-300 border-2">
                 <Image
                   src={avatar.initials}
                   alt="user"
@@ -129,7 +136,19 @@ const TaskItem = ({ task }) => (
   </div>
 );
 
-const ProjectSection = ({ title, date, count, bgColor, shadow }) => {
+const ProjectSection = ({ 
+  title, 
+  date, 
+  count, 
+  bgColor, 
+  shadow 
+}: {
+  title: string;
+  date: string;
+  count: number;
+  bgColor: string;
+  shadow: string;
+}) => {
   const tasks = [
     {
       icon: <div className="w-6 h-6 bg-orange-500 rounded"></div>,

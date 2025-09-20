@@ -8,7 +8,7 @@ const UserSidebar = () => {
   const router = useRouter();
   const handleLogout = async () => {
     try {
-      const response:any = await logoutUser()
+      const response:any = await logoutUser({})
       if (response.data && response.data.status === "success") {
         router.push('/')
       }

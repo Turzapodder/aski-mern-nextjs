@@ -2,49 +2,73 @@ import jwt from "jsonwebtoken";
 import refreshAccessToken from "../utils/refreshAccessTooken.js";
 import setTokensCookies from "../utils/setTokensCookies.js";
 
-
 const isTokenExpired = (token) => {
     if (!token) {
         return true;
     }
-    const decodedToken = jwt.decode(token)
-    const currentTime = Date.now() / 1000;
-    return decodedToken.exp < currentTime
+    try {
+        const decodedToken = jwt.decode(token);
+        if (!decodedToken || !decodedToken.exp) {
+            return true;
+        }
+        const currentTime = Date.now() / 1000;
+        return decodedToken.exp < currentTime;
+    } catch (error) {
+        console.error('Error decoding token:', error);
+        return true;
+    }
 }
+
 // This middleware will set Authorization header and will refresh access token on expire
 const AccessTokenAutoRefresh = async (req, res, next) => {
     try {
         const accessToken = req.cookies.accessToken;
+
+        console.log('accessToken', accessToken);
         
-        // check if access token is still valid, then set the authorization an bearer
-        if (accessToken || !isTokenExpired(accessToken)) {
-            req.headers['authorization'] = `Bearer ${accessToken}`
+        // FIXED: Check if access token exists AND is not expired
+        if (accessToken && !isTokenExpired(accessToken)) {
+            req.headers['authorization'] = `Bearer ${accessToken}`;
+            return next(); // Token is valid, proceed
         }
 
-        // if access token is  expired, refresh tokens
+        // FIXED: If access token is missing or expired, refresh tokens
         if (!accessToken || isTokenExpired(accessToken)) {
             const refreshToken = req.cookies.refreshToken;
-            // if Refresh token is also missing, throwing an error
-            if(!refreshToken){
+            
+            // If Refresh token is also missing, throwing an error
+            if (!refreshToken) {
                 throw new Error('Refresh token is missing');
             }
 
+            // Check if refresh token is expired
+            if (isTokenExpired(refreshToken)) {
+                throw new Error('Refresh token is expired');
+            }
+
             // Access token is expired, make a refresh token request
-            const {newAccessToken, newRefreshToken, newAccessTokenExp, newRefreshTokenExp} = await refreshAccessToken(req, res);
+            const { newAccessToken, newRefreshToken, newAccessTokenExp, newRefreshTokenExp } = await refreshAccessToken(req, res);
 
-            // set cokkies with new tokens
-            setTokensCookies(res, newAccessToken,newRefreshToken, newAccessTokenExp, newRefreshTokenExp);
+            // Set cookies with new tokens
+            setTokensCookies(res, newAccessToken, newRefreshToken, newAccessTokenExp, newRefreshTokenExp);
 
-            req.headers['authorization'] = `Bearer ${newAccessToken}`
+            req.headers['authorization'] = `Bearer ${newAccessToken}`;
         }
-        next()
+        
+        next();
 
     } catch (error) {
         console.error('Error adding access token to header', error.message);
 
-        res.status(401).json({error: 'Unauthorized', message: 'Access token is missing or invalid'});
+        // Clear cookies on error
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+
+        res.status(401).json({
+            status: 'failed',
+            message: 'Unauthorized - Please login again'
+        });
     }
 }
-
 
 export default AccessTokenAutoRefresh;
