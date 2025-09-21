@@ -63,8 +63,9 @@ const AccessTokenAutoRefresh = async (req, res, next) => {
         // Check if response has already been sent
         if (!res.headersSent) {
             // Clear cookies on error
-            res.clearCookie('accessToken');
-            res.clearCookie('refreshToken');
+            // res.clearCookie('accessToken');
+            // res.clearCookie('refreshToken');
+            // res.clearCookie('is_auth');
 
             res.status(401).json({
                 status: 'failed',

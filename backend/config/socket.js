@@ -3,22 +3,27 @@ import jwt from 'jsonwebtoken';
 import UserModel from '../models/User.js';
 import ChatModel from '../models/Chat.js';
 import MessageModel from '../models/Message.js';
+import logger from '../utils/logger.js';
 
 class SocketManager {
   constructor() {
     this.io = null;
-    this.connectedUsers = new Map(); // userId -> socketId
+    this.connectedUsers = new Map(); // userId -> { socketId, userInfo }
     this.userSockets = new Map(); // socketId -> userId
     this.typingUsers = new Map(); // chatId -> Set of userIds
+    this.chatRooms = new Map(); // chatId -> Set of socketIds
   }
 
   initialize(server) {
     this.io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_HOST,
+        origin: [process.env.FRONTEND_HOST || "http://localhost:3000", "http://127.0.0.1:3000"],
         methods: ['GET', 'POST'],
         credentials: true
-      }
+      },
+      transports: ['websocket', 'polling'],
+      pingTimeout: 60000,
+      pingInterval: 25000
     });
 
     // Authentication middleware
@@ -27,20 +32,45 @@ class SocketManager {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
         
         if (!token) {
+          logger.warn('Socket connection denied: No token provided');
           return next(new Error('Authentication token required'));
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET_KEY);
-        const user = await UserModel.findById(decoded.userID).select('-password');
+        // Try to decode the token - handle both userID and _id formats
+        let decoded;
+        try {
+          decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET_KEY);
+        } catch (jwtError) {
+          // Try with refresh token secret as fallback
+          try {
+            decoded = jwt.verify(token, process.env.JWT_REFRESH_TOKEN_SECRET_KEY);
+          } catch (fallbackError) {
+            logger.error('JWT verification failed:', jwtError.message);
+            return next(new Error('Invalid authentication token'));
+          }
+        }
+
+        // Handle different token formats
+        const userId = decoded.userID || decoded._id || decoded.id;
+        if (!userId) {
+          logger.error('No user ID found in token:', decoded);
+          return next(new Error('Invalid token: no user ID'));
+        }
+
+        const user = await UserModel.findById(userId).select('-password');
         
-        if (!user || user.status !== 'active') {
-          return next(new Error('Invalid user or user is inactive'));
+        if (!user) {
+          logger.warn(`User not found for ID: ${userId}`);
+          return next(new Error('User not found'));
         }
 
         socket.userId = user._id.toString();
         socket.user = user;
+        
+        logger.info(`Socket authentication successful for user: ${user.name} (${user._id})`);
         next();
       } catch (error) {
+        logger.error('Socket authentication error:', error.message);
         next(new Error('Authentication failed'));
       }
     });
@@ -49,27 +79,56 @@ class SocketManager {
       this.handleConnection(socket);
     });
 
-    console.log('🔌 Socket.IO server initialized and ready for real-time communication');
+    logger.info('🔌 Socket.IO server initialized and ready for real-time communication');
     return this.io;
   }
 
-  handleConnection(socket) {
+  async handleConnection(socket) {
     const userId = socket.userId;
-    console.log(`👤 User ${userId} connected with socket ${socket.id}`);
+    const userName = socket.user.name;
+    
+    logger.info(`👤 User ${userName} (${userId}) connected with socket ${socket.id}`);
 
     // Store user connection
-    this.connectedUsers.set(userId, socket.id);
+    this.connectedUsers.set(userId, {
+      socketId: socket.id,
+      userInfo: {
+        _id: socket.user._id,
+        name: socket.user.name,
+        email: socket.user.email,
+        avatar: socket.user.avatar
+      }
+    });
     this.userSockets.set(socket.id, userId);
 
     // Join user to their chat rooms
-    this.joinUserChats(socket, userId);
+    await this.joinUserChats(socket, userId);
+
+    // Broadcast user online status
+    socket.broadcast.emit('user_online', {
+      userId: userId,
+      status: 'online',
+      userData: {
+        _id: socket.user._id,
+        name: socket.user.name,
+        email: socket.user.email,
+        avatar: socket.user.avatar
+      }
+    });
 
     // Handle socket events
     this.setupSocketEvents(socket);
 
     // Handle disconnection
-    socket.on('disconnect', () => {
-      this.handleDisconnection(socket);
+    socket.on('disconnect', (reason) => {
+      this.handleDisconnection(socket, reason);
+    });
+
+    // Send connection confirmation
+    socket.emit('connected', {
+      message: 'Connected to chat server',
+      userId: userId,
+      socketId: socket.id
     });
   }
 
@@ -78,25 +137,35 @@ class SocketManager {
       const userChats = await ChatModel.find({
         'participants.user': userId,
         isActive: true
-      }).select('_id');
+      }).select('_id name');
 
-      userChats.forEach(chat => {
-        socket.join(chat._id.toString());
-      });
+      for (const chat of userChats) {
+        const chatId = chat._id.toString();
+        socket.join(chatId);
+        
+        // Track chat rooms
+        if (!this.chatRooms.has(chatId)) {
+          this.chatRooms.set(chatId, new Set());
+        }
+        this.chatRooms.get(chatId).add(socket.id);
+      }
 
-      console.log(`🏠 User ${userId} joined ${userChats.length} chat rooms`);
+      logger.info(`🏠 User ${socket.user.name} joined ${userChats.length} chat rooms`);
     } catch (error) {
-      console.error('Error joining user chats:', error);
+      logger.error('Error joining user chats:', error);
     }
   }
 
   setupSocketEvents(socket) {
     const userId = socket.userId;
+    const userName = socket.user.name;
 
     // Handle new message
     socket.on('send_message', async (data) => {
       try {
         const { chatId, content, type = 'text', replyTo } = data;
+
+        logger.info(`📤 User ${userName} sending message to chat ${chatId}: "${content?.substring(0, 50)}..."`);
 
         // Verify user is participant
         const chat = await ChatModel.findOne({
@@ -135,25 +204,37 @@ class SocketManager {
         // Broadcast message to all chat participants
         this.io.to(chatId).emit('new_message', {
           message: newMessage,
-          chatId
+          chatId: chatId
         });
 
         // Stop typing indicator for this user
         this.handleStopTyping(socket, chatId);
 
+        logger.info(`✅ Message sent successfully by ${userName} to chat ${chatId}`);
+
       } catch (error) {
-        console.error('Send message error:', error);
+        logger.error('Send message error:', error);
         socket.emit('error', { message: 'Failed to send message' });
       }
     });
 
     // Handle typing indicators
     socket.on('typing_start', (data) => {
-      this.handleStartTyping(socket, data.chatId);
+      try {
+        const { chatId } = data;
+        this.handleStartTyping(socket, chatId);
+      } catch (error) {
+        logger.error('Typing start error:', error);
+      }
     });
 
     socket.on('typing_stop', (data) => {
-      this.handleStopTyping(socket, data.chatId);
+      try {
+        const { chatId } = data;
+        this.handleStopTyping(socket, chatId);
+      } catch (error) {
+        logger.error('Typing stop error:', error);
+      }
     });
 
     // Handle joining a chat
@@ -161,30 +242,80 @@ class SocketManager {
       try {
         const { chatId } = data;
         
+        logger.info(`User ${userName} joining chat: ${chatId}`);
+
         // Verify user is participant
         const chat = await ChatModel.findOne({
           _id: chatId,
-          'participants.user': userId
+          'participants.user': userId,
+          isActive: true
         });
 
         if (chat) {
           socket.join(chatId);
+          
+          // Track chat rooms
+          if (!this.chatRooms.has(chatId)) {
+            this.chatRooms.set(chatId, new Set());
+          }
+          this.chatRooms.get(chatId).add(socket.id);
+
+          // Notify user they joined successfully
           socket.emit('joined_chat', { chatId });
+          
+          // Notify others in the chat
+          socket.to(chatId).emit('user_joined_chat', {
+            chatId,
+            user: {
+              _id: socket.user._id,
+              name: socket.user.name,
+              email: socket.user.email
+            }
+          });
+
+          logger.info(`✅ User ${userName} successfully joined chat: ${chatId}`);
         } else {
           socket.emit('error', { message: 'Chat not found or access denied' });
         }
       } catch (error) {
-        console.error('Join chat error:', error);
+        logger.error('Join chat error:', error);
         socket.emit('error', { message: 'Failed to join chat' });
       }
     });
 
     // Handle leaving a chat
     socket.on('leave_chat', (data) => {
-      const { chatId } = data;
-      socket.leave(chatId);
-      this.handleStopTyping(socket, chatId);
-      socket.emit('left_chat', { chatId });
+      try {
+        const { chatId } = data;
+        
+        logger.info(`User ${userName} leaving chat: ${chatId}`);
+        
+        socket.leave(chatId);
+        
+        // Remove from chat rooms tracking
+        if (this.chatRooms.has(chatId)) {
+          this.chatRooms.get(chatId).delete(socket.id);
+          if (this.chatRooms.get(chatId).size === 0) {
+            this.chatRooms.delete(chatId);
+          }
+        }
+
+        this.handleStopTyping(socket, chatId);
+        
+        socket.emit('left_chat', { chatId });
+        
+        // Notify others in the chat
+        socket.to(chatId).emit('user_left_chat', {
+          chatId,
+          user: {
+            _id: socket.user._id,
+            name: socket.user.name,
+            email: socket.user.email
+          }
+        });
+      } catch (error) {
+        logger.error('Leave chat error:', error);
+      }
     });
 
     // Handle message read status
@@ -192,10 +323,13 @@ class SocketManager {
       try {
         const { chatId } = data;
         
+        logger.info(`User ${userName} marking messages as read in chat: ${chatId}`);
+
         // Verify user is participant
         const chat = await ChatModel.findOne({
           _id: chatId,
-          'participants.user': userId
+          'participants.user': userId,
+          isActive: true
         });
 
         if (!chat) {
@@ -204,10 +338,11 @@ class SocketManager {
         }
 
         // Update messages as read
-        await MessageModel.updateMany(
+        const updateResult = await MessageModel.updateMany(
           {
             chat: chatId,
             'readBy.user': { $ne: userId },
+            sender: { $ne: userId }, // Don't mark own messages as read
             isDeleted: false
           },
           {
@@ -220,32 +355,40 @@ class SocketManager {
           }
         );
 
+        logger.info(`Marked ${updateResult.modifiedCount} messages as read for user ${userName}`);
+
         // Notify other participants about read status
         socket.to(chatId).emit('messages_read', {
           chatId,
-          userId,
+          userId: userId,
           readAt: new Date()
         });
 
       } catch (error) {
-        console.error('Mark messages read error:', error);
+        logger.error('Mark messages read error:', error);
         socket.emit('error', { message: 'Failed to mark messages as read' });
       }
     });
 
-    // Handle user presence
+    // Handle user presence updates
     socket.on('update_presence', (data) => {
-      const { status } = data; // online, away, busy
-      socket.broadcast.emit('user_presence_updated', {
-        userId,
-        status,
-        lastSeen: new Date()
-      });
+      try {
+        const { status } = data; // online, away, busy
+        socket.broadcast.emit('user_presence_updated', {
+          userId,
+          status,
+          lastSeen: new Date()
+        });
+        logger.info(`User ${userName} updated presence to: ${status}`);
+      } catch (error) {
+        logger.error('Update presence error:', error);
+      }
     });
   }
 
   handleStartTyping(socket, chatId) {
     const userId = socket.userId;
+    const userName = socket.user.name;
     
     if (!this.typingUsers.has(chatId)) {
       this.typingUsers.set(chatId, new Set());
@@ -253,16 +396,19 @@ class SocketManager {
     
     this.typingUsers.get(chatId).add(userId);
     
-    // Notify other participants
+    // Notify other participants (exclude sender)
     socket.to(chatId).emit('user_typing', {
       chatId,
       userId,
-      userName: socket.user.name
+      userName
     });
+
+    logger.info(`User ${userName} started typing in chat: ${chatId}`);
   }
 
   handleStopTyping(socket, chatId) {
     const userId = socket.userId;
+    const userName = socket.user.name;
     
     if (this.typingUsers.has(chatId)) {
       this.typingUsers.get(chatId).delete(userId);
@@ -272,22 +418,47 @@ class SocketManager {
       }
     }
     
-    // Notify other participants
+    // Notify other participants (exclude sender)
     socket.to(chatId).emit('user_stopped_typing', {
       chatId,
       userId
     });
+
+    logger.info(`User ${userName} stopped typing in chat: ${chatId}`);
   }
 
-  handleDisconnection(socket) {
+  handleDisconnection(socket, reason) {
     const userId = this.userSockets.get(socket.id);
     
     if (userId) {
-      console.log(`👋 User ${userId} disconnected`);
+      const userInfo = this.connectedUsers.get(userId);
+      logger.info(`👋 User ${userInfo?.userInfo?.name || userId} disconnected (${reason})`);
       
       // Remove from connected users
       this.connectedUsers.delete(userId);
       this.userSockets.delete(socket.id);
+      
+      // Remove from all chat rooms
+      this.chatRooms.forEach((socketIds, chatId) => {
+        if (socketIds.has(socket.id)) {
+          socketIds.delete(socket.id);
+          
+          // Notify others in the chat
+          socket.to(chatId).emit('user_left_chat', {
+            chatId,
+            user: socket.user ? {
+              _id: socket.user._id,
+              name: socket.user.name,
+              email: socket.user.email
+            } : null
+          });
+        }
+        
+        // Clean up empty chat rooms
+        if (socketIds.size === 0) {
+          this.chatRooms.delete(chatId);
+        }
+      });
       
       // Clean up typing indicators
       this.typingUsers.forEach((typingSet, chatId) => {
@@ -297,14 +468,17 @@ class SocketManager {
             chatId,
             userId
           });
+          
+          if (typingSet.size === 0) {
+            this.typingUsers.delete(chatId);
+          }
         }
       });
       
       // Broadcast user offline status
-      socket.broadcast.emit('user_presence_updated', {
-        userId,
-        status: 'offline',
-        lastSeen: new Date()
+      socket.broadcast.emit('user_offline', {
+        userId: userId,
+        userData: userInfo?.userInfo || null
       });
     }
   }
@@ -315,13 +489,17 @@ class SocketManager {
   }
 
   getOnlineUsers() {
+    return Array.from(this.connectedUsers.values()).map(connection => connection.userInfo);
+  }
+
+  getOnlineUserIds() {
     return Array.from(this.connectedUsers.keys());
   }
 
   emitToUser(userId, event, data) {
-    const socketId = this.connectedUsers.get(userId);
-    if (socketId) {
-      this.io.to(socketId).emit(event, data);
+    const connection = this.connectedUsers.get(userId);
+    if (connection) {
+      this.io.to(connection.socketId).emit(event, data);
       return true;
     }
     return false;
@@ -329,6 +507,62 @@ class SocketManager {
 
   emitToChat(chatId, event, data) {
     this.io.to(chatId).emit(event, data);
+    logger.info(`Emitted ${event} to chat ${chatId}`);
+  }
+
+  getChatUsers(chatId) {
+    const chatSockets = this.chatRooms.get(chatId);
+    if (!chatSockets) return [];
+    
+    const users = [];
+    chatSockets.forEach(socketId => {
+      const userId = this.userSockets.get(socketId);
+      if (userId && this.connectedUsers.has(userId)) {
+        users.push(this.connectedUsers.get(userId).userInfo);
+      }
+    });
+    
+    return users;
+  }
+
+  // Close all connections
+  async close() {
+    if (this.io) {
+      logger.info('🔌 Closing Socket.IO server...');
+      
+      // Notify all clients about server shutdown
+      this.io.emit('server_shutdown', {
+        message: 'Server is shutting down',
+        timestamp: new Date()
+      });
+      
+      // Give clients time to receive the message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Close all socket connections
+      this.io.close();
+      
+      // Clear all maps
+      this.connectedUsers.clear();
+      this.userSockets.clear();
+      this.typingUsers.clear();
+      this.chatRooms.clear();
+      
+      logger.info('✅ Socket.IO server closed successfully');
+    }
+  }
+
+  // Get server statistics
+  getStats() {
+    return {
+      connectedUsers: this.connectedUsers.size,
+      activeChats: this.chatRooms.size,
+      typingUsers: Array.from(this.typingUsers.entries()).reduce((acc, [chatId, users]) => {
+        acc[chatId] = users.size;
+        return acc;
+      }, {}),
+      totalSockets: this.userSockets.size
+    };
   }
 }
 
