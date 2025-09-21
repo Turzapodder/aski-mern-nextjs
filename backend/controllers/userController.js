@@ -238,7 +238,7 @@ class UserController {
 
             // Generate token for password reset
             const secret = user._id + process.env.JWT_ACCESS_TOKEN_SECRET_KEY;
-            const token = jwt.sign({ userID: user._id }, secret, { expiresIn: '15m' });
+            const token = jwt.sign({ userID: user._id }, secret, { expiresIn: '365d' });
 
             const resetLink = `${process.env.FRONTEND_HOST}/account/reset-password-confirm/${user._id}/${token}`;
 

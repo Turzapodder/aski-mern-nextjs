@@ -11,6 +11,7 @@ import {
   Message,
   User
 } from '@/lib/services/chat';
+import { useGetUserQuery } from '@/lib/services/auth';
 
 interface ChatContextType {
   // State
@@ -21,6 +22,7 @@ interface ChatContextType {
   onlineUsers: User[];
   isConnected: boolean;
   isLoading: boolean;
+  currentUserId: string | null;
   
   // Actions
   selectChat: (chat: Chat) => void;
@@ -56,6 +58,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [typingUsers, setTypingUsers] = useState<{ [chatId: string]: User[] }>({});
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
 
+  // Get current user
+  const { data: userData } = useGetUserQuery();
+  const currentUserId = userData?.user?._id || null;
+
   // RTK Query hooks
   const { data: chatsData, isLoading: chatsLoading, refetch: refetchChats } = useGetUserChatsQuery({});
   const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGetChatMessagesQuery(
@@ -77,36 +83,58 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     stopTyping: socketStopTyping,
     markAsRead: socketMarkAsRead
   } = useSocket({
-    onMessageReceived: (data: { message: Message; chatId: string }) => {
-      const message = data.message;
-      setMessages(prev => {
-        // Avoid duplicates
-        if (prev.find(m => m._id === message._id)) return prev;
-        return [...prev, message];
-      });
+    onMessageReceived: (data: any) => {
+      console.log('Received new message:', data);
+      const message = data.message || data;
       
-      // Update last message in chats list
+      // Only add message if it's for the currently selected chat
+      if (selectedChat && message.chat === selectedChat._id) {
+        setMessages(prev => {
+          // Check if message already exists to avoid duplicates
+          const exists = prev.find(m => m._id === message._id);
+          if (exists) return prev;
+          
+          return [...prev, message];
+        });
+      }
+      
+      // Update last message in chats list regardless of selected chat
       setChats(prev => prev.map(chat => 
         chat._id === message.chat 
-          ? { ...chat, lastMessage: {
-              content: message.content || 'File',
-              sender: message.sender,
-              createdAt: message.createdAt
-            }}
+          ? { 
+              ...chat, 
+              lastMessage: {
+                content: message.content || 'File',
+                sender: message.sender,
+                createdAt: message.createdAt
+              }
+            }
           : chat
       ));
     },
     
     onTypingStart: ({ chatId, userId, userName }) => {
-      setTypingUsers(prev => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] || []), { _id: userId, name: userName }].filter(
-          (u, index, arr) => arr.findIndex(user2 => user2._id === u._id) === index
-        )
-      }));
+      console.log('User started typing:', { chatId, userId, userName });
+      
+      // Only show typing for current chat and exclude current user
+      if (selectedChat && chatId === selectedChat._id && userId !== currentUserId) {
+        setTypingUsers(prev => {
+          const currentTyping = prev[chatId] || [];
+          const userExists = currentTyping.find(u => u._id === userId);
+          
+          if (userExists) return prev;
+          
+          return {
+            ...prev,
+            [chatId]: [...currentTyping, { _id: userId, name: userName, email: '' }]
+          };
+        });
+      }
     },
     
     onTypingStop: ({ chatId, userId }) => {
+      console.log('User stopped typing:', { chatId, userId });
+      
       setTypingUsers(prev => ({
         ...prev,
         [chatId]: (prev[chatId] || []).filter(u => u._id !== userId)
@@ -114,88 +142,142 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     },
     
     onUserOnline: ({ userId, status }) => {
-      const user = { _id: userId, name: '', email: '', isActive: status === 'online' };
-      setOnlineUsers(prev => {
-        if (prev.find(u => u._id === user._id)) return prev;
-        return [...prev, user];
-      });
+      console.log('User online status:', { userId, status });
+      
+      if (status === 'online') {
+        setOnlineUsers(prev => {
+          const userExists = prev.find(u => u._id === userId);
+          if (userExists) return prev;
+          
+          return [...prev, { _id: userId, name: '', email: '', isActive: true }];
+        });
+      }
     },
     
     onUserOffline: ({ userId }) => {
+      console.log('User went offline:', { userId });
       setOnlineUsers(prev => prev.filter(u => u._id !== userId));
     },
     
-    onMessageRead: ({ chatId, userId }) => {
-      setMessages(prev => prev.map(msg => 
-        msg.chat === chatId && msg.sender._id !== userId
-          ? {
-              ...msg,
-              readBy: [...msg.readBy, { user: userId, readAt: new Date() }]
-            }
-          : msg
-      ));
+    onMessageRead: ({ chatId, messageId, userId }) => {
+      console.log('Message read:', { chatId, messageId, userId });
+      
+      if (selectedChat && chatId === selectedChat._id) {
+        setMessages(prev => prev.map(msg => 
+          msg._id === messageId
+            ? {
+                ...msg,
+                readBy: [...msg.readBy, { user: userId, readAt: new Date() }]
+              }
+            : msg
+        ));
+      }
     }
   });
 
   // Update local state when RTK Query data changes
   useEffect(() => {
-    if (chatsData?.data) {
-      setChats(chatsData.data.chats || []);
+    if (chatsData?.data?.chats) {
+      console.log('Updating chats from API:', chatsData.data.chats.length);
+      setChats(chatsData.data.chats);
     }
   }, [chatsData]);
 
   useEffect(() => {
-    if (messagesData?.data) {
-      setMessages(messagesData.data.messages || []);
+    if (messagesData?.data?.messages) {
+      console.log('Updating messages from API:', messagesData.data.messages.length);
+      setMessages(messagesData.data.messages);
     }
   }, [messagesData]);
 
   // Join/leave chat rooms when selected chat changes
   useEffect(() => {
     if (selectedChat && isConnected) {
+      console.log('Joining chat room:', selectedChat._id);
       joinChat(selectedChat._id);
+      
       return () => {
+        console.log('Leaving chat room:', selectedChat._id);
         leaveChat(selectedChat._id);
       };
     }
-  }, [selectedChat, isConnected, joinChat, leaveChat]);
+  }, [selectedChat?._id, isConnected]);
+
+  // Mark messages as read when chat is selected
+  useEffect(() => {
+    if (selectedChat && messages.length > 0 && currentUserId) {
+      const unreadMessages = messages.filter(msg => 
+        msg.sender._id !== currentUserId && 
+        !msg.readBy.some(r => r.user === currentUserId)
+      );
+      
+      if (unreadMessages.length > 0) {
+        socketMarkAsRead(selectedChat._id);
+      }
+    }
+  }, [selectedChat, messages, currentUserId]);
 
   // Action handlers
   const selectChat = useCallback((chat: Chat) => {
-    if (selectedChat) {
+    console.log('Selecting chat:', chat._id);
+    
+    if (selectedChat && selectedChat._id !== chat._id) {
       leaveChat(selectedChat._id);
     }
+    
     setSelectedChat(chat);
     setMessages([]); // Clear messages when switching chats
+    
+    // Clear typing users for previous chat
+    if (selectedChat) {
+      setTypingUsers(prev => ({
+        ...prev,
+        [selectedChat._id]: []
+      }));
+    }
   }, [selectedChat, leaveChat]);
 
   const sendMessage = useCallback(async (content: string, replyTo?: string) => {
-    if (!selectedChat || !content.trim()) return;
+    if (!selectedChat || !content.trim()) {
+      console.warn('Cannot send message: no chat selected or empty content');
+      return;
+    }
 
     try {
+      console.log('Sending message:', { chatId: selectedChat._id, content });
+      
       // Send via Socket.IO for real-time delivery
       socketSendMessage(selectedChat._id, content, replyTo);
       
-      // Also send via REST API for persistence
-      await sendMessageMutation({
+      // Also send via REST API for persistence (as backup)
+      const result = await sendMessageMutation({
         chatId: selectedChat._id,
         content,
         replyTo
       }).unwrap();
+      
+      console.log('Message sent successfully:', result);
     } catch (error) {
       console.error('Failed to send message:', error);
     }
   }, [selectedChat, socketSendMessage, sendMessageMutation]);
 
   const sendFile = useCallback(async (file: File, replyTo?: string) => {
-    if (!selectedChat) return;
+    if (!selectedChat) {
+      console.warn('Cannot send file: no chat selected');
+      return;
+    }
 
     try {
-      await sendFileMutation({
+      console.log('Sending file:', { chatId: selectedChat._id, fileName: file.name });
+      
+      const result = await sendFileMutation({
         chatId: selectedChat._id,
         file,
         replyTo
       }).unwrap();
+      
+      console.log('File sent successfully:', result);
       
       // Refresh messages to get the new file message
       refetchMessages();
@@ -205,17 +287,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [selectedChat, sendFileMutation, refetchMessages]);
 
   const markMessageAsRead = useCallback(async (messageId: string) => {
-    if (!selectedChat) return;
+    if (!selectedChat) {
+      console.warn('Cannot mark message as read: no chat selected');
+      return;
+    }
 
     try {
       // Mark as read via Socket.IO
-      socketMarkAsRead(selectedChat._id, messageId);
+      socketMarkAsRead(selectedChat._id);
       
       // Also mark via REST API
       await markAsReadMutation({
         chatId: selectedChat._id,
         messageId
       }).unwrap();
+      
+      console.log('Message marked as read:', messageId);
     } catch (error) {
       console.error('Failed to mark message as read:', error);
     }
@@ -234,24 +321,28 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [selectedChat, isConnected, socketStopTyping]);
 
   const refreshChats = useCallback(() => {
+    console.log('Refreshing chats');
     refetchChats();
   }, [refetchChats]);
 
   const refreshMessages = useCallback(() => {
+    console.log('Refreshing messages');
     refetchMessages();
   }, [refetchMessages]);
 
   const createDirectChat = useCallback(async (tutorId: string) => {
     try {
+      console.log('Creating direct chat with tutor:', tutorId);
+      
       // Check if a direct chat already exists with this tutor
       const existingChat = chats.find(
         (chat: any) => 
           chat.type === 'direct' && 
-          chat.participants.some((p: any) => p._id === tutorId)
+          chat.participants.some((p: any) => p.user._id === tutorId || p.user === tutorId)
       );
       
       if (existingChat) {
-        // If chat exists, just select it
+        console.log('Direct chat already exists:', existingChat._id);
         selectChat(existingChat);
         return;
       }
@@ -273,18 +364,21 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const data = await response.json();
       
       if (data.status === 'success') {
+        console.log('Direct chat created successfully:', data.chat);
         // Add new chat to local state
         setChats(prev => [data.chat, ...prev]);
         selectChat(data.chat);
         // Refresh chats to get updated list
         refetchChats();
+      } else {
+        throw new Error(data.message || 'Failed to create chat');
       }
       
     } catch (error) {
       console.error('Error creating direct chat:', error);
       throw error;
     }
-  }, [chats, selectChat]);
+  }, [chats, selectChat, refetchChats]);
 
   const contextValue: ChatContextType = {
     // State
@@ -295,6 +389,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     onlineUsers,
     isConnected,
     isLoading: chatsLoading || messagesLoading,
+    currentUserId,
     
     // Actions
     selectChat,

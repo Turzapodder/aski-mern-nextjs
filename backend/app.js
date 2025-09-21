@@ -108,8 +108,8 @@ const startServer = async () => {
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req, res) => {
-        // Skip rate limiting for health checks
-        return req.path === '/health' || req.path === '/';
+        // Skip rate limiting for health checks and socket connections
+        return req.path === '/health' || req.path === '/' || req.path.includes('/socket.io/');
       },
       handler: (req, res) => {
         logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
@@ -121,13 +121,25 @@ const startServer = async () => {
     });
     app.use(limiter);
 
-    // CORS configuration
+    // CORS configuration - Enhanced for Socket.IO
     const corsOptions = {
-      origin: process.env.FRONTEND_HOST || "http://localhost:3000",
+      origin: [
+        process.env.FRONTEND_HOST || "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000"
+      ],
       optionsSuccessStatus: 200,
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      allowedHeaders: [
+        "Content-Type", 
+        "Authorization", 
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers"
+      ],
     };
 
     app.use(cors(corsOptions));
@@ -196,8 +208,8 @@ const startServer = async () => {
           },
         },
         skip: (req, res) => {
-          // Skip logging for health checks to reduce noise
-          return req.path === '/health';
+          // Skip logging for health checks and socket.io polling to reduce noise
+          return req.path === '/health' || req.path.includes('/socket.io/');
         }
       })
     );
@@ -235,6 +247,26 @@ const startServer = async () => {
     // Passport initialization
     app.use(passport.initialize());
 
+    // Create HTTP server BEFORE routes
+    server = createServer(app);
+
+    // Initialize Socket.IO with the HTTP server
+    try {
+      const io = socketManager.initialize(server);
+      logger.info("Socket.IO initialized successfully");
+      
+      // Make socket manager available to routes
+      app.set('socketManager', socketManager);
+      app.set('io', io);
+      
+    } catch (socketError) {
+      logger.error("Socket.IO initialization error:", socketError);
+      // Don't fail the server start for socket errors in development
+      if (process.env.NODE_ENV === 'production') {
+        throw socketError;
+      }
+    }
+
     // Serve uploaded files with error handling
     app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
       maxAge: '1d',
@@ -252,6 +284,8 @@ const startServer = async () => {
           (uptime % 3600) / 60
         )}m ${Math.floor(uptime % 60)}s`;
 
+        const socketStats = socketManager ? socketManager.getStats() : null;
+
         res.json({
           status: "success",
           message: "MERN Stack Server is running successfully! 🚀",
@@ -263,6 +297,10 @@ const startServer = async () => {
           platform: process.platform,
           architecture: process.arch,
           restartAttempts,
+          socketIO: {
+            initialized: !!socketManager.io,
+            stats: socketStats
+          },
           memoryUsage: {
             rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
             heapTotal: `${Math.round(
@@ -288,13 +326,19 @@ const startServer = async () => {
 
     app.get("/health", (req, res) => {
       try {
+        const socketStats = socketManager ? socketManager.getStats() : null;
+        
         res.status(200).json({
           status: "healthy",
           timestamp: new Date().toISOString(),
           uptime: process.uptime(),
           environment: process.env.NODE_ENV || "development",
           restartAttempts,
-          pid: process.pid
+          pid: process.pid,
+          socketIO: {
+            status: socketManager?.io ? 'connected' : 'disconnected',
+            stats: socketStats
+          }
         });
       } catch (error) {
         res.status(500).json({
@@ -310,9 +354,15 @@ const startServer = async () => {
           status: "success",
           message: "API is working correctly",
           version: "v1",
+          socketIO: {
+            enabled: !!socketManager.io,
+            endpoint: "/socket.io/"
+          },
           endpoints: {
             users: "/api/user",
             chat: "/api/chat",
+            tutors: "/api/tutor",
+            students: "/api/student",
             health: "/health",
             root: "/",
           },
@@ -327,41 +377,10 @@ const startServer = async () => {
     });
 
     // Load application routes with error boundaries
-    app.use("/api/user", (req, res, next) => {
-      try {
-        userRoutes(req, res, next);
-      } catch (error) {
-        logger.error("User routes error:", error);
-        next(error);
-      }
-    });
-
-    app.use("/api/chat", (req, res, next) => {
-      try {
-        chatRoutes(req, res, next);
-      } catch (error) {
-        logger.error("Chat routes error:", error);
-        next(error);
-      }
-    });
-
-    app.use("/api/tutor", (req, res, next) => {
-      try {
-        tutorRoutes(req, res, next);
-      } catch (error) {
-        logger.error("Tutor routes error:", error);
-        next(error);
-      }
-    });
-
-    app.use("/api/student", (req, res, next) => {
-      try {
-        studentRoutes(req, res, next);
-      } catch (error) {
-        logger.error("Student routes error:", error);
-        next(error);
-      }
-    });
+    app.use("/api/user", userRoutes);
+    app.use("/api/chat", chatRoutes);
+    app.use("/api/tutor", tutorRoutes);
+    app.use("/api/student", studentRoutes);
 
     // Google OAuth routes with enhanced error handling and logging
     app.get("/auth/google", (req, res, next) => {
@@ -481,18 +500,6 @@ const startServer = async () => {
       }
     });
 
-    // Create HTTP server
-    server = createServer(app);
-
-    // Initialize Socket.IO with error handling
-    try {
-      socketManager.initialize(server);
-      logger.info("Socket.IO initialized successfully");
-    } catch (socketError) {
-      logger.error("Socket.IO initialization error:", socketError);
-      // Don't fail the server start for socket errors
-    }
-
     // Start the server with promise handling
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(port, ipAddress, (error) => {
@@ -551,6 +558,16 @@ const gracefulShutdown = async (signal, exitCode = 0) => {
   logger.info(`📴 Received ${signal}. Starting graceful shutdown...`);
 
   try {
+    // Close Socket.IO connections first
+    if (socketManager) {
+      try {
+        await socketManager.close();
+        logger.info("🔌 Socket.IO connections closed");
+      } catch (socketError) {
+        logger.error("Error closing Socket.IO:", socketError);
+      }
+    }
+
     // Stop accepting new connections
     if (server) {
       server.close((err) => {
@@ -560,16 +577,6 @@ const gracefulShutdown = async (signal, exitCode = 0) => {
           logger.info("🛑 HTTP server closed");
         }
       });
-    }
-
-    // Close Socket.IO connections
-    if (socketManager && typeof socketManager.close === 'function') {
-      try {
-        await socketManager.close();
-        logger.info("🔌 Socket.IO connections closed");
-      } catch (socketError) {
-        logger.error("Error closing Socket.IO:", socketError);
-      }
     }
 
     // Give time for cleanup
@@ -613,6 +620,15 @@ const restartServer = async (reason = "unknown") => {
   }
 
   try {
+    // Close Socket.IO first
+    if (socketManager) {
+      try {
+        await socketManager.close();
+      } catch (socketError) {
+        logger.error("Error closing Socket.IO during restart:", socketError);
+      }
+    }
+
     // Close existing server if it exists
     if (server) {
       try {
@@ -691,6 +707,12 @@ const monitorMemory = () => {
   // Log memory usage every 10 minutes
   if (Date.now() % (10 * 60 * 1000) < 1000) {
     logger.info(`📊 Memory usage: ${usedMB}MB / ${totalMB}MB`);
+    
+    // Log Socket.IO stats if available
+    if (socketManager) {
+      const socketStats = socketManager.getStats();
+      logger.info(`🔌 Socket.IO stats:`, socketStats);
+    }
   }
   
   // Restart if memory usage is too high (adjust threshold as needed)
