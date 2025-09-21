@@ -1,22 +1,60 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import {
   UserRoundPen,
   BookOpenCheck,
   CircleCheck,
-  PhoneIncoming,
   Rabbit,
 } from "lucide-react";
 import MultiSelect from "@/components/MultiSelect";
 import Quiz from "@/components/Quiz";
 import { subjectTopics } from "@/lib/constants";
 import { useGetUserQuery, useGenerateQuizMutation } from "@/lib/services/auth";
-import Link from "next/link";
+import { useSubmitTutorApplicationMutation, useGetTutorApplicationStatusQuery } from "@/lib/services/tutor";
 import { useRouter } from "next/navigation";
+
+// Define proper types
+interface User {
+  name: string;
+  email: string;
+  is_verified: boolean;
+}
+
+interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  topic: string;
+}
+
+interface QuizSummary {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  timeSpent: number;
+  topicPerformance: Record<string, any>;
+  answers?: any[];
+}
+
+interface FormData {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  university: string;
+  degree: string;
+  gpa: string;
+  country: string;
+  subject: string;
+  topics: string[];
+  quizSummary: QuizSummary | null;
+  certificate: File | null;
+  profilePicture: File | null;
+}
 
 const steps = [
   {
@@ -42,7 +80,7 @@ const steps = [
 const validationSchema = [
   // Step 1
   Yup.object({
-    fullName: Yup.string().required("First name is required"),
+    fullName: Yup.string().required("Full name is required"),
     email: Yup.string().email("Invalid email").required("Email is required"),
     phoneNumber: Yup.string().required("Phone number is required"),
     university: Yup.string().required("University name is required"),
@@ -61,77 +99,101 @@ const validationSchema = [
 
 export default function TutorOnboarding() {
   const router = useRouter();
-  const [user, setUser] = useState<any>({
+  const [user, setUser] = useState<User>({
     name: "",
     email: "",
     is_verified: false,
   });
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizLoading, setQuizLoading] = useState(false);
-  const [tempFormData, setTempFormData] = useState<any>(null);
-  const [generateQuiz] = useGenerateQuizMutation();
-  const { data, isSuccess } = useGetUserQuery();
+  const [tempFormData, setTempFormData] = useState<FormData | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [showSubmit, setShowSubmit] = useState(true);
+  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [existingApplication, setExistingApplication] = useState<any>(null);
 
-  const formik = useFormik({
+  const [generateQuiz] = useGenerateQuizMutation();
+  const [submitApplication] = useSubmitTutorApplicationMutation();
+  const { data: userData, isSuccess: userSuccess } = useGetUserQuery();
+  const { data: applicationData, isSuccess: applicationSuccess, isLoading: applicationLoading } = useGetTutorApplicationStatusQuery();
+
+  const formik = useFormik<FormData>({
     enableReinitialize: true,
     initialValues: {
       fullName: user?.name || "",
       email: user?.email || "",
       phoneNumber: "",
-      university: "", // Changed from streetAddress
-      degree: "", // Added new field
-      gpa: "", // Added new field
-      country: "", // This will be used for country
+      university: "",
+      degree: "",
+      gpa: "",
+      country: "",
       subject: "",
       topics: [],
       quizSummary: null,
-      certificate: null as File | null,
-      profilePicture: null as File | null,
+      certificate: null,
+      profilePicture: null,
     },
     validationSchema: validationSchema[currentStep - 1],
-    validate: (values) => {
-      const errors = {};
-      try {
-        validationSchema[currentStep - 1].validateSync(values, {
-          abortEarly: false,
-        });
-      } catch (err: any) {
-        console.log("Validation errors:", err.errors);
-      }
-      return errors;
-    },
     onSubmit: async (values) => {
       setIsSubmitting(true);
+      setErrorMessage("");
+      
       try {
-        console.log("Form submitted:", values); // Debug log
         if (currentStep === 1) {
+          // Check if user can apply for this subject
+          if (values.subject) {
+            try {
+              const canApplyResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/tutor/can-apply/${encodeURIComponent(values.subject)}`,
+                {
+                  credentials: 'include',
+                  headers: {
+                    'Accept': 'application/json'
+                  }
+                }
+              );
+              
+              const canApplyData = await canApplyResponse.json();
+              
+              if (!canApplyData.canApply) {
+                setErrorMessage(canApplyData.message);
+                setIsSubmitting(false);
+                return;
+              }
+            } catch (error) {
+              console.error("Error checking application eligibility:", error);
+              // Continue with the process if check fails
+            }
+          }
+
           setTempFormData(values);
           setQuizLoading(true);
 
-          console.log("Generating quiz for:", values.subject, values.topics); // Debug log
-          const response = await generateQuiz({
-            subject: values.subject,
-            topics: values.topics,
-          }).unwrap();
+          console.log("Generating quiz for:", values.subject, values.topics);
+          
+          try {
+            const response = await generateQuiz({
+              subject: values.subject,
+              topics: values.topics,
+            }).unwrap();
 
-          if (response) {
-            setQuizQuestions(response.data.questions);
-            setCurrentStep(2);
-          } else {
-            throw new Error("Failed to generate quiz");
+            if (response?.data?.questions) {
+              setQuizQuestions(response.data.questions);
+              setCurrentStep(2);
+            } else {
+              throw new Error("Failed to generate quiz - no questions received");
+            }
+          } catch (quizError) {
+            console.error("Quiz generation error:", quizError);
+            setErrorMessage("Failed to generate quiz. Please try again.");
           }
-        } else if (currentStep === 3) {
-          // Demo function to show all data
-          handleFinalSubmit(values);
         }
-
-        setCurrentStep(currentStep + 1);
       } catch (error) {
         console.error("Error:", error);
+        setErrorMessage("An error occurred. Please try again.");
       } finally {
         setIsSubmitting(false);
         setQuizLoading(false);
@@ -139,37 +201,70 @@ export default function TutorOnboarding() {
     },
   });
 
-  const handleFinalSubmit = (values: any) => {
-    const finalData = {
-      personalInfo: {
-        ...tempFormData,
-        // Include any updated fields from the current values
-        fullName: values.fullName,
-        email: values.email,
-        phoneNumber: values.phoneNumber,
-        university: values.university,
-        degree: values.degree,
-        gpa: values.gpa,
-        country: values.country,
-        subject: values.subject,
-        topics: values.topics,
-      },
-      quizSummary: values.quizSummary,
-      submittedAt: new Date().toISOString(),
-    };
+  const handleFinalSubmit = async (quizSummary: QuizSummary) => {
+    if (applicationSubmitted || isSubmitting || !tempFormData) {
+      console.log("Application already submitted or in progress, skipping...");
+      return;
+    }
+    
+    try {
+      console.log("Starting application submission...");
+      setIsSubmitting(true);
+      setApplicationSubmitted(true);
 
-    console.log("Final Application Data:", finalData);
+      const applicationData = {
+        personalInfo: {
+          fullName: tempFormData.fullName,
+          email: tempFormData.email,
+          phoneNumber: tempFormData.phoneNumber,
+          university: tempFormData.university,
+          degree: tempFormData.degree,
+          gpa: tempFormData.gpa,
+          country: tempFormData.country,
+        },
+        academicInfo: {
+          subject: tempFormData.subject,
+          topics: tempFormData.topics,
+        },
+        quizSummary: quizSummary,
+        documents: {
+          certificate: tempFormData.certificate || undefined,
+          profilePicture: tempFormData.profilePicture || undefined,
+        },
+      };
+
+      console.log("Submitting application data:", applicationData);
+
+      const response = await submitApplication(applicationData).unwrap();
+      
+      if (response.status === 'success') {
+        console.log('Application submitted successfully:', response);
+        setCurrentStep(3);
+      } else {
+        throw new Error(response.message || 'Failed to submit application');
+      }
+    } catch (error: any) {
+      console.error('Failed to submit application:', error);
+      setErrorMessage(error.data?.message || error.message || 'Failed to submit application');
+      setApplicationSubmitted(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
-    if (data && isSuccess) {
-      setUser(data.user);
-      // if (data.user.onboardingStatus === "pending") {
-      //   setCurrentStep(3);
-      //   setShowSubmit(false);
-      // }
+    if (userData && userSuccess) {
+      setUser(userData.user);
     }
-  }, [data, isSuccess]);
+  }, [userData, userSuccess]);
+
+  useEffect(() => {
+    if (applicationData && applicationSuccess) {
+      setExistingApplication(applicationData.application);
+      // If user has an existing application, show approval summary first
+      setCurrentStep(3);
+    }
+  }, [applicationData, applicationSuccess]);
 
   useEffect(() => {
     if (currentStep === 3 && countdown > 0) {
@@ -182,11 +277,22 @@ export default function TutorOnboarding() {
     }
   }, [currentStep, countdown, router]);
 
+  const getSubjectTopics = (subject: string): string[] => {
+    const topics = subjectTopics as Record<string, string[]>;
+    return topics[subject] || [];
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
           <div className="space-y-4">
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-4">
                 <div>
@@ -203,9 +309,7 @@ export default function TutorOnboarding() {
                   />
                   {formik.touched.fullName && formik.errors.fullName && (
                     <div className="text-red-500 text-sm mt-1">
-                      {typeof formik.errors.fullName === "string"
-                        ? formik.errors.fullName
-                        : ""}
+                      {formik.errors.fullName}
                     </div>
                   )}
                 </div>
@@ -224,16 +328,14 @@ export default function TutorOnboarding() {
                   />
                   {formik.touched.email && formik.errors.email && (
                     <div className="text-red-500 text-sm mt-1">
-                      {typeof formik.errors.email === "string"
-                        ? formik.errors.email
-                        : ""}
+                      {formik.errors.email}
                     </div>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+                    Phone Number*
                   </label>
                   <input
                     type="text"
@@ -243,6 +345,11 @@ export default function TutorOnboarding() {
                     value={formik.values.phoneNumber}
                     className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
+                  {formik.touched.phoneNumber && formik.errors.phoneNumber && (
+                    <div className="text-red-500 text-sm mt-1">
+                      {formik.errors.phoneNumber}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -252,9 +359,7 @@ export default function TutorOnboarding() {
                     <div className="flex flex-col items-center space-y-3">
                       <div className="w-32 h-32 rounded-full overflow-hidden bg-yellow-400">
                         <img
-                          src={URL.createObjectURL(
-                            formik.values.profilePicture
-                          )}
+                          src={URL.createObjectURL(formik.values.profilePicture)}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
@@ -262,9 +367,7 @@ export default function TutorOnboarding() {
                       <button
                         type="button"
                         onClick={() => {
-                          const fileInput = document.getElementById(
-                            "profile-upload"
-                          ) as HTMLInputElement;
+                          const fileInput = document.getElementById("profile-upload") as HTMLInputElement;
                           if (fileInput) fileInput.click();
                         }}
                         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
@@ -295,9 +398,7 @@ export default function TutorOnboarding() {
                       <button
                         type="button"
                         onClick={() => {
-                          const fileInput = document.getElementById(
-                            "profile-upload"
-                          ) as HTMLInputElement;
+                          const fileInput = document.getElementById("profile-upload") as HTMLInputElement;
                           if (fileInput) fileInput.click();
                         }}
                         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
@@ -320,10 +421,7 @@ export default function TutorOnboarding() {
                     onChange={(event) => {
                       const file = event.currentTarget.files?.[0];
                       if (file) {
-                        if (
-                          file.type === "image/jpeg" ||
-                          file.type === "image/png"
-                        ) {
+                        if (file.type === "image/jpeg" || file.type === "image/png") {
                           formik.setFieldValue("profilePicture", file);
                         } else {
                           alert("Only JPG or PNG files are allowed");
@@ -341,13 +439,19 @@ export default function TutorOnboarding() {
               </label>
               <input
                 type="text"
-                name="university" // Changed from streetAddress
+                name="university"
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 value={formik.values.university}
                 className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
+              {formik.touched.university && formik.errors.university && (
+                <div className="text-red-500 text-sm mt-1">
+                  {formik.errors.university}
+                </div>
+              )}
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -355,12 +459,17 @@ export default function TutorOnboarding() {
                 </label>
                 <input
                   type="text"
-                  name="degree" // Changed from streetAddress
+                  name="degree"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.degree}
                   className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
+                {formik.touched.degree && formik.errors.degree && (
+                  <div className="text-red-500 text-sm mt-1">
+                    {formik.errors.degree}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -368,14 +477,20 @@ export default function TutorOnboarding() {
                 </label>
                 <input
                   type="text"
-                  name="gpa" // Changed from streetAddress
+                  name="gpa"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.gpa}
                   className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
+                {formik.touched.gpa && formik.errors.gpa && (
+                  <div className="text-red-500 text-sm mt-1">
+                    {formik.errors.gpa}
+                  </div>
+                )}
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country*
@@ -388,6 +503,11 @@ export default function TutorOnboarding() {
                 value={formik.values.country}
                 className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
+              {formik.touched.country && formik.errors.country && (
+                <div className="text-red-500 text-sm mt-1">
+                  {formik.errors.country}
+                </div>
+              )}
             </div>
 
             <div>
@@ -401,6 +521,7 @@ export default function TutorOnboarding() {
                   onChange={(e) => {
                     formik.setFieldValue("subject", e.target.value);
                     formik.setFieldValue("topics", []);
+                    setErrorMessage(""); // Clear error when subject changes
                   }}
                   onBlur={formik.handleBlur}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-600 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300"
@@ -425,11 +546,7 @@ export default function TutorOnboarding() {
                     Select Topics*
                   </label>
                   <MultiSelect
-                    options={
-                      subjectTopics[
-                        formik.values.subject as keyof typeof subjectTopics
-                      ]
-                    }
+                    options={getSubjectTopics(formik.values.subject)}
                     placeholder="Choose topics"
                     onChange={(selected) => {
                       formik.setFieldValue("topics", selected);
@@ -446,7 +563,7 @@ export default function TutorOnboarding() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Education Certificate
+                Last Education Certificate (Optional)
               </label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div className="space-y-1 text-center">
@@ -455,9 +572,7 @@ export default function TutorOnboarding() {
                       <p>Selected file: {formik.values.certificate.name}</p>
                       <button
                         type="button"
-                        onClick={() =>
-                          formik.setFieldValue("certificate", null)
-                        }
+                        onClick={() => formik.setFieldValue("certificate", null)}
                         className="text-red-500 hover:text-red-700 mt-2"
                       >
                         Remove file
@@ -491,9 +606,7 @@ export default function TutorOnboarding() {
                           type="button"
                           className="mt-4 px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
                           onClick={() => {
-                            const fileInput = document.getElementById(
-                              "file-upload"
-                            ) as HTMLInputElement;
+                            const fileInput = document.getElementById("file-upload") as HTMLInputElement;
                             if (fileInput) fileInput.click();
                           }}
                         >
@@ -510,7 +623,7 @@ export default function TutorOnboarding() {
                               if (file.size <= 10 * 1024 * 1024) {
                                 formik.setFieldValue("certificate", file);
                               } else {
-                                alert("File size should be less than 50MB");
+                                alert("File size should be less than 10MB");
                               }
                             }
                           }}
@@ -525,30 +638,145 @@ export default function TutorOnboarding() {
         );
       case 2:
         return quizLoading ? (
-          <div className="flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-300"></div>
+            <p className="mt-4 text-gray-600">Generating quiz questions...</p>
           </div>
         ) : (
-          <Quiz
-            subject={formik.values.subject}
-            topics={formik.values.topics}
-            questions={quizQuestions}
-            onComplete={(quizSummary) => {
-              // Store the complete quiz summary object instead of just the score
-              formik.setFieldValue("quizSummary", quizSummary);
-
-              // Log the updated form data with quiz summary
-              console.log("Quiz completed with summary:", quizSummary);
-              console.log("Updated form data:", {
-                ...formik.values,
-                quizSummary: quizSummary,
-              });
-
-              setCurrentStep(3);
-            }}
-          />
+          <div className="space-y-4">
+            {isSubmitting && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md text-center">
+                Submitting your application... Please wait.
+              </div>
+            )}
+            <Quiz
+              subject={formik.values.subject}
+              topics={formik.values.topics}
+              questions={quizQuestions}
+              onComplete={(quizSummary: QuizSummary) => {
+                console.log("Quiz completed with summary:", quizSummary);
+                if (!isSubmitting && !applicationSubmitted) {
+                  handleFinalSubmit(quizSummary);
+                }
+              }}
+            />
+          </div>
         );
       case 3:
+        // If there's an existing application, show approval summary
+        if (existingApplication) {
+          const getStatusColor = (status: string) => {
+            switch (status) {
+              case 'pending': return 'text-yellow-600 bg-yellow-100';
+              case 'under_review': return 'text-blue-600 bg-blue-100';
+              case 'approved': return 'text-green-600 bg-green-100';
+              case 'rejected': return 'text-red-600 bg-red-100';
+              default: return 'text-gray-600 bg-gray-100';
+            }
+          };
+
+          const getStatusIcon = (status: string) => {
+            switch (status) {
+              case 'pending': return '⏳';
+              case 'under_review': return '👀';
+              case 'approved': return '✅';
+              case 'rejected': return '❌';
+              default: return '📋';
+            }
+          };
+
+          return (
+            <div className="min-h-[400px] p-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">{getStatusIcon(existingApplication.applicationStatus)}</div>
+                  <h2 className="text-3xl font-bold mb-4">Application Status</h2>
+                  <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(existingApplication.applicationStatus)}`}>
+                    {existingApplication.applicationStatus.charAt(0).toUpperCase() + existingApplication.applicationStatus.slice(1).replace('_', ' ')}
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-4">Application Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Subject</p>
+                      <p className="font-medium">{existingApplication.academicInfo?.subject || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Topics</p>
+                      <p className="font-medium">{existingApplication.academicInfo?.topics?.join(', ') || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Submitted</p>
+                      <p className="font-medium">{new Date(existingApplication.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Application ID</p>
+                      <p className="font-medium text-xs">{existingApplication._id}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* {existingApplication.quizResult && (
+                  <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                    <h3 className="text-lg font-semibold mb-4">Quiz Results</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-primary-600">{existingApplication.quizResult.score}</p>
+                        <p className="text-sm text-gray-600">Score</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-primary-600">{existingApplication.quizResult.percentage}%</p>
+                        <p className="text-sm text-gray-600">Percentage</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-primary-600">{existingApplication.quizResult.totalQuestions}</p>
+                        <p className="text-sm text-gray-600">Total Questions</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-primary-600">{Math.floor(existingApplication.quizResult.timeSpent / 60)}m</p>
+                        <p className="text-sm text-gray-600">Time Spent</p>
+                      </div>
+                    </div>
+                  </div>
+                )} */}
+
+                <div className="text-center">
+                  {existingApplication.applicationStatus === 'pending' && (
+                    <p className="text-gray-600 mb-4">
+                      Your application is being reviewed. We'll contact you within 24-48 hours with an update.
+                    </p>
+                  )}
+                  {existingApplication.applicationStatus === 'under_review' && (
+                    <p className="text-gray-600 mb-4">
+                      Your application is currently under detailed review. We'll notify you once the review is complete.
+                    </p>
+                  )}
+                  {existingApplication.applicationStatus === 'approved' && (
+                    <p className="text-green-600 mb-4">
+                      Congratulations! Your application has been approved. Welcome to our tutor community!
+                    </p>
+                  )}
+                  {existingApplication.applicationStatus === 'rejected' && (
+                    <p className="text-red-600 mb-4">
+                      Unfortunately, your application was not approved at this time. You may reapply after 30 days.
+                    </p>
+                  )}
+                  
+                  <button
+                    onClick={() => router.push("/")}
+                    className="px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Default success message for new applications
         return (
           <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center">
             <div className="bg-primary-500 rounded-full p-5 mb-6">
@@ -579,13 +807,13 @@ export default function TutorOnboarding() {
             </p>
 
             <div className="mt-4">
-              <Link
-                href="/"
+              <button
+                onClick={() => router.push("/")}
                 className="px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-black transition-colors"
               >
                 Check your inbox{" "}
                 {countdown > 0 && `(Redirecting in ${countdown}s)`}
-              </Link>
+              </button>
             </div>
           </div>
         );
@@ -599,12 +827,9 @@ export default function TutorOnboarding() {
       <div className="max-w-full w-4-xl h-[800px] bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="flex h-full">
           <div className="w-80 bg-gray-50 p-8 flex-shrink-0">
-            <Image
-              src={"/assets/main-logo.svg"}
-              width={100}
-              alt={"Site Logo"}
-              height={70}
-            />
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold">Tutor Application</h1>
+            </div>
             <div className="space-y-4">
               {steps.map((step, index) => (
                 <div key={step.id} className="relative">
@@ -624,41 +849,42 @@ export default function TutorOnboarding() {
                     </div>
                   </div>
 
-                  {/* Vertical separator line */}
                   {index < steps.length - 1 && (
-                    <div className="absolute left-3 w-0.5 h-[25px] -ml-[1px]  bg-gray-300"></div>
+                    <div className="absolute left-3 w-0.5 h-[25px] -ml-[1px] bg-gray-300"></div>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          
-            <div className="flex-1 border-t-[2rem] border-b-[2rem] border-l-[2rem] border-r-[10px]  border-white overflow-y-auto">
-              <form onSubmit={formik.handleSubmit} className="pr-6">
-                <h2 className="text-2xl font-bold mb-6">
-                  {steps[currentStep - 1].title}
-                </h2>
-                {renderStepContent()}
-                <div className="mt-6 sticky bottom-0 bg-white py-4">
-                  {currentStep !== 2 && showSubmit && (
-                    <button
-                      type="submit"
-                      disabled={
-                        isSubmitting || (currentStep === 1 && !formik.isValid)
-                      }
-                      className="w-full bg-primary-500 text-white rounded-lg px-4 py-2 hover:bg-primary-950 hover:text-white disabled:bg-primary-950 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting
-                        ? "Processing..."
-                        : currentStep === 3
-                        ? "Submit Application"
-                        : "Confirm"}
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
+          <div className="flex-1 border-t-[2rem] border-b-[2rem] border-l-[2rem] border-r-[10px] border-white overflow-y-auto">
+            <form onSubmit={formik.handleSubmit} className="pr-6">
+              <h2 className="text-2xl font-bold mb-6">
+                {steps[currentStep - 1]?.title}
+              </h2>
+              {renderStepContent()}
+             {!existingApplication&& <div className="mt-6 sticky bottom-0 bg-white py-4">
+                {currentStep !== 2 && showSubmit && !applicationSubmitted && (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || (currentStep === 1 && !formik.isValid)}
+                    className="w-full bg-primary-500 text-white rounded-lg px-4 py-2 hover:bg-primary-950 hover:text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting
+                      ? "Processing..."
+                      : currentStep === 3
+                      ? "Submit Application"
+                      : "Continue to Quiz"}
+                  </button>
+                )}
+                {errorMessage && currentStep === 1 && (
+                  <div className="mt-2 text-red-600 text-sm text-center">
+                    {errorMessage}
+                  </div>
+                )}
+              </div>}
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -1,15 +1,27 @@
 'use client'
 
+import { useState } from "react"
 import CollapsibleSidebar from "@/components/CollapsibleSidebar"
 import TopNavbar from "@/components/TopNavbar"
-const UserLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="flex h-screen bg-gray-100 container mx-auto">
-      {/* Collapsible Sidebar */}
-      <CollapsibleSidebar activeItem="dashboard" />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+const UserLayout = ({ children }: { children: React.ReactNode }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  const handleSidebarToggle = (isCollapsed: boolean) => {
+    setSidebarCollapsed(isCollapsed)
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Collapsible Sidebar */}
+      <CollapsibleSidebar activeItem="dashboard" onToggle={handleSidebarToggle} />
+
+      {/* Main Content Area - with dynamic left margin based on sidebar state */}
+      <div 
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-16' : 'ml-64'
+        }`}
+      >
         {/* Header */}
         <TopNavbar
           userName="Ratul"
@@ -21,7 +33,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-[#f6f6f6]">
+        <main className="flex-1 p-6 bg-[#f6f6f6] overflow-y-auto">
           {children}
         </main>
       </div>

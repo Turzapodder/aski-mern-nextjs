@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useGetUserQuery } from '@/lib/services/auth'
+import { useGetStudentFormQuery, useConvertFormToAssignmentMutation } from '@/lib/services/student'
 import Sidebar from '@/components/Sidebar'
 import PostAssignmentModal from '@/components/PostAssignmentModal'
 import DashboardLayout from '@/components/DashboardLayout'
@@ -61,12 +62,42 @@ const UserDashboard = () => {
   const [user, setUser] = useState(mockUser);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<any>(null);
+  const [convertForm] = useConvertFormToAssignmentMutation();
 
   useEffect(() => {
     if (isUserSuccess && userData?.user) {
       setUser({ name: userData.user.name || 'Taylor', avatar: userData.user.avatar || '/site-logo.png' });
+      
+      // Check for pending form data after login
+      const storedSessionId = localStorage.getItem('pendingFormSessionId');
+      console.log('Checking for stored session ID:', storedSessionId);
+      
+      if (storedSessionId) {
+        console.log('Found stored session ID, converting form...');
+        // Convert the form data
+        convertForm({ sessionId: storedSessionId })
+          .unwrap()
+          .then((response) => {
+            console.log('Convert form response:', response);
+            if (response.formData) {
+              setPendingFormData(response.formData);
+              // Automatically show the modal with pre-filled data
+              setShowPostModal(true);
+              console.log('Form data converted and modal opened:', response.formData);
+            }
+            localStorage.removeItem('pendingFormSessionId');
+            console.log('Session ID removed from localStorage');
+          })
+          .catch((error) => {
+            console.error('Failed to convert form:', error);
+            localStorage.removeItem('pendingFormSessionId');
+          });
+      } else {
+        console.log('No stored session ID found');
+      }
     }
-  }, [userData, isUserSuccess]);
+  }, [userData, isUserSuccess, convertForm]);
 
 
   // Calendar state and functions
@@ -121,6 +152,24 @@ const UserDashboard = () => {
           <div className="flex-1">
             {/* New Courses Section */}
 
+            {/* Show pending form notification if exists */}
+            {pendingFormData && (
+              <div className="bg-primary-100 border border-primary-300 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-primary-800 mb-2">
+                  Welcome! Your assignment request has been saved.
+                </h3>
+                <p className="text-primary-700 text-sm mb-3">
+                  Subject: {pendingFormData.subject} | Description: {pendingFormData.description}
+                </p>
+                <button 
+                  onClick={() => setPendingFormData(null)}
+                  className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
+                >
+                  Continue with this assignment
+                </button>
+              </div>
+            )}
+
             <DashboardComponent />
             
 
@@ -172,6 +221,23 @@ const UserDashboard = () => {
 
         </main>
       </div>
+      
+      {/* PostAssignmentModal */}
+      <PostAssignmentModal 
+        isOpen={showPostModal}
+        onClose={() => {
+          setShowPostModal(false);
+          setPendingFormData(null);
+        }}
+        onSubmit={(data) => {
+          console.log('Assignment submitted:', data);
+          setShowPostModal(false);
+          setPendingFormData(null);
+          // Clean up localStorage after successful conversion
+          localStorage.removeItem('pendingFormSessionId');
+        }}
+        initialData={pendingFormData}
+      />
     </div>
   );
 };

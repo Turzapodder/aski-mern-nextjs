@@ -5,7 +5,7 @@ const checkUserAuth = async (req, res, next) => {
   let token;
   const { authorization } = req.headers;
 
-  console.log('authorization check::', authorization);
+  // console.log('authorization check::', authorization);
   
   if (authorization && authorization.startsWith('Bearer')) {
     try {
@@ -15,12 +15,12 @@ const checkUserAuth = async (req, res, next) => {
       // Verify token - FIXED: Use _id instead of userID
       const { _id } = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET_KEY);
 
-      console.log('userID from token:', _id);
+      // console.log('userID from token:', _id);
       
       // Get user from token - FIXED: Use _id
       req.user = await UserModel.findById(_id).select('-password');
 
-      console.log('req.user', req.user);
+      // console.log('req.user', req.user);
       
       if (!req.user) {
         return res.status(401).json({

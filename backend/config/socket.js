@@ -49,13 +49,13 @@ class SocketManager {
       this.handleConnection(socket);
     });
 
-    console.log('Socket.IO server initialized');
+    console.log('🔌 Socket.IO server initialized and ready for real-time communication');
     return this.io;
   }
 
   handleConnection(socket) {
     const userId = socket.userId;
-    console.log(`User ${userId} connected with socket ${socket.id}`);
+    console.log(`👤 User ${userId} connected with socket ${socket.id}`);
 
     // Store user connection
     this.connectedUsers.set(userId, socket.id);
@@ -84,7 +84,7 @@ class SocketManager {
         socket.join(chat._id.toString());
       });
 
-      console.log(`User ${userId} joined ${userChats.length} chat rooms`);
+      console.log(`🏠 User ${userId} joined ${userChats.length} chat rooms`);
     } catch (error) {
       console.error('Error joining user chats:', error);
     }
@@ -283,7 +283,7 @@ class SocketManager {
     const userId = this.userSockets.get(socket.id);
     
     if (userId) {
-      console.log(`User ${userId} disconnected`);
+      console.log(`👋 User ${userId} disconnected`);
       
       // Remove from connected users
       this.connectedUsers.delete(userId);

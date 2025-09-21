@@ -1,6 +1,9 @@
 'use client'
-import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { X, Upload, FileImage, Play } from 'lucide-react'
+import { useGenerateSessionIdQuery, useSaveStudentFormMutation } from '@/lib/services/student'
+import { useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 
 interface UploadProjectFormProps {
   onSubmit?: (formData: FormData) => void
@@ -37,11 +40,190 @@ const UploadProjectForm = ({
   const [newTag, setNewTag] = useState('')
   const [isDraft, setIsDraft] = useState(true)
   const [isAdvanced, setIsAdvanced] = useState(advanced)
+  const [sessionId, setSessionId] = useState<string>('')
+  const [isDragging, setIsDragging] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [fileError, setFileError] = useState<string>('')
+  
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+  
+  // Get session ID for anonymous users
+  const { data: sessionData } = useGenerateSessionIdQuery()
+  const [saveStudentForm] = useSaveStudentFormMutation()
+  
+  // Set session ID when received
+  useEffect(() => {
+    if (sessionData?.sessionId) {
+      setSessionId(sessionData.sessionId)
+    }
+  }, [sessionData])
+
+  // Clean up preview URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
+  const validateFile = (file: File): string => {
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    const allowedTypes = ['image/', 'video/']
+    
+    if (file.size > maxSize) {
+      return 'File size must be less than 10MB'
+    }
+    
+    if (!allowedTypes.some(type => file.type.startsWith(type))) {
+      return 'Only image and video files are allowed'
+    }
+    
+    return ''
+  }
+
+  const handleFileSelect = (file: File) => {
+    const error = validateFile(file)
+    
+    if (error) {
+      setFileError(error)
+      return
+    }
+    
+    setFileError('')
+    
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+    }
+    
+    // Create new preview URL
+    const newPreviewUrl = URL.createObjectURL(file)
+    setPreviewUrl(newPreviewUrl)
+    
+    setFormData(prev => ({ ...prev, file }))
+    setIsDraft(false)
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleFileSelect(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      handleFileSelect(files[0])
+    }
+  }
+
+  const handleRemoveFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl('')
+    }
+    
+    setFormData(prev => ({ ...prev, file: undefined }))
+    setFileError('')
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleUploadAreaClick = () => {
+    fileInputRef.current?.click()
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (onSubmit) {
-      onSubmit(formData)
+    
+    // Check if user is logged in
+    const isAuth = Cookies.get('is_auth')
+    
+    if (isAuth === 'true') {
+      // User is logged in, proceed normally
+      if (onSubmit) {
+        onSubmit(formData)
+      }
+    } else {
+      // User is not logged in, save form and redirect to registration
+      handleAnonymousSubmit()
+    }
+  }
+  
+  const handleAnonymousSubmit = async () => {
+    try {
+      if (!sessionId) {
+        console.error('No session ID available')
+        return
+      }
+      
+      // Create FormData for file upload
+      const submitFormData = new FormData()
+      submitFormData.append('sessionId', sessionId)
+      
+      // Prepare form data object
+      const formDataObj = {
+        projectName: formData.projectName,
+        description: formData.description,
+        subject: formData.projectName, // Using projectName as subject for now
+        topics: formData.tags,
+        deadline: new Date().toISOString(), // Default deadline
+        estimatedCost: 0,
+        attachments: [] // Will be handled by multer
+      }
+      
+      submitFormData.append('formData', JSON.stringify(formDataObj))
+      
+      // Add file if exists
+      if (formData.file) {
+        submitFormData.append('attachments', formData.file)
+      }
+      
+      // Save form data to backend with file
+      const response = await fetch('http://localhost:8000/api/student/form/save', {
+        method: 'POST',
+        body: submitFormData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Server error:', errorData)
+        throw new Error(`Failed to save form data: ${errorData.message || response.statusText}`)
+      }
+      
+      const result = await response.json()
+      console.log('Form saved successfully:', result)
+      
+      // Store session ID in localStorage for retrieval after registration
+      localStorage.setItem('pendingFormSessionId', sessionId)
+      console.log('Session ID stored in localStorage:', sessionId)
+      
+      // Redirect to registration
+      router.push('/account/register')
+      
+    } catch (error) {
+      console.error('Failed to save form data:', error)
+      // Still redirect to registration even if save fails
+      router.push('/account/register')
     }
   }
 
@@ -82,6 +264,22 @@ const UploadProjectForm = ({
     }
   }
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const isImage = (file: File): boolean => {
+    return file.type.startsWith('image/')
+  }
+
+  const isVideo = (file: File): boolean => {
+    return file.type.startsWith('video/')
+  }
+
   return (
     <div className={`bg-white rounded-2xl shadow-lg p-8 ${maxWidth} w-full ${className}`}>
       <form onSubmit={handleSubmit}>
@@ -108,7 +306,6 @@ const UploadProjectForm = ({
           />
         </div>
 
-        
         {/* Project Name */}
         <div className="mb-6">
           <label className="block text-gray-900 font-medium mb-2">
@@ -123,6 +320,7 @@ const UploadProjectForm = ({
             required
           />
         </div>
+
         {/* Advanced Sections - Conditionally Rendered */}
         {isAdvanced && (
           <>
@@ -174,24 +372,128 @@ const UploadProjectForm = ({
 
             {/* File Upload Area */}
             <div className="mb-6">
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-primary-300 transition-colors cursor-pointer">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ArrowRight size={20} className="text-gray-400 rotate-90" />
-                </div>
-                <p className="text-gray-600 font-medium mb-1">Upload an image or video</p>
-                <p className="text-gray-400 text-sm">1600×1200 (10 mb max)</p>
+              <label className="block text-gray-900 font-medium mb-2">Upload Files</label>
+              
+              {/* File Upload Zone */}
+              <div
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer relative ${
+                  isDragging
+                    ? 'border-primary-400 bg-primary-50'
+                    : fileError
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleUploadAreaClick}
+              >
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*,video/*"
                   className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      setFormData(prev => ({ ...prev, file }))
-                    }
-                  }}
+                  onChange={handleFileInputChange}
                 />
+                
+                {formData.file ? (
+                  // File Preview
+                  <div className="relative">
+                    <div className="mb-4">
+                      {isImage(formData.file) ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={previewUrl}
+                            alt="Preview"
+                            className="max-w-full max-h-48 rounded-lg shadow-md"
+                          />
+                          <div className="absolute top-2 right-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveFile()
+                              }}
+                              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : isVideo(formData.file) ? (
+                        <div className="relative inline-block">
+                          <video
+                            src={previewUrl}
+                            controls
+                            className="max-w-full max-h-48 rounded-lg shadow-md"
+                          />
+                          <div className="absolute top-2 right-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveFile()
+                              }}
+                              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <div className="bg-gray-100 rounded-lg p-4 flex items-center space-x-3">
+                            <FileImage size={24} className="text-gray-500" />
+                            <div className="text-left">
+                              <p className="font-medium text-gray-900">{formData.file.name}</p>
+                              <p className="text-sm text-gray-500">{formatFileSize(formData.file.size)}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveFile()
+                              }}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-1">{formData.file.name}</p>
+                      <p className="text-xs text-gray-400">{formatFileSize(formData.file.size)}</p>
+                      <p className="text-xs text-primary-600 mt-2">Click to replace or drag a new file</p>
+                    </div>
+                  </div>
+                ) : (
+                  // Upload Prompt
+                  <>
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Upload size={20} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-1">
+                      {isDragging ? 'Drop your file here' : 'Upload an image or video'}
+                    </p>
+                    <p className="text-gray-400 text-sm mb-2">
+                      Drag and drop or click to browse
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      Max file size: 10MB | Supported: Images, Videos
+                    </p>
+                  </>
+                )}
               </div>
+              
+              {/* File Error */}
+              {fileError && (
+                <p className="text-red-500 text-sm mt-2 flex items-center">
+                  <X size={16} className="mr-1" />
+                  {fileError}
+                </p>
+              )}
             </div>
 
             {/* Publish Time */}
@@ -227,8 +529,6 @@ const UploadProjectForm = ({
             </div>
           </>
         )}
-
-      
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between">
@@ -271,7 +571,7 @@ const UploadProjectForm = ({
               type="submit"
               className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
-              Schedule
+             Schedule
             </button>
           </div>
         </div>

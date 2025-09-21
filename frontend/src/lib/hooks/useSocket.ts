@@ -64,44 +64,47 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     });
 
     // Chat event handlers
-    socket.on('messageReceived', (message) => {
-      console.log('Message received:', message);
-      events.onMessageReceived?.(message);
+    socket.on('new_message', (data) => {
+      console.log('Message received:', data);
+      events.onMessageReceived?.(data);
     });
 
-    socket.on('typingStart', (data) => {
+    socket.on('user_typing', (data) => {
       console.log('User started typing:', data);
       events.onTypingStart?.(data);
     });
 
-    socket.on('typingStop', (data) => {
+    socket.on('user_stopped_typing', (data) => {
       console.log('User stopped typing:', data);
       events.onTypingStop?.(data);
     });
 
-    socket.on('userJoined', (data) => {
+    socket.on('joined_chat', (data) => {
       console.log('User joined chat:', data);
       events.onUserJoined?.(data);
     });
 
-    socket.on('userLeft', (data) => {
+    socket.on('left_chat', (data) => {
       console.log('User left chat:', data);
       events.onUserLeft?.(data);
     });
 
-    socket.on('messageRead', (data) => {
+    socket.on('messages_read', (data) => {
       console.log('Message marked as read:', data);
       events.onMessageRead?.(data);
     });
 
-    socket.on('userOnline', (user) => {
-      console.log('User came online:', user);
-      events.onUserOnline?.(user);
+    socket.on('user_presence_updated', (data) => {
+      console.log('User presence updated:', data);
+      if (data.status === 'online') {
+        events.onUserOnline?.(data);
+      } else {
+        events.onUserOffline?.(data);
+      }
     });
 
-    socket.on('userOffline', (user) => {
-      console.log('User went offline:', user);
-      events.onUserOffline?.(user);
+    socket.on('error', (data) => {
+      console.error('Socket error:', data);
     });
 
     // Cleanup on unmount
@@ -115,9 +118,10 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
   // Socket action functions
   const sendMessage = (chatId: string, content: string, replyTo?: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('sendMessage', {
+      socketRef.current.emit('send_message', {
         chatId,
         content,
+        type: 'text',
         replyTo
       });
     }
@@ -125,31 +129,31 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
 
   const joinChat = (chatId: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('joinChat', { chatId });
+      socketRef.current.emit('join_chat', { chatId });
     }
   };
 
   const leaveChat = (chatId: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('leaveChat', { chatId });
+      socketRef.current.emit('leave_chat', { chatId });
     }
   };
 
   const startTyping = (chatId: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('typing', { chatId });
+      socketRef.current.emit('typing_start', { chatId });
     }
   };
 
   const stopTyping = (chatId: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('stopTyping', { chatId });
+      socketRef.current.emit('typing_stop', { chatId });
     }
   };
 
-  const markAsRead = (chatId: string, messageId: string) => {
+  const markAsRead = (chatId: string) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('markAsRead', { chatId, messageId });
+      socketRef.current.emit('mark_messages_read', { chatId });
     }
   };
 

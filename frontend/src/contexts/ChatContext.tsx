@@ -77,7 +77,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     stopTyping: socketStopTyping,
     markAsRead: socketMarkAsRead
   } = useSocket({
-    onMessageReceived: (message: Message) => {
+    onMessageReceived: (data: { message: Message; chatId: string }) => {
+      const message = data.message;
       setMessages(prev => {
         // Avoid duplicates
         if (prev.find(m => m._id === message._id)) return prev;
@@ -96,39 +97,40 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       ));
     },
     
-    onTypingStart: ({ chatId, user }) => {
+    onTypingStart: ({ chatId, userId, userName }) => {
       setTypingUsers(prev => ({
         ...prev,
-        [chatId]: [...(prev[chatId] || []), user].filter(
+        [chatId]: [...(prev[chatId] || []), { _id: userId, name: userName }].filter(
           (u, index, arr) => arr.findIndex(user2 => user2._id === u._id) === index
         )
       }));
     },
     
-    onTypingStop: ({ chatId, user }) => {
+    onTypingStop: ({ chatId, userId }) => {
       setTypingUsers(prev => ({
         ...prev,
-        [chatId]: (prev[chatId] || []).filter(u => u._id !== user._id)
+        [chatId]: (prev[chatId] || []).filter(u => u._id !== userId)
       }));
     },
     
-    onUserOnline: (user) => {
+    onUserOnline: ({ userId, status }) => {
+      const user = { _id: userId, name: '', email: '', isActive: status === 'online' };
       setOnlineUsers(prev => {
         if (prev.find(u => u._id === user._id)) return prev;
         return [...prev, user];
       });
     },
     
-    onUserOffline: (user) => {
-      setOnlineUsers(prev => prev.filter(u => u._id !== user._id));
+    onUserOffline: ({ userId }) => {
+      setOnlineUsers(prev => prev.filter(u => u._id !== userId));
     },
     
-    onMessageRead: ({ chatId, messageId, user }) => {
+    onMessageRead: ({ chatId, userId }) => {
       setMessages(prev => prev.map(msg => 
-        msg._id === messageId 
+        msg.chat === chatId && msg.sender._id !== userId
           ? {
               ...msg,
-              readBy: [...msg.readBy, { user: user._id, readAt: new Date() }]
+              readBy: [...msg.readBy, { user: userId, readAt: new Date() }]
             }
           : msg
       ));
@@ -254,29 +256,29 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         return;
       }
       
-      // Create a temporary chat object for immediate UI feedback
-      const tempChat = {
-        _id: tutorId,
-        type: 'direct',
-        participants: [
-          { _id: tutorId, name: 'Loading...', email: '' }
-        ],
-        lastMessage: null,
-        unreadCount: 0,
-        createdAt: new Date().toISOString(),
-        isTemporary: true
-      };
+      // Create direct chat via API
+      const response = await fetch('http://localhost:8000/api/chat/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${document.cookie.split('accessToken=')[1]?.split(';')[0]}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: 'direct',
+          tutorId
+        })
+      });
       
-      // Select the temporary chat immediately
-      selectChat({
-        ...tempChat,
-        creator: tutorId,
-        isActive: true,
-        updatedAt: new Date().toISOString()
-      } as unknown as Chat);
+      const data = await response.json();
       
-      // The actual chat will be created when the first message is sent
-      // This is handled in the sendMessage function
+      if (data.status === 'success') {
+        // Add new chat to local state
+        setChats(prev => [data.chat, ...prev]);
+        selectChat(data.chat);
+        // Refresh chats to get updated list
+        refetchChats();
+      }
       
     } catch (error) {
       console.error('Error creating direct chat:', error);

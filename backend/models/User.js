@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     institution: { type: String }, // Only for students
     class: { type: String }, // Only for students
     age: { type: Number }, // Only for students
-    onboardingStatus: { type: String, enum: ["pending", "completed"], default: "pending" }, // Only for students
+    onboardingStatus: { type: String, enum: ["under_review","pending", "completed", "incomplete", "under_review","approved", "rejected"], default: "pending" }, // Only for students
     
     // Tutor-specific fields
     subjects: { type: [String], default: [] }, // Subjects the tutor teaches
@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema({
     },
   
     // Status control for admins
-    status: { type: String, enum: ["active", "suspended", "banned"], default: "active" },
+    status: { type: String, enum: ["active", "suspended", "banned", "pending", "under_review","approved", "rejected"], default: "active" },
     suspendedUntil: { type: Date },
 });
 

@@ -7,8 +7,68 @@ class ChatController {
   // Create a new chat/group
   static createChat = async (req, res) => {
     try {
-      const { name, description, type = 'group', participants = [] } = req.body;
+      const { name, description, type = 'group', participants = [], tutorId } = req.body;
       const userId = req.user._id;
+
+      // Handle direct chat creation with tutor
+      if (type === 'direct' && tutorId) {
+        // Check if direct chat already exists
+        const existingChat = await ChatModel.findOne({
+          type: 'direct',
+          'participants.user': { $all: [userId, tutorId] },
+          isActive: true
+        });
+
+        if (existingChat) {
+          await existingChat.populate('participants.user', 'name email avatar');
+          return res.status(200).json({
+            status: 'success',
+            message: 'Chat already exists',
+            chat: existingChat
+          });
+        }
+
+        // Get tutor details for chat name
+        const tutor = await UserModel.findById(tutorId).select('name');
+        const currentUser = await UserModel.findById(userId).select('name');
+        
+        if (!tutor) {
+          return res.status(404).json({
+            status: 'failed',
+            message: 'Tutor not found'
+          });
+        }
+
+        // Create new direct chat with auto-generated name
+        const directChat = new ChatModel({
+          name: `${currentUser.name} & ${tutor.name}`, // Auto-generate name for direct chat
+          type: 'direct',
+          participants: [
+            { user: userId, role: 'member' },
+            { user: tutorId, role: 'member' }
+          ],
+          createdBy: userId,
+          isActive: true
+        });
+
+        await directChat.save();
+        await directChat.populate('participants.user', 'name email avatar');
+        await directChat.populate('createdBy', 'name email avatar');
+
+        return res.status(201).json({
+          status: 'success',
+          message: 'Direct chat created successfully',
+          chat: directChat
+        });
+      }
+
+      // For group chats, name is required
+      if (type === 'group' && !name) {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Chat name is required for group chats'
+        });
+      }
 
       // Validate participants
       const validParticipants = await UserModel.find({

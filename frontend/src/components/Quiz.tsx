@@ -72,6 +72,16 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
       }
     });
     
+    // Generate detailed answers array with questions and options
+    const detailedAnswers = questions.map((question, index) => ({
+      questionId: question.id,
+      question: question.question,
+      options: question.options,
+      selectedAnswer: answers[index] !== undefined ? answers[index] : null,
+      correctAnswer: question.correctAnswer,
+      topic: question.topic
+    }));
+
     // Generate summary
     const summary = {
       score,
@@ -81,6 +91,7 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
       incorrectAnswers: answers.filter((a, i) => a !== undefined && a !== questions[i].correctAnswer).length,
       topicPerformance,
       timeSpent: 3600 - timeLeft,
+      answers: detailedAnswers
     };
     
     setQuizSummary(summary);
