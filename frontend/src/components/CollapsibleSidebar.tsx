@@ -18,21 +18,31 @@ interface SidebarSection {
 
 interface CollapsibleSidebarProps {
   activeItem?: string
+  onToggle?: (isCollapsed: boolean) => void
 }
 
-const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
+const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) => {
   const [logoutUser] = useLogoutUserMutation()
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
+  const handleToggle = () => {
+    const newCollapsedState = !isCollapsed
+    setIsCollapsed(newCollapsedState)
+    onToggle?.(newCollapsedState)
+  }
+
   const handleLogout = async () => {
     try {
-      const response: any = ''
+      const response = await logoutUser({})
       if (response.data && response.data.status === "success") {
+        // Clear any local storage or session data if needed
         router.push('/')
       }
     } catch (error) {
       console.log(error)
+      // Even if logout fails, redirect to home page
+      router.push('/')
     }
   }
 
@@ -63,7 +73,7 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
 
   return (
     <aside
-      className={`bg-[#f6f6f6]  transition-all duration-300 py-4 flex flex-col h-screen ${
+      className={`bg-[#f6f6f6] transition-all duration-300 py-4 flex flex-col h-screen fixed left-0 top-0 z-50 ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -82,7 +92,7 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
             </div>
           )}
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleToggle}
             className="p-1 rounded-lg hover:bg-gray-200 transition-colors"
           >
             {isCollapsed ? <Menu size={20} /> : <CopyMinus size={20} />}
@@ -146,7 +156,7 @@ const CollapsibleSidebar = ({ activeItem }: CollapsibleSidebarProps) => {
       {/* Logout */}
       <div className="p-4 ">
         <button
-          onClick={() => router.push("/")}
+          onClick={handleLogout}
           className="w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-white hover:text-gray-900 group"
           title={isCollapsed ? "Logout" : undefined}
         >

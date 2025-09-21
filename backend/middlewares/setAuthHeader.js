@@ -60,14 +60,17 @@ const AccessTokenAutoRefresh = async (req, res, next) => {
     } catch (error) {
         console.error('Error adding access token to header', error.message);
 
-        // Clear cookies on error
-        res.clearCookie('accessToken');
-        res.clearCookie('refreshToken');
+        // Check if response has already been sent
+        if (!res.headersSent) {
+            // Clear cookies on error
+            res.clearCookie('accessToken');
+            res.clearCookie('refreshToken');
 
-        res.status(401).json({
-            status: 'failed',
-            message: 'Unauthorized - Please login again'
-        });
+            res.status(401).json({
+                status: 'failed',
+                message: 'Unauthorized - Please login again'
+            });
+        }
     }
 }
 

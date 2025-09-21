@@ -50,6 +50,52 @@ module.exports = {
   			accent: {
   				'500': '#7c5cff',
   			},
+			
+			// Calendar specific colors
+			calendar: {
+				bg: '#f8fafc',
+				card: '#ffffff',
+				'border-light': '#e2e8f0',
+				'text-primary': '#1e293b',
+				'text-secondary': '#64748b',
+				'text-muted': '#94a3b8'
+			},
+			
+			// Status colors
+			status: {
+				progress: '#3b82f6',
+				completed: '#10b981',
+				pending: '#f59e0b',
+				cancelled: '#ef4444'
+			},
+			
+			foreground: 'hsl(var(--foreground))',
+			card: {
+				DEFAULT: 'hsl(var(--card))',
+				foreground: 'hsl(var(--card-foreground))'
+			},
+			popover: {
+				DEFAULT: 'hsl(var(--popover))',
+				foreground: 'hsl(var(--popover-foreground))'
+			},
+			muted: {
+				DEFAULT: 'hsl(var(--muted))',
+				foreground: 'hsl(var(--muted-foreground))'
+			},
+			destructive: {
+				DEFAULT: 'hsl(var(--destructive))',
+				foreground: 'hsl(var(--destructive-foreground))'
+			},
+			border: 'hsl(var(--border))',
+			input: 'hsl(var(--input))',
+			ring: 'hsl(var(--ring))',
+			chart: {
+				'1': 'hsl(var(--chart-1))',
+				'2': 'hsl(var(--chart-2))',
+				'3': 'hsl(var(--chart-3))',
+				'4': 'hsl(var(--chart-4))',
+				'5': 'hsl(var(--chart-5))'
+			}
 		}
   	}
   },

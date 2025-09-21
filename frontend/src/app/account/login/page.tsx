@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useFormik } from 'formik';
 import { loginSchema } from "@/validation/schemas";
 import { useRouter } from 'next/navigation'
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLoginUserMutation } from "@/lib/services/auth";
+import {  useConvertFormToAssignmentMutation } from '@/lib/services/student'
 
 const initialValues = {
   email: "",
@@ -18,6 +19,30 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [loginUser] = useLoginUserMutation()
+  const [pendingSessionId, setPendingSessionId] = useState<string>('')
+  const [convertForm] = useConvertFormToAssignmentMutation()
+  
+  // Check for pending form data
+  useEffect(() => {
+    const storedSessionId = localStorage.getItem('pendingFormSessionId')
+    if (storedSessionId) {
+      setPendingSessionId(storedSessionId)
+    }
+  }, [])
+  
+  // Handle form conversion after successful login
+  const handleFormConversion = async () => {
+    if (pendingSessionId) {
+      try {
+        await convertForm({ sessionId: pendingSessionId }).unwrap()
+        localStorage.removeItem('pendingFormSessionId')
+        console.log('Form converted successfully')
+      } catch (error) {
+        console.error('Failed to convert form:', error)
+      }
+    }
+  }
+  
   const { values, errors, handleChange, handleSubmit } = useFormik({
     initialValues,
     validationSchema: loginSchema,
@@ -29,8 +54,12 @@ const Login = () => {
           setServerSuccessMessage(response.data.message)
           setServerErrorMessage('')
           action.resetForm()
+          
+          // Convert pending form if exists
+          await handleFormConversion()
+          
           setTimeout(() => {
-            router.push('/user/profile')  // Fixed: Using absolute path instead of relative path
+            router.push('/user/dashboard')  // Fixed: Using absolute path instead of relative path
           }, 1000)
           setLoading(false);
         }

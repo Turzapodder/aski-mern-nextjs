@@ -4,38 +4,41 @@ import userRefreshTokenModel from "../models/UserRefreshToken.js";
 import generateTokens from "./generateTokens.js";
 import UserModel from '../models/User.js';
 
-const refreshAccessToken = async (req,res) =>{
-    try{
+const refreshAccessToken = async (req, res) => {
+    try {
         const oldRefreshToken = req.cookies.refreshToken;
 
-       // Verify Refresh Token is valid or not 
-       const {tokenDetails, error} = await verifyRefreshToken(oldRefreshToken);
-       
-       if(error){
-        return res.status(401).send({status: "failed", message: "Invalid refresh token"});
-       }
-       const user = await UserModel.findById(tokenDetails._id);
-       if(!user){
-        return res.status(404).send({status: "failed", message: "User not Found"});
-       }
-       const userRefreshToken = await userRefreshTokenModel.findOne({userId: tokenDetails._id});
+        // Verify Refresh Token is valid or not 
+        const { tokenDetails, error } = await verifyRefreshToken(oldRefreshToken);
+        
+        if (error) {
+            console.log('Error verifying refresh token:', error);
+            throw new Error('Invalid refresh token');
+        }
+        
+        const user = await UserModel.findById(tokenDetails._id);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        
+        const userRefreshToken = await userRefreshTokenModel.findOne({ userId: tokenDetails._id });
 
-       if(oldRefreshToken !== userRefreshToken.token || userRefreshToken.blacklisted){
-        return res.status(401).send({status: "failed", message: "Unauthorized access"});
-       }
+        if (oldRefreshToken !== userRefreshToken.token || userRefreshToken.blacklisted) {
+            throw new Error('Unauthorized access');
+        }
 
-       const {accessToken, refreshToken, accessTokenExp, refreshTokenExp} = await generateTokens(user);
+        const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } = await generateTokens(user);
 
-       return {
-        newAccessToken : accessToken,
-        newRefreshToken : refreshToken,
-        newAccessTokenExp : accessTokenExp,
-        newRefreshTokenExp : refreshTokenExp
-       };
+        return {
+            newAccessToken: accessToken,
+            newRefreshToken: refreshToken,
+            newAccessTokenExp: accessTokenExp,
+            newRefreshTokenExp: refreshTokenExp
+        };
 
-    }catch(error){
-        console.error(error);
-        return res.status(500).send({status: "failed", message: "Internel Server error"});
+    } catch (error) {
+        console.error('Refresh token error:', error.message);
+        throw error; // Re-throw the error to be handled by the middleware
     }
 }
 

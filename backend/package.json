@@ -5,15 +5,33 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app",
-    "dev": "nodemon app",
+    "start": "node app.js",
+    "dev": "nodemon app.js --ignore uploads/",
+    "dev:watch": "nodemon app.js --ignore uploads/ --watch . --ext js,json",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs",
+    "pm2:reload": "pm2 reload ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete ecosystem.config.cjs",
+    "pm2:start:esm": "pm2 start ecosystem.config.mjs",
+    "pm2:logs": "pm2 logs nayon-server",
+    "pm2:monitor": "pm2 monit",
     "setup:production": "npm run setup:logs && npm run pm2:start",
-    "health": "curl http://localhost:5000/health"
+    "setup:logs": "mkdir -p logs && touch logs/app.log logs/error.log",
+    "health": "curl http://localhost:5000/health",
+    "monitor": "node scripts/monitor.js",
+    "cluster": "node cluster.js"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "nodejs",
+    "mern",
+    "auto-restart",
+    "production"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Auto-restarting MERN stack server with comprehensive error handling",
   "devDependencies": {
     "nodemon": "^3.1.9"
   },
@@ -37,7 +55,25 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "pm2": "^6.0.11",
     "socket.io": "^4.7.5",
+    "uuid": "^11.1.0",
     "winston": "^3.17.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "node_modules/*",
+      "uploads/*",
+      "logs/*",
+      "*.log"
+    ],
+    "delay": 2000,
+    "env": {
+      "NODE_ENV": "development"
+    }
   }
 }

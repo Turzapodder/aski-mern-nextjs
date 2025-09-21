@@ -3,12 +3,19 @@ const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, new
     const accessTokenMaxAge = (newAccessTokenExp - Math.floor(Date.now() / 1000)) * 1000;
     const refreshTokenMaxAge = (newRefreshTokenExp - Math.floor(Date.now() / 1000)) * 1000;
 
+    // Validate maxAge values
+    if (accessTokenMaxAge <= 0 || refreshTokenMaxAge <= 0) {
+        console.error('Invalid maxAge values:', { accessTokenMaxAge, refreshTokenMaxAge });
+        throw new Error('Invalid token expiration times');
+    }
+
     // Set Cookies for Access Token
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: false, // Set to true in production with HTTPS
         maxAge: accessTokenMaxAge,
     });
+    
     // Set Cookies for Refresh Token
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -31,7 +38,7 @@ const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, new
         });
     } else {
         // For tutors with pending onboarding, set is_auth_pending
-        res.cookie('is_auth', false, {
+        res.cookie('is_auth', true, {
             httpOnly: false,
             secure: false,
             maxAge: refreshTokenMaxAge,
