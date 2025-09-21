@@ -5,6 +5,7 @@ import { useFormik } from 'formik';
 import { registerSchema } from '@/validation/schemas'
 import { useCreateUserMutation } from "@/lib/services/auth";
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useGetStudentFormQuery, useConvertFormToAssignmentMutation } from '@/lib/services/student'
 
 const initialValues = {
   name: "",
@@ -23,7 +24,15 @@ const Register = () => {
   const [userRole, setUserRole] = useState("user");
   const router = useRouter()
   const searchParams = useSearchParams();
+  const [pendingSessionId, setPendingSessionId] = useState<string>('')
+  const [showFormNotification, setShowFormNotification] = useState(false)
   const [createUser] = useCreateUserMutation()
+  const [convertForm] = useConvertFormToAssignmentMutation()
+  
+  // Check for pending form data
+  const { data: formData } = useGetStudentFormQuery(pendingSessionId, {
+    skip: !pendingSessionId
+  })
   
   // Get role from search params
   useEffect(() => {
@@ -33,7 +42,27 @@ const Register = () => {
       // Update formik values with the role
       values.role = "tutor";
     }
+    
+    // Check for pending form session ID
+    const storedSessionId = localStorage.getItem('pendingFormSessionId')
+    if (storedSessionId) {
+      setPendingSessionId(storedSessionId)
+      setShowFormNotification(true)
+    }
   }, [searchParams]);
+  
+  // Handle form conversion after successful registration
+  const handleFormConversion = async () => {
+    if (pendingSessionId) {
+      try {
+        await convertForm({ sessionId: pendingSessionId }).unwrap()
+        localStorage.removeItem('pendingFormSessionId')
+        console.log('Form converted successfully')
+      } catch (error) {
+        console.error('Failed to convert form:', error)
+      }
+    }
+  }
 
   const { values, errors, touched, handleChange, handleSubmit, handleBlur } = useFormik({
     initialValues,
@@ -59,6 +88,8 @@ const Register = () => {
           if (userRole === "tutor") {
             router.push(`/account/verify-email?email=${values.email}&role=tutor`)
           } else {
+            // Convert pending form if exists
+            await handleFormConversion()
             router.push(`/account/verify-email?email=${values.email}`)
           }
         }
@@ -69,6 +100,8 @@ const Register = () => {
             setServerSuccessMessage("A new verification code has been sent to your email")
             setServerErrorMessage('')
             setLoading(false);
+            // Convert pending form if exists
+            await handleFormConversion()
             // Pass email to verify page through router state
             router.push(`/account/verify-email?email=${values.email}`)
           } else {
@@ -132,6 +165,19 @@ const Register = () => {
                 className={`min-w-[30px] min-h-[30px] w-[120px] object-contain`}
               />
           </div>
+          
+          {/* Show form notification if user has pending form data */}
+          {showFormNotification && formData?.formData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-blue-800 mb-2">
+                📝 Your assignment request is saved!
+              </h3>
+              <p className="text-blue-700 text-sm">
+                Complete registration to continue with: "{formData.formData.description?.substring(0, 50)}..."
+              </p>
+            </div>
+          )}
+          
           <h2 className="text-3xl font-semibold mb-5 text-gray-800">
             Create an account
             {userRole === "tutor" && <span className="text-accent-500 ml-2">as a Teacher</span>}

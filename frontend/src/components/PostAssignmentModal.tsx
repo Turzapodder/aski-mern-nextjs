@@ -10,6 +10,7 @@ interface PostAssignmentModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit?: (data: AssignmentData) => void
+  initialData?: any // Add initialData prop for pre-filling
 }
 
 interface AssignmentData {
@@ -47,7 +48,7 @@ const topicOptions = [
   'Ethics', 'Logic', 'Metaphysics'
 ]
 
-export default function PostAssignmentModal({ isOpen, onClose, onSubmit }: PostAssignmentModalProps) {
+export default function PostAssignmentModal({ isOpen, onClose, onSubmit, initialData }: PostAssignmentModalProps) {
   const [formData, setFormData] = useState<AssignmentData>({
     title: '',
     description: '',
@@ -59,6 +60,42 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit }: PostA
   
   const [dragActive, setDragActive] = useState(false)
   const [estimatedCost, setEstimatedCost] = useState(0)
+
+  // Pre-fill form data when initialData is provided
+  useEffect(() => {
+    if (initialData) {
+      // Convert base64 buffer data back to File objects for attachments
+      let attachments: File[] = []
+      if (initialData.attachments && initialData.attachments.length > 0) {
+        attachments = initialData.attachments.map((attachment: any) => {
+          if (attachment.buffer) {
+            // Convert base64 buffer back to File
+            const byteCharacters = atob(attachment.buffer)
+            const byteNumbers = new Array(byteCharacters.length)
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            const blob = new Blob([byteArray], { type: attachment.mimetype })
+            return new File([blob], attachment.originalName || attachment.filename, {
+              type: attachment.mimetype
+            })
+          }
+          return null
+        }).filter(Boolean)
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        title: initialData.projectName || initialData.title || '',
+        description: initialData.description || '',
+        subject: initialData.subject || '',
+        topics: initialData.topics || [],
+        deadline: initialData.deadline ? new Date(initialData.deadline).toISOString().slice(0, 16) : '',
+        attachments: attachments
+      }))
+    }
+  }, [initialData])
 
   // Calculate estimated cost based on form data
   const calculateCost = () => {
@@ -146,9 +183,9 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit }: PostA
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-primary-200 to-primary-300 rounded-xl flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
@@ -167,7 +204,7 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit }: PostA
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Title */}
             <div>
@@ -308,7 +345,7 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit }: PostA
           </div>
 
           {/* Cost Estimation */}
-          <div className="border-t border-gray-200 p-6">
+          <div className="border-t border-gray-200 p-6 flex-shrink-0">
             <div className="bg-gradient-to-r from-primary-100 to-primary-200 rounded-xl p-4 mb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
