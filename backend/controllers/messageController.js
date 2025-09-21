@@ -51,20 +51,38 @@ export const upload = multer({
 });
 
 class MessageController {
-  // Send a text message
+  // Send a text message (REST API backup - main sending happens via Socket.IO)
   static sendMessage = async (req, res) => {
     try {
       const { chatId, content, replyTo } = req.body;
+      const chatIdFromParams = req.params.chatId;
       const userId = req.user._id;
+      const socketManager = req.app.get('socketManager');
+
+      const actualChatId = chatIdFromParams || chatId;
+
+      console.log('📨 REST API SendMessage Request:', {
+        chatIdFromBody: chatId,
+        chatIdFromParams: chatIdFromParams,
+        actualChatId: actualChatId,
+        userId: userId.toString(),
+        content: content?.substring(0, 50) + '...',
+        timestamp: new Date().toISOString()
+      });
 
       // Verify user is participant of the chat
       const chat = await ChatModel.findOne({
-        _id: chatId,
+        _id: actualChatId,
         'participants.user': userId,
         isActive: true
       });
 
       if (!chat) {
+        console.log('❌ Chat access denied:', {
+          actualChatId,
+          userId: userId.toString(),
+          reason: 'Chat not found or user not participant'
+        });
         return res.status(403).json({
           status: 'failed',
           message: 'Chat not found or access denied'
@@ -72,7 +90,7 @@ class MessageController {
       }
 
       const newMessage = new MessageModel({
-        chat: chatId,
+        chat: actualChatId,
         sender: userId,
         content,
         type: 'text',
@@ -92,6 +110,21 @@ class MessageController {
         await newMessage.populate('replyTo');
       }
 
+      // Send via Socket.IO to all chat participants
+      if (socketManager) {
+        socketManager.sendToChat(actualChatId, 'new_message', {
+          message: newMessage,
+          chatId: actualChatId
+        });
+        console.log('✅ Message sent via Socket.IO to chat:', actualChatId);
+      }
+
+      console.log('✅ Message sent successfully via REST API:', {
+        messageId: newMessage._id,
+        chatId: actualChatId,
+        sender: userId.toString()
+      });
+
       res.status(201).json({
         status: 'success',
         message: 'Message sent successfully',
@@ -110,8 +143,12 @@ class MessageController {
   static sendFileMessage = async (req, res) => {
     try {
       const { chatId, content, replyTo } = req.body;
+      const chatIdFromParams = req.params.chatId;
       const userId = req.user._id;
       const files = req.files;
+      const socketManager = req.app.get('socketManager');
+
+      const actualChatId = chatIdFromParams || chatId;
 
       if (!files || files.length === 0) {
         return res.status(400).json({
@@ -122,7 +159,7 @@ class MessageController {
 
       // Verify user is participant of the chat
       const chat = await ChatModel.findOne({
-        _id: chatId,
+        _id: actualChatId,
         'participants.user': userId,
         isActive: true
       });
@@ -148,7 +185,7 @@ class MessageController {
       const messageType = hasImages ? 'image' : 'file';
 
       const newMessage = new MessageModel({
-        chat: chatId,
+        chat: actualChatId,
         sender: userId,
         content: content || '',
         type: messageType,
@@ -167,6 +204,15 @@ class MessageController {
       await newMessage.populate('sender', 'name email avatar');
       if (replyTo) {
         await newMessage.populate('replyTo');
+      }
+
+      // Send via Socket.IO to all chat participants
+      if (socketManager) {
+        socketManager.sendToChat(actualChatId, 'new_message', {
+          message: newMessage,
+          chatId: actualChatId
+        });
+        console.log('✅ File message sent via Socket.IO to chat:', actualChatId);
       }
 
       res.status(201).json({
@@ -190,6 +236,13 @@ class MessageController {
       const { page = 1, limit = 50 } = req.query;
       const userId = req.user._id;
 
+      console.log('📥 Fetching messages for chat:', {
+        chatId,
+        userId: userId.toString(),
+        page,
+        limit
+      });
+
       // Verify user is participant of the chat
       const chat = await ChatModel.findOne({
         _id: chatId,
@@ -208,7 +261,13 @@ class MessageController {
         isDeleted: false
       })
       .populate('sender', 'name email avatar')
-      .populate('replyTo')
+      .populate({
+        path: 'replyTo',
+        populate: {
+          path: 'sender',
+          select: 'name email avatar'
+        }
+      })
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -216,9 +275,18 @@ class MessageController {
       // Reverse to get chronological order
       messages.reverse();
 
+      console.log('✅ Messages fetched successfully:', {
+        chatId,
+        messageCount: messages.length
+      });
+
       res.status(200).json({
         status: 'success',
-        messages
+        data: {
+          messages,
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(messages.length / limit)
+        }
       });
     } catch (error) {
       console.error('Get chat messages error:', error);
@@ -234,6 +302,12 @@ class MessageController {
     try {
       const { chatId } = req.params;
       const userId = req.user._id;
+      const socketManager = req.app.get('socketManager');
+
+      console.log('📖 Marking messages as read:', {
+        chatId,
+        userId: userId.toString()
+      });
 
       // Verify user is participant of the chat
       const chat = await ChatModel.findOne({
@@ -249,10 +323,11 @@ class MessageController {
       }
 
       // Update all unread messages in this chat
-      await MessageModel.updateMany(
+      const updateResult = await MessageModel.updateMany(
         {
           chat: chatId,
           'readBy.user': { $ne: userId },
+          sender: { $ne: userId }, // Don't mark own messages as read
           isDeleted: false
         },
         {
@@ -265,9 +340,20 @@ class MessageController {
         }
       );
 
+      console.log(`✅ Marked ${updateResult.modifiedCount} messages as read`);
+
+      // Notify via Socket.IO
+      if (socketManager) {
+        socketManager.sendToChat(chatId, 'messages_read', {
+          chatId,
+          userId: userId.toString()
+        });
+      }
+
       res.status(200).json({
         status: 'success',
-        message: 'Messages marked as read'
+        message: 'Messages marked as read',
+        markedCount: updateResult.modifiedCount
       });
     } catch (error) {
       console.error('Mark messages as read error:', error);
@@ -283,6 +369,7 @@ class MessageController {
     try {
       const { messageId } = req.params;
       const userId = req.user._id;
+      const socketManager = req.app.get('socketManager');
 
       const message = await MessageModel.findOne({
         _id: messageId,
@@ -299,6 +386,14 @@ class MessageController {
       message.isDeleted = true;
       message.deletedAt = new Date();
       await message.save();
+
+      // Notify via Socket.IO
+      if (socketManager) {
+        socketManager.sendToChat(message.chat.toString(), 'message_deleted', {
+          messageId: messageId,
+          chatId: message.chat.toString()
+        });
+      }
 
       res.status(200).json({
         status: 'success',
@@ -319,6 +414,7 @@ class MessageController {
       const { messageId } = req.params;
       const { content } = req.body;
       const userId = req.user._id;
+      const socketManager = req.app.get('socketManager');
 
       const message = await MessageModel.findOne({
         _id: messageId,
@@ -339,6 +435,14 @@ class MessageController {
       await message.save();
 
       await message.populate('sender', 'name email avatar');
+
+      // Notify via Socket.IO
+      if (socketManager) {
+        socketManager.sendToChat(message.chat.toString(), 'message_edited', {
+          message: message,
+          chatId: message.chat.toString()
+        });
+      }
 
       res.status(200).json({
         status: 'success',
