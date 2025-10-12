@@ -12,20 +12,23 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className='flex h-screen bg-gray-100'>
       {/* Collapsible Sidebar */}
-      <CollapsibleSidebar activeItem="dashboard" onToggle={handleSidebarToggle} />
+      <CollapsibleSidebar
+        activeItem='dashboard'
+        onToggle={handleSidebarToggle}
+      />
 
       {/* Main Content Area - with dynamic left margin based on sidebar state */}
-      <div 
+      <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          sidebarCollapsed ? "ml-16" : "ml-64"
         }`}
       >
         {/* Header */}
         <TopNavbar
-          userName="Ratul"
-          greeting="Good morning"
+          userName='Ratul'
+          greeting='Good morning'
           notificationCount={3}
           onSearch={(query) => console.log("Search:", query)}
           onNotificationClick={() => console.log("Notifications clicked")}
@@ -33,12 +36,12 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-[#f6f6f6] overflow-y-auto">
+        <main className='flex-1 p-6 gray-bg overflow-x-hidden'>
           {children}
         </main>
       </div>
     </div>
-  )
+  );
 }
 
 export default UserLayout
