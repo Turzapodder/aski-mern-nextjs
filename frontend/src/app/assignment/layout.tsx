@@ -1,14 +1,15 @@
-'use client'
-import { useState } from "react"
-import CollapsibleSidebar from "@/components/CollapsibleSidebar"
-import TopNavbar from "@/components/TopNavbar"
+"use client";
 
-const UserLayout = ({ children }: { children: React.ReactNode }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+import { useState } from "react";
+import CollapsibleSidebar from "@/components/CollapsibleSidebar";
+import TopNavbar from "@/components/TopNavbar";
+
+const AssignmentLayout = ({ children }: { children: React.ReactNode }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleSidebarToggle = (isCollapsed: boolean) => {
-    setSidebarCollapsed(isCollapsed)
-  }
+    setSidebarCollapsed(isCollapsed);
+  };
 
   return (
     <div className='flex h-screen bg-gray-100'>
@@ -33,12 +34,10 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         />
 
         {/* Main Content */}
-        <main className='flex-1 p-6 gray-bg overflow-x-hidden'>
-          {children}
-        </main>
+        <main className='flex-1 p-6 gray-bg overflow-x-hidden'>{children}</main>
       </div>
     </div>
   );
-}
+};
 
-export default UserLayout
+export default AssignmentLayout;
