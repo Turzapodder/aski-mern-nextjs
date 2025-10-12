@@ -1,6 +1,6 @@
 'use client'
 import { useGetUserQuery } from "@/lib/services/auth";
-import { useEffect, useMemo, useState } from "react";
+import {  useMemo, } from "react";
 import { useGetProfileQuery } from "@/lib/services/profile";
 import ProfileEditor from "@/components/ProfileEditor";
 

@@ -51,7 +51,7 @@ class ProfileController {
       const {
         // Common profile
         profileImage,
-        fullName,
+        name,
         phone,
         gender,
         dateOfBirth,
@@ -59,7 +59,6 @@ class ProfileController {
         city,
         address,
         about,
-        socialLinks,
         languages,
         profileStatus,
         // Student
@@ -70,7 +69,7 @@ class ProfileController {
 
       const update = {};
       if (profileImage !== undefined) update.profileImage = profileImage;
-      if (fullName !== undefined) update.fullName = fullName;
+      if (name !== undefined) update.name = name;
       if (phone !== undefined) update.phone = phone;
       if (gender !== undefined) update.gender = gender;
       if (dateOfBirth !== undefined) update.dateOfBirth = dateOfBirth;
@@ -78,7 +77,6 @@ class ProfileController {
       if (city !== undefined) update.city = city;
       if (address !== undefined) update.address = address;
       if (about !== undefined) update.about = about;
-      if (socialLinks !== undefined) update.socialLinks = socialLinks;
       if (languages !== undefined) update.languages = languages;
       if (profileStatus !== undefined) update.profileStatus = profileStatus;
 
