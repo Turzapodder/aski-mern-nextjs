@@ -1,3 +1,4 @@
+// backend\routes\studentRoutes.js
 import express from 'express';
 import multer from 'multer';
 import StudentFormController from '../controllers/studentFormController.js';

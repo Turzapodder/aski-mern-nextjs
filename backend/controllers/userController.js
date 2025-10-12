@@ -1,5 +1,5 @@
 import UserModel from "../models/User.js";
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import sendEmailVerifyOTP from "../utils/sendEmailVerifyOtp.js";
 import EmailVerificationModel from "../models/EmailVerification.js";
 import generateTokens from "../utils/generateTokens.js";

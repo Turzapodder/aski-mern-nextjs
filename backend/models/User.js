@@ -1,62 +1,158 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-    // Existing fields
-    name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true, unique: true, lowercase: true },
-    password: { type: String, required: true, trim: true },
+const StudentProfileSchema = new mongoose.Schema(
+  {
+    institutionName: { type: String, trim: true },
+    institutionType: {
+      type: String,
+      enum: ["College", "University", "High School", "Other"],
+    },
+    department: { type: String, trim: true },
+    degree: { type: String, trim: true },
+    yearOfStudy: { type: String, trim: true },
+    studentID: { type: String, trim: true },
+    cgpa: { type: String, trim: true },
+    interests: { type: [String], default: [] },
+    skills: { type: [String], default: [] },
+    guardianContact: { type: String, trim: true },
+    documents: [
+      {
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+      },
+    ],
+  },
+  { _id: false }
+);
+
+const TutorProfileSchema = new mongoose.Schema(
+  {
+    professionalTitle: { type: String, trim: true },
+    qualification: { type: String, trim: true },
+    expertiseSubjects: { type: [String], default: [] },
+    experienceYears: { type: Number, min: 0 },
+    currentInstitution: { type: String, trim: true },
+    availableDays: { type: [String], default: [] },
+    availableTimeSlots: { type: [String], default: [] },
+    hourlyRate: { type: Number, min: 0 },
+    teachingMode: { type: String, enum: ["Online", "Offline", "Hybrid"] },
+    achievements: { type: String, trim: true },
+    documents: [
+      {
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+      },
+    ],
+    verificationStatus: {
+      type: String,
+      enum: ["Pending", "Verified", "Rejected"],
+      default: "Pending",
+    },
+  },
+  { _id: false }
+);
+
+const userSchema = new mongoose.Schema(
+  {
+    // Authentication
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      lowercase: true,
+    },
+    password: { type: String, required: true },
     is_verified: { type: Boolean, default: false },
-    roles: { type: [String], enum: ["user", "tutor", "admin"], default: ["user"] },
-  
-    // New fields based on your provided structure
-    avatar: { type: String }, // URL for user's avatar
-    registrationDate: { type: Date, default: Date.now }, // Date of registration
-    lastLogin: { type: Date }, // Last login timestamp
-    lastSeen: { type: Date, default: Date.now }, // Last activity timestamp
-    isActive: { type: Boolean, default: true }, // Online/offline status
-    
-    // Student-specific fields
-    institution: { type: String }, // Only for students
-    class: { type: String }, // Only for students
-    age: { type: Number }, // Only for students
-    onboardingStatus: { type: String, enum: ["under_review","pending", "completed", "incomplete", "under_review","approved", "rejected"], default: "pending" }, // Only for students
-    
-    // Tutor-specific fields
-    subjects: { type: [String], default: [] }, // Subjects the tutor teaches
-    bio: { type: String }, // Tutor biography
-    experience: { type: Number }, // Years of experience
-    hourlyRate: { type: Number }, // Hourly rate for tutoring
-    availability: {
-        monday: { type: [String], default: [] },
-        tuesday: { type: [String], default: [] },
-        wednesday: { type: [String], default: [] },
-        thursday: { type: [String], default: [] },
-        friday: { type: [String], default: [] },
-        saturday: { type: [String], default: [] },
-        sunday: { type: [String], default: [] }
+
+    // Roles
+    roles: {
+      type: [String],
+      enum: ["user", "tutor", "student", "admin"],
+      default: ["user"],
     },
-    
-    // Admin-specific fields (only if role = 'admin')
+
+    // Common Profile Fields
+    name: { type: String, required: true, trim: true },
+    profileImage: { type: String },
+    phone: { type: String, trim: true },
+    gender: { type: String, enum: ["Male", "Female", "Other"] },
+    dateOfBirth: { type: Date },
+    country: { type: String, trim: true },
+    city: { type: String, trim: true },
+    address: { type: String, trim: true },
+    about: { type: String, trim: true },
+    languages: { type: [String], default: [] },
+    profileStatus: { type: Boolean, default: false },
+
+    // Activity Tracking
+    registrationDate: { type: Date, default: Date.now },
+    lastLogin: { type: Date },
+    lastSeen: { type: Date, default: Date.now },
+    isActive: { type: Boolean, default: true },
+
+    // Role-specific Profiles
+    studentProfile: { type: StudentProfileSchema, default: {} },
+    tutorProfile: { type: TutorProfileSchema, default: {} },
+
+    // Onboarding Status
+    onboardingStatus: {
+      type: String,
+      enum: [
+        "pending",
+        "completed",
+        "incomplete",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
+      default: "pending",
+    },
+
+    // Admin Control
     adminPrivileges: {
-        canManageUsers: { type: Boolean, default: false },
-        canManagePayments: { type: Boolean, default: false },
-        canViewAnalytics: { type: Boolean, default: false },
+      canManageUsers: { type: Boolean, default: false },
+      canManagePayments: { type: Boolean, default: false },
+      canViewAnalytics: { type: Boolean, default: false },
     },
-  
-    // Status control for admins
-    status: { type: String, enum: ["active", "suspended", "banned", "pending", "under_review","approved", "rejected"], default: "active" },
+
+    status: {
+      type: String,
+      enum: [
+        "active",
+        "suspended",
+        "banned",
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
+      default: "active",
+    },
     suspendedUntil: { type: Date },
+  },
+  { timestamps: true }
+);
+
+// Indexes for better query performance
+userSchema.index({ roles: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ onboardingStatus: 1 });
+
+// Middleware: Update lastSeen on any modification
+userSchema.pre("save", function (next) {
+  if (this.isModified() && !this.isNew) {
+    this.lastSeen = new Date();
+  }
+  next();
 });
 
-// Update lastSeen on any user activity
-userSchema.pre('save', function(next) {
-    if (this.isModified() && !this.isNew) {
-        this.lastSeen = new Date();
-    }
-    next();
-});
+const UserModel = mongoose.model("user", userSchema);
 
-
-const UserModel = mongoose.model("user", userSchema)
-
-export default UserModel
+export default UserModel;
