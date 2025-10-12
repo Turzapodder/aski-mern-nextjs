@@ -2,40 +2,43 @@ import jwt from 'jsonwebtoken';
 import userRefreshTokenModel from '../models/UserRefreshToken.js';
 
 const verifyRefreshToken = async (refreshToken) => {
-   try {
+  try {
     const privateKey = process.env.JWT_REFRESH_TOKEN_SECRET_KEY;
-    console.log('verifyRefreshToken - privateKey exists:', !!privateKey);
-    console.log('verifyRefreshToken - refreshToken:', refreshToken);
 
-    //Find the refresh token document
-    const userRefreshToken =  await userRefreshTokenModel.findOne({ token: refreshToken });
-    console.log('verifyRefreshToken - userRefreshToken found:', !!userRefreshToken);
-    
-    if(!userRefreshToken){
-        console.log('verifyRefreshToken - Token not found in database');
-        throw {error : true, message: "Invalid refresh token"};
+    // ✅ Log token details
+    console.log("🔍 Verifying token - Length:", refreshToken?.length);
+
+    const userRefreshToken = await userRefreshTokenModel.findOne({
+      token: refreshToken,
+    });
+
+    if (!userRefreshToken) {
+      // ✅ Debug: Check if ANY tokens exist for this user
+      const decoded = jwt.decode(refreshToken);
+      const allTokens = await userRefreshTokenModel.find({
+        userId: decoded?._id,
+      });
+
+      console.log("❌ Token not found. Tokens in DB:", allTokens.length);
+      allTokens.forEach((t, i) => {
+        console.log(`  Token ${i}: ${t.token.substring(0, 30)}...`);
+        console.log(`    Matches: ${t.token === refreshToken}`);
+      });
+
+      throw { error: true, message: "Invalid refresh token" };
     }
 
-    //Verify Refresh TOken
-    console.log('verifyRefreshToken - Attempting JWT verification');
     const tokenDetails = jwt.verify(refreshToken, privateKey);
-    console.log('verifyRefreshToken - JWT verification successful:', tokenDetails);
-    
+
     return {
-        tokenDetails,
-        error: false,
-        message: "Valid refresh Token",
-    }
-   } catch (error) {
-    console.error('verifyRefreshToken - Error:', error);
-    if (error.error && error.message) {
-        // This is our custom error
-        throw error;
-    } else {
-        // This is a JWT error or other error
-        throw { error: true, message: 'Invalid refresh Token'};
-    }
-   }
-}
+      tokenDetails,
+      error: false,
+      message: "Valid refresh Token",
+    };
+  } catch (error) {
+    console.error("❌ Verification error:", error.message);
+    throw { error: true, message: "Invalid refresh Token" };
+  }
+};
 
 export default verifyRefreshToken;
