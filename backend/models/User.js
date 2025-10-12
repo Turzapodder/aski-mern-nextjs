@@ -1,21 +1,20 @@
-// backend\models\User.js
 import mongoose from "mongoose";
 
 const StudentProfileSchema = new mongoose.Schema(
   {
-    institutionName: { type: String },
+    institutionName: { type: String, trim: true },
     institutionType: {
       type: String,
       enum: ["College", "University", "High School", "Other"],
     },
-    department: { type: String },
-    degree: { type: String },
-    yearOfStudy: { type: String },
-    studentID: { type: String },
-    cgpa: { type: String },
+    department: { type: String, trim: true },
+    degree: { type: String, trim: true },
+    yearOfStudy: { type: String, trim: true },
+    studentID: { type: String, trim: true },
+    cgpa: { type: String, trim: true },
     interests: { type: [String], default: [] },
     skills: { type: [String], default: [] },
-    guardianContact: { type: String },
+    guardianContact: { type: String, trim: true },
     documents: [
       {
         filename: String,
@@ -31,16 +30,16 @@ const StudentProfileSchema = new mongoose.Schema(
 
 const TutorProfileSchema = new mongoose.Schema(
   {
-    professionalTitle: { type: String },
-    qualification: { type: String },
+    professionalTitle: { type: String, trim: true },
+    qualification: { type: String, trim: true },
     expertiseSubjects: { type: [String], default: [] },
-    experienceYears: { type: Number },
-    currentInstitution: { type: String },
+    experienceYears: { type: Number, min: 0 },
+    currentInstitution: { type: String, trim: true },
     availableDays: { type: [String], default: [] },
     availableTimeSlots: { type: [String], default: [] },
-    hourlyRate: { type: Number },
+    hourlyRate: { type: Number, min: 0 },
     teachingMode: { type: String, enum: ["Online", "Offline", "Hybrid"] },
-    achievements: { type: String },
+    achievements: { type: String, trim: true },
     documents: [
       {
         filename: String,
@@ -59,101 +58,94 @@ const TutorProfileSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const userSchema = new mongoose.Schema({
-  // Existing fields
-  name: { type: String, required: true, trim: true },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-    lowercase: true,
+const userSchema = new mongoose.Schema(
+  {
+    // Authentication
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      lowercase: true,
+    },
+    password: { type: String, required: true },
+    is_verified: { type: Boolean, default: false },
+
+    // Roles
+    roles: {
+      type: [String],
+      enum: ["user", "tutor", "student", "admin"],
+      default: ["user"],
+    },
+
+    // Common Profile Fields
+    name: { type: String, required: true, trim: true },
+    profileImage: { type: String },
+    phone: { type: String, trim: true },
+    gender: { type: String, enum: ["Male", "Female", "Other"] },
+    dateOfBirth: { type: Date },
+    country: { type: String, trim: true },
+    city: { type: String, trim: true },
+    address: { type: String, trim: true },
+    about: { type: String, trim: true },
+    languages: { type: [String], default: [] },
+    profileStatus: { type: Boolean, default: false },
+
+    // Activity Tracking
+    registrationDate: { type: Date, default: Date.now },
+    lastLogin: { type: Date },
+    lastSeen: { type: Date, default: Date.now },
+    isActive: { type: Boolean, default: true },
+
+    // Role-specific Profiles
+    studentProfile: { type: StudentProfileSchema, default: {} },
+    tutorProfile: { type: TutorProfileSchema, default: {} },
+
+    // Onboarding Status
+    onboardingStatus: {
+      type: String,
+      enum: [
+        "pending",
+        "completed",
+        "incomplete",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
+      default: "pending",
+    },
+
+    // Admin Control
+    adminPrivileges: {
+      canManageUsers: { type: Boolean, default: false },
+      canManagePayments: { type: Boolean, default: false },
+      canViewAnalytics: { type: Boolean, default: false },
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "active",
+        "suspended",
+        "banned",
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
+      default: "active",
+    },
+    suspendedUntil: { type: Date },
   },
-  password: { type: String, required: true, trim: true },
-  is_verified: { type: Boolean, default: false },
-  roles: {
-    type: [String],
-    enum: ["user", "tutor", "admin"],
-    default: ["user"],
-  },
+  { timestamps: true }
+);
 
-  // New fields based on your provided structure
-  // Common Profile fields
-  avatar: { type: String }, // Legacy avatar URL
-  profileImage: { type: String }, // Prefer this in new UI
-  name: { type: String },
-  phone: { type: String },
-  gender: { type: String, enum: ["Male", "Female", "Other"] },
-  dateOfBirth: { type: Date },
-  country: { type: String },
-  city: { type: String },
-  address: { type: String },
-  about: { type: String },
-  languages: { type: [String], default: [] },
-  profileStatus: { type: Boolean, default: false },
+// Indexes for better query performance
+userSchema.index({ roles: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ onboardingStatus: 1 });
 
-  // Legacy activity fields
-  registrationDate: { type: Date, default: Date.now }, // Date of registration
-  lastLogin: { type: Date }, // Last login timestamp
-  lastSeen: { type: Date, default: Date.now }, // Last activity timestamp
-  isActive: { type: Boolean, default: true }, // Online/offline status
-
-  // Student profile subdocument
-  studentProfile: { type: StudentProfileSchema, default: {} },
-  onboardingStatus: {
-    type: String,
-    enum: [
-      "pending",
-      "completed",
-      "incomplete",
-      "under_review",
-      "approved",
-      "rejected",
-    ],
-    default: "pending",
-  },
-
-  // Tutor profile subdocument (keeping legacy fields for compatibility)
-  tutorProfile: { type: TutorProfileSchema, default: {} },
-  subjects: { type: [String], default: [] }, // Legacy: subjects the tutor teaches
-  bio: { type: String }, // Legacy tutor biography
-  experience: { type: Number }, // Legacy years of experience
-  hourlyRate: { type: Number }, // Legacy hourly rate
-  availability: {
-    monday: { type: [String], default: [] },
-    tuesday: { type: [String], default: [] },
-    wednesday: { type: [String], default: [] },
-    thursday: { type: [String], default: [] },
-    friday: { type: [String], default: [] },
-    saturday: { type: [String], default: [] },
-    sunday: { type: [String], default: [] },
-  },
-
-  // Admin-specific fields (only if role = 'admin')
-  adminPrivileges: {
-    canManageUsers: { type: Boolean, default: false },
-    canManagePayments: { type: Boolean, default: false },
-    canViewAnalytics: { type: Boolean, default: false },
-  },
-
-  // Status control for admins
-  status: {
-    type: String,
-    enum: [
-      "active",
-      "suspended",
-      "banned",
-      "pending",
-      "under_review",
-      "approved",
-      "rejected",
-    ],
-    default: "active",
-  },
-  suspendedUntil: { type: Date },
-});
-
-// Update lastSeen on any user activity
+// Middleware: Update lastSeen on any modification
 userSchema.pre("save", function (next) {
   if (this.isModified() && !this.isNew) {
     this.lastSeen = new Date();

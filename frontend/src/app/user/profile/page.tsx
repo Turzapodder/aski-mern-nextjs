@@ -1,7 +1,6 @@
 'use client'
 import { useGetUserQuery } from "@/lib/services/auth";
 import {  useMemo, } from "react";
-import { useGetProfileQuery } from "@/lib/services/profile";
 import ProfileEditor from "@/components/ProfileEditor";
 
 const Profile = () => {
@@ -15,10 +14,6 @@ const Profile = () => {
     return 'user';
   }, [user]);
 
-  const { data: profileData } = useGetProfileQuery(userId!, {
-    skip: !userId,
-  });
-
   if (!isSuccess || !userId) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -31,10 +26,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 overflow-auto">
+    <div className="min-h-screen gray-bg overflow-auto">
       <div className="w-full mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Profile</h1>
-        <ProfileEditor userId={userId} role={role} initialProfile={profileData?.user || profileData} />
+        <ProfileEditor userId={userId} role={role} />
       </div>
     </div>
   );
