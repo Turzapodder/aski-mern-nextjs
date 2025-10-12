@@ -1,3 +1,4 @@
+// backend\routes\profileRoutes.js
 import express from 'express';
 import ProfileController, { uploadProfileFiles } from '../controllers/profileController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';

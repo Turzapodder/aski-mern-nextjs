@@ -1,16 +1,9 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export interface SocialLinks {
-  facebook?: string;
-  linkedin?: string;
-  twitter?: string;
-  instagram?: string;
-  website?: string;
-}
 
 export interface StudentProfile {
   institutionName?: string;
-  institutionType?: 'College' | 'University' | 'High School' | 'Other';
+  institutionType?: "College" | "University" | "High School" | "Other";
   department?: string;
   degree?: string;
   yearOfStudy?: string;
@@ -19,7 +12,7 @@ export interface StudentProfile {
   interests?: string[];
   skills?: string[];
   guardianContact?: string;
-  documents?: Array<{ filename: string; url: string; }>;
+  documents?: Array<{ filename: string; url: string }>;
 }
 
 export interface TutorProfile {
@@ -31,23 +24,22 @@ export interface TutorProfile {
   availableDays?: string[];
   availableTimeSlots?: string[];
   hourlyRate?: number;
-  teachingMode?: 'Online' | 'Offline' | 'Hybrid';
+  teachingMode?: "Online" | "Offline" | "Hybrid";
   achievements?: string;
-  documents?: Array<{ filename: string; url: string; }>;
-  verificationStatus?: 'Pending' | 'Verified' | 'Rejected';
+  documents?: Array<{ filename: string; url: string }>;
+  verificationStatus?: "Pending" | "Verified" | "Rejected";
 }
 
 export interface ProfileUpdatePayload {
   profileImage?: string;
-  fullName?: string;
+  name?: string;
   phone?: string;
-  gender?: 'Male' | 'Female' | 'Other';
+  gender?: "Male" | "Female" | "Other";
   dateOfBirth?: string;
   country?: string;
   city?: string;
   address?: string;
   about?: string;
-  socialLinks?: SocialLinks;
   languages?: string[];
   profileStatus?: boolean;
   studentProfile?: StudentProfile;
@@ -55,28 +47,41 @@ export interface ProfileUpdatePayload {
 }
 
 export const profileApi = createApi({
-  reducerPath: 'profileApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8000/api/profile/' , credentials: 'include'}),
+  reducerPath: "profileApi",
+  tagTypes: ["Profile"],
+  baseQuery: fetchBaseQuery({
+    baseUrl: "http://localhost:8000/api/profile/",
+    credentials: "include",
+  }),
   endpoints: (builder) => ({
     getProfile: builder.query<any, string>({
-      query: (userId) => ({ url: userId, method: 'GET' })
+      query: (userId) => ({ url: userId, method: "GET" }),
+      providesTags: (result, error, userId) => [{ type: "Profile", id: userId }],
     }),
-    updateProfile: builder.mutation<any, { userId: string; data: ProfileUpdatePayload }>({
+    updateProfile: builder.mutation<
+      any,
+      { userId: string; data: ProfileUpdatePayload }
+    >({
       query: ({ userId, data }) => ({
         url: userId,
-        method: 'PUT',
+        method: "PUT",
         body: data,
-        headers: { 'Content-Type': 'application/json' }
-      })
+        headers: { "Content-Type": "application/json" },
+      }),
+      invalidatesTags: (result, error, { userId }) => [{ type: "Profile", id: userId }],
     }),
     uploadFiles: builder.mutation<any, FormData>({
       query: (formData) => ({
-        url: 'upload',
-        method: 'POST',
-        body: formData
-      })
-    })
-  })
+        url: "upload",
+        method: "POST",
+        body: formData,
+      }),
+    }),
+  }),
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation, useUploadFilesMutation } = profileApi;
+export const {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useUploadFilesMutation,
+} = profileApi;
