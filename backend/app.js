@@ -19,6 +19,7 @@ import userRoutes from "./routes/userRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import tutorRoutes from "./routes/tutorRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import socketManager from "./config/socket.js";
 import "./config/passport-jwt-strategy.js";
 import setTokensCookies from "./utils/setTokensCookies.js";
@@ -50,7 +51,8 @@ const startServer = async () => {
 
     // Reset restart attempts on successful start after cooldown
     const now = Date.now();
-    if (now - lastRestartTime > 60000) { // 1 minute cooldown
+    if (now - lastRestartTime > 60000) {
+      // 1 minute cooldown
       restartAttempts = 0;
     }
 
@@ -71,24 +73,29 @@ const startServer = async () => {
     );
     console.log(chalk.yellow(`🌐 IP Address: ${ipAddress}`));
     console.log(chalk.magenta(`🔌 Port: ${port}`));
-    
+
     if (restartAttempts > 0) {
-      console.log(chalk.yellow(`🔄 Restart attempt: ${restartAttempts}/${MAX_RESTART_ATTEMPTS}`));
+      console.log(
+        chalk.yellow(
+          `🔄 Restart attempt: ${restartAttempts}/${MAX_RESTART_ATTEMPTS}`
+        )
+      );
     }
 
     // Trust proxy for accurate IP addresses
     app.set("trust proxy", 1);
 
-    // Security middleware with enhanced error handling
+    // Security middleware with enhanced error handling - FIXED FOR CORS
     app.use(
       helmet({
         crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: { policy: "cross-origin" },
         contentSecurityPolicy: {
           directives: {
             defaultSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            imgSrc: ["'self'", "data:", "https:", "http:"],
           },
         },
       })
@@ -109,15 +116,19 @@ const startServer = async () => {
       legacyHeaders: false,
       skip: (req, res) => {
         // Skip rate limiting for health checks and socket connections
-        return req.path === '/health' || req.path === '/' || req.path.includes('/socket.io/');
+        return (
+          req.path === "/health" ||
+          req.path === "/" ||
+          req.path.includes("/socket.io/")
+        );
       },
       handler: (req, res) => {
         logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
         res.status(429).json({
           error: "Too many requests from this IP, please try again later.",
-          retryAfter: "15 minutes"
+          retryAfter: "15 minutes",
         });
-      }
+      },
     });
     app.use(limiter);
 
@@ -126,19 +137,19 @@ const startServer = async () => {
       origin: [
         process.env.FRONTEND_HOST || "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:3000"
+        "http://localhost:3000",
       ],
       optionsSuccessStatus: 200,
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: [
-        "Content-Type", 
-        "Authorization", 
+        "Content-Type",
+        "Authorization",
         "X-Requested-With",
         "Accept",
         "Origin",
         "Access-Control-Request-Method",
-        "Access-Control-Request-Headers"
+        "Access-Control-Request-Headers",
       ],
     };
 
@@ -209,8 +220,8 @@ const startServer = async () => {
         },
         skip: (req, res) => {
           // Skip logging for health checks and socket.io polling to reduce noise
-          return req.path === '/health' || req.path.includes('/socket.io/');
-        }
+          return req.path === "/health" || req.path.includes("/socket.io/");
+        },
       })
     );
 
@@ -218,28 +229,32 @@ const startServer = async () => {
     await connectDB(DATABASE_URL);
 
     // Body parsing middleware with enhanced limits and error handling
-    app.use(express.json({ 
-      limit: "10mb",
-      verify: (req, res, buf) => {
-        try {
-          JSON.parse(buf);
-        } catch (e) {
-          res.status(400).json({ error: "Invalid JSON payload" });
-          throw new Error("Invalid JSON");
-        }
-      }
-    }));
-    
-    app.use(express.urlencoded({ 
-      extended: true, 
-      limit: "10mb",
-      verify: (req, res, buf) => {
-        // Basic validation for URL encoded data
-        if (buf.length === 0) {
-          throw new Error("Empty request body");
-        }
-      }
-    }));
+    app.use(
+      express.json({
+        limit: "10mb",
+        verify: (req, res, buf) => {
+          try {
+            JSON.parse(buf);
+          } catch (e) {
+            res.status(400).json({ error: "Invalid JSON payload" });
+            throw new Error("Invalid JSON");
+          }
+        },
+      })
+    );
+
+    app.use(
+      express.urlencoded({
+        extended: true,
+        limit: "10mb",
+        verify: (req, res, buf) => {
+          // Basic validation for URL encoded data
+          if (buf.length === 0) {
+            throw new Error("Empty request body");
+          }
+        },
+      })
+    );
 
     // Cookie parser with error handling
     app.use(cookieParser());
@@ -254,27 +269,40 @@ const startServer = async () => {
     try {
       const io = socketManager.initialize(server);
       logger.info("Socket.IO initialized successfully");
-      
+
       // Make socket manager available to routes
-      app.set('socketManager', socketManager);
-      app.set('io', io);
-      
+      app.set("socketManager", socketManager);
+      app.set("io", io);
     } catch (socketError) {
       logger.error("Socket.IO initialization error:", socketError);
       // Don't fail the server start for socket errors in development
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         throw socketError;
       }
     }
 
+    // FIXED: Custom CORS middleware for uploaded files
+    app.use("/uploads", (req, res, next) => {
+      const allowedOrigins = [
+        process.env.FRONTEND_HOST || "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+      ];
+
+      next();
+    });
+
     // Serve uploaded files with error handling
-    app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
-      maxAge: '1d',
-      etag: false,
-      setHeaders: (res, path) => {
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-      }
-    }));
+    app.use(
+      "/uploads",
+      express.static(path.join(__dirname, "uploads"), {
+        maxAge: "1d",
+        etag: false,
+        setHeaders: (res, filepath) => {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+        },
+      })
+    );
 
     // Enhanced health check endpoints
     app.get("/", (req, res) => {
@@ -299,7 +327,7 @@ const startServer = async () => {
           restartAttempts,
           socketIO: {
             initialized: !!socketManager.io,
-            stats: socketStats
+            stats: socketStats,
           },
           memoryUsage: {
             rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
@@ -319,7 +347,7 @@ const startServer = async () => {
         res.status(500).json({
           status: "error",
           message: "Health check failed",
-          error: error.message
+          error: error.message,
         });
       }
     });
@@ -327,7 +355,7 @@ const startServer = async () => {
     app.get("/health", (req, res) => {
       try {
         const socketStats = socketManager ? socketManager.getStats() : null;
-        
+
         res.status(200).json({
           status: "healthy",
           timestamp: new Date().toISOString(),
@@ -336,14 +364,14 @@ const startServer = async () => {
           restartAttempts,
           pid: process.pid,
           socketIO: {
-            status: socketManager?.io ? 'connected' : 'disconnected',
-            stats: socketStats
-          }
+            status: socketManager?.io ? "connected" : "disconnected",
+            stats: socketStats,
+          },
         });
       } catch (error) {
         res.status(500).json({
           status: "unhealthy",
-          error: error.message
+          error: error.message,
         });
       }
     });
@@ -356,7 +384,7 @@ const startServer = async () => {
           version: "v1",
           socketIO: {
             enabled: !!socketManager.io,
-            endpoint: "/socket.io/"
+            endpoint: "/socket.io/",
           },
           endpoints: {
             users: "/api/user",
@@ -371,7 +399,7 @@ const startServer = async () => {
         res.status(500).json({
           status: "error",
           message: "API endpoint error",
-          error: error.message
+          error: error.message,
         });
       }
     });
@@ -381,6 +409,7 @@ const startServer = async () => {
     app.use("/api/chat", chatRoutes);
     app.use("/api/tutor", tutorRoutes);
     app.use("/api/student", studentRoutes);
+    app.use("/api/profile", profileRoutes);
 
     // Google OAuth routes with enhanced error handling and logging
     app.get("/auth/google", (req, res, next) => {
@@ -389,7 +418,9 @@ const startServer = async () => {
         const userIp = req.ip;
 
         logger.info(
-          `🔐 Google OAuth initiated - IP: ${userIp}, Role: ${role || "default"}`
+          `🔐 Google OAuth initiated - IP: ${userIp}, Role: ${
+            role || "default"
+          }`
         );
 
         const authOptions = {
@@ -401,7 +432,9 @@ const startServer = async () => {
         passport.authenticate("google", authOptions)(req, res, next);
       } catch (error) {
         logger.error("Google OAuth initiation error:", error);
-        res.redirect(`${process.env.FRONTEND_HOST}/account/login?error=oauth_init_failed`);
+        res.redirect(
+          `${process.env.FRONTEND_HOST}/account/login?error=oauth_init_failed`
+        );
       }
     });
 
@@ -417,7 +450,9 @@ const startServer = async () => {
         try {
           if (!req.user) {
             logger.error("Google OAuth callback: No user data received");
-            return res.redirect(`${process.env.FRONTEND_HOST}/account/login?error=no_user_data`);
+            return res.redirect(
+              `${process.env.FRONTEND_HOST}/account/login?error=no_user_data`
+            );
           }
 
           const {
@@ -428,11 +463,13 @@ const startServer = async () => {
             refreshTokenExp,
             isNewTutor,
           } = req.user;
-          
+
           const userIp = req.ip;
 
           logger.info(
-            `✅ Google OAuth success - User: ${user?.email || 'unknown'}, IP: ${userIp}, New Tutor: ${isNewTutor}`
+            `✅ Google OAuth success - User: ${
+              user?.email || "unknown"
+            }, IP: ${userIp}, New Tutor: ${isNewTutor}`
           );
 
           // Check if response headers have already been sent
@@ -451,17 +488,22 @@ const startServer = async () => {
           );
 
           if (
-            (user.roles?.includes("tutor") && user.onboardingStatus === "pending") ||
+            (user.roles?.includes("tutor") &&
+              user.onboardingStatus === "pending") ||
             isNewTutor
           ) {
-            res.redirect(`${process.env.FRONTEND_HOST}/account/tutor-onboarding`);
+            res.redirect(
+              `${process.env.FRONTEND_HOST}/account/tutor-onboarding`
+            );
           } else {
             res.redirect(`${process.env.FRONTEND_HOST}/user/dashboard`);
           }
         } catch (error) {
           logger.error("Google OAuth callback error:", error);
           if (!res.headersSent) {
-            res.redirect(`${process.env.FRONTEND_HOST}/account/login?error=callback_failed`);
+            res.redirect(
+              `${process.env.FRONTEND_HOST}/account/login?error=callback_failed`
+            );
           }
         }
       }
@@ -484,7 +526,7 @@ const startServer = async () => {
           stack: error.stack,
           url: req.url,
           method: req.method,
-          ip: req.ip
+          ip: req.ip,
         });
 
         // Call the original error handler
@@ -494,7 +536,7 @@ const startServer = async () => {
         if (!res.headersSent) {
           res.status(500).json({
             status: "error",
-            message: "Internal server error"
+            message: "Internal server error",
           });
         }
       }
@@ -511,15 +553,27 @@ const startServer = async () => {
         console.log("\n" + "=".repeat(60));
         console.log(chalk.green.bold("✅ SERVER SUCCESSFULLY STARTED"));
         console.log("=".repeat(60));
-        console.log(chalk.cyan(`🌐 Server running on: http://${ipAddress}:${port}`));
+        console.log(
+          chalk.cyan(`🌐 Server running on: http://${ipAddress}:${port}`)
+        );
         console.log(
           chalk.yellow(`📊 Health check: http://${ipAddress}:${port}/health`)
         );
-        console.log(chalk.magenta(`🔌 Socket.IO ready for real-time communication`));
-        console.log(chalk.blue(`📱 API endpoints: http://${ipAddress}:${port}/api`));
-        console.log(chalk.gray(`🕒 Started at: ${new Date().toLocaleString()}`));
+        console.log(
+          chalk.magenta(`🔌 Socket.IO ready for real-time communication`)
+        );
+        console.log(
+          chalk.blue(`📱 API endpoints: http://${ipAddress}:${port}/api`)
+        );
+        console.log(
+          chalk.gray(`🕒 Started at: ${new Date().toLocaleString()}`)
+        );
         if (restartAttempts > 0) {
-          console.log(chalk.green(`🔄 Successfully restarted after ${restartAttempts} attempts`));
+          console.log(
+            chalk.green(
+              `🔄 Successfully restarted after ${restartAttempts} attempts`
+            )
+          );
         }
         console.log("=".repeat(60) + "\n");
 
@@ -532,7 +586,7 @@ const startServer = async () => {
       });
 
       // Handle server errors
-      serverInstance.on('error', (error) => {
+      serverInstance.on("error", (error) => {
         logger.error("Server error:", error);
         reject(error);
       });
@@ -540,7 +594,6 @@ const startServer = async () => {
       // Set server timeout to prevent hanging requests
       serverInstance.timeout = 30000; // 30 seconds
     });
-
   } catch (error) {
     logger.error("Server startup error:", error);
     throw error;
@@ -580,11 +633,10 @@ const gracefulShutdown = async (signal, exitCode = 0) => {
     }
 
     // Give time for cleanup
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     logger.info("✅ Graceful shutdown completed");
     process.exit(exitCode);
-
   } catch (error) {
     logger.error("Error during graceful shutdown:", error);
     process.exit(1);
@@ -594,7 +646,7 @@ const gracefulShutdown = async (signal, exitCode = 0) => {
 // Auto-restart function
 const restartServer = async (reason = "unknown") => {
   const now = Date.now();
-  
+
   // Prevent restart if we're already shutting down
   if (isShuttingDown) {
     logger.info("Shutdown in progress, skipping restart");
@@ -603,18 +655,24 @@ const restartServer = async (reason = "unknown") => {
 
   // Check restart cooldown
   if (now - lastRestartTime < RESTART_COOLDOWN) {
-    logger.warn(`Restart cooldown active, skipping restart (reason: ${reason})`);
+    logger.warn(
+      `Restart cooldown active, skipping restart (reason: ${reason})`
+    );
     return;
   }
 
   restartAttempts++;
   lastRestartTime = now;
 
-  logger.info(`🔄 Attempting to restart server (attempt ${restartAttempts}/${MAX_RESTART_ATTEMPTS}) - Reason: ${reason}`);
+  logger.info(
+    `🔄 Attempting to restart server (attempt ${restartAttempts}/${MAX_RESTART_ATTEMPTS}) - Reason: ${reason}`
+  );
 
   // Check if we've exceeded maximum restart attempts
   if (restartAttempts > MAX_RESTART_ATTEMPTS) {
-    logger.error(`❌ Maximum restart attempts (${MAX_RESTART_ATTEMPTS}) exceeded. Manual intervention required.`);
+    logger.error(
+      `❌ Maximum restart attempts (${MAX_RESTART_ATTEMPTS}) exceeded. Manual intervention required.`
+    );
     process.exit(1);
     return;
   }
@@ -633,7 +691,7 @@ const restartServer = async (reason = "unknown") => {
     if (server) {
       try {
         server.close();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (closeError) {
         logger.error("Error closing server during restart:", closeError);
       }
@@ -644,12 +702,16 @@ const restartServer = async (reason = "unknown") => {
 
     // Start new server instance
     await startServer();
-    
-    logger.info(`✅ Server restarted successfully (attempt ${restartAttempts})`);
-    
+
+    logger.info(
+      `✅ Server restarted successfully (attempt ${restartAttempts})`
+    );
   } catch (error) {
-    logger.error(`❌ Failed to restart server (attempt ${restartAttempts}):`, error);
-    
+    logger.error(
+      `❌ Failed to restart server (attempt ${restartAttempts}):`,
+      error
+    );
+
     // Wait before next restart attempt
     setTimeout(() => {
       restartServer(`restart_failed_${restartAttempts}`);
@@ -665,9 +727,12 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT", 0));
 process.on("unhandledRejection", async (err, promise) => {
   logger.error(`❌ Unhandled Promise Rejection at:`, promise, `reason:`, err);
   logger.error(`Stack trace:`, err.stack);
-  
+
   // Don't restart for headers already sent errors in development
-  if (err.message && err.message.includes("Cannot set headers after they are sent")) {
+  if (
+    err.message &&
+    err.message.includes("Cannot set headers after they are sent")
+  ) {
     logger.warn("Headers already sent error detected, attempting restart...");
     setTimeout(() => {
       restartServer("headers_already_sent");
@@ -683,7 +748,7 @@ process.on("unhandledRejection", async (err, promise) => {
 process.on("uncaughtException", async (err) => {
   logger.error(`💥 Uncaught Exception:`, err);
   logger.error(`Stack trace:`, err.stack);
-  
+
   setTimeout(() => {
     restartServer("uncaught_exception");
   }, 1000);
@@ -694,7 +759,7 @@ process.on("warning", (warning) => {
   logger.warn(`⚠️ Process Warning:`, {
     name: warning.name,
     message: warning.message,
-    stack: warning.stack
+    stack: warning.stack,
   });
 });
 
@@ -703,22 +768,24 @@ const monitorMemory = () => {
   const usage = process.memoryUsage();
   const usedMB = Math.round(usage.heapUsed / 1024 / 1024);
   const totalMB = Math.round(usage.heapTotal / 1024 / 1024);
-  
+
   // Log memory usage every 10 minutes
   if (Date.now() % (10 * 60 * 1000) < 1000) {
     logger.info(`📊 Memory usage: ${usedMB}MB / ${totalMB}MB`);
-    
+
     // Log Socket.IO stats if available
     if (socketManager) {
       const socketStats = socketManager.getStats();
       logger.info(`🔌 Socket.IO stats:`, socketStats);
     }
   }
-  
+
   // Restart if memory usage is too high (adjust threshold as needed)
   const memoryThreshold = 512; // 512MB threshold
   if (usedMB > memoryThreshold) {
-    logger.warn(`⚠️ High memory usage detected: ${usedMB}MB > ${memoryThreshold}MB`);
+    logger.warn(
+      `⚠️ High memory usage detected: ${usedMB}MB > ${memoryThreshold}MB`
+    );
     setTimeout(() => {
       restartServer("high_memory_usage");
     }, 5000);
