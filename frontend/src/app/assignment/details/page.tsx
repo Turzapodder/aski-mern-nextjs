@@ -1,5 +1,5 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   MapPin,
   Clock,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import ProposalsComponent from "@/components/ProposalsComponent";
+import TutorProposalsComponent from "@/components/TutorProposalsComponent";
 import PaymentComponent from "@/components/PaymentComponent";
 import CompletionFeedbackComponent from "@/components/CompletionFeedbackComponent";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
@@ -24,6 +25,7 @@ import TopNavbar from "@/components/TopNavbar";
 
 const AssignmentDetails = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = searchParams.get("id");
   const [showProposal, setShowProposal] = useState(false);
   const [proposal, setProposal] = useState("");
@@ -244,7 +246,26 @@ const AssignmentDetails = () => {
                 </div>
               )}
               
-              {/* We've moved the Proposals Component to the bottom of the page */}
+              {/* Proposals Tab Content */}
+              {activeStep === "proposals" && (
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <TutorProposalsComponent 
+                    onMessageClick={(tutorId) => {
+                      // Navigate to messages page
+                      router.push(`/user/messages?tutorId=${tutorId}`);
+                    }}
+                    onHireClick={(tutorId) => {
+                      // Move to payment step
+                      setActiveStep("payment");
+                      setProgressWidth("50%");
+                    }}
+                    onProfileClick={(tutorId) => {
+                      // Navigate to tutor profile page
+                      router.push(`/user/tutor-profile?id=${tutorId}`);
+                    }}
+                  />
+                </div>
+              )}
               
               {/* Payment Component */}
               {activeStep === "payment" && (
