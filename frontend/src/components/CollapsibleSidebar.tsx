@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation } from '@/lib/services/auth'
-import {  CheckSquare, CopyMinus, Menu, X} from 'lucide-react'
+import {  CopyMinus, Menu, X} from 'lucide-react'
 
 interface SidebarItem {
   name: string

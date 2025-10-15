@@ -1,10 +1,10 @@
-import TutorApplicationModel from '../models/TutorApplication.js';
-import QuizResultModel from '../models/QuizResult.js';
-import UserModel from '../models/User.js';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import TutorApplicationModel from "../models/TutorApplication.js";
+import QuizResultModel from "../models/QuizResult.js";
+import UserModel from "../models/User.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,30 +12,33 @@ const __dirname = path.dirname(__filename);
 // Configure multer for document uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/tutor-documents');
+    const uploadPath = path.join(__dirname, "../uploads/tutor-documents");
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'application/pdf'
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
   ];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images and PDF files are allowed.'), false);
+    cb(
+      new Error("Invalid file type. Only images and PDF files are allowed."),
+      false
+    );
   }
 };
 
@@ -43,8 +46,8 @@ export const uploadDocuments = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
 });
 
 class TutorController {
@@ -57,47 +60,56 @@ class TutorController {
 
       // Parse JSON strings from FormData
       let personalInfo, academicInfo, quizSummary;
-      
+
       try {
-        personalInfo = typeof req.body.personalInfo === 'string' 
-          ? JSON.parse(req.body.personalInfo) 
-          : req.body.personalInfo;
-        
-        academicInfo = typeof req.body.academicInfo === 'string'
-          ? JSON.parse(req.body.academicInfo)
-          : req.body.academicInfo;
-        
-        quizSummary = typeof req.body.quizSummary === 'string'
-          ? JSON.parse(req.body.quizSummary)
-          : req.body.quizSummary;
-        
-        console.log("Parsed data - Subject:", academicInfo?.subject, "User:", userId);
+        personalInfo =
+          typeof req.body.personalInfo === "string"
+            ? JSON.parse(req.body.personalInfo)
+            : req.body.personalInfo;
+
+        academicInfo =
+          typeof req.body.academicInfo === "string"
+            ? JSON.parse(req.body.academicInfo)
+            : req.body.academicInfo;
+
+        quizSummary =
+          typeof req.body.quizSummary === "string"
+            ? JSON.parse(req.body.quizSummary)
+            : req.body.quizSummary;
+
+        console.log(
+          "Parsed data - Subject:",
+          academicInfo?.subject,
+          "User:",
+          userId
+        );
       } catch (parseError) {
-        console.error('JSON parsing error:', parseError);
+        console.error("JSON parsing error:", parseError);
         return res.status(400).json({
-          status: 'failed',
-          message: 'Invalid JSON format in request data'
+          status: "failed",
+          message: "Invalid JSON format in request data",
         });
       }
 
       // Validate required fields
       if (!personalInfo || !academicInfo || !quizSummary) {
-        console.log("Missing required fields:", { 
-          personalInfo: !!personalInfo, 
-          academicInfo: !!academicInfo, 
-          quizSummary: !!quizSummary 
+        console.log("Missing required fields:", {
+          personalInfo: !!personalInfo,
+          academicInfo: !!academicInfo,
+          quizSummary: !!quizSummary,
         });
         return res.status(400).json({
-          status: 'failed',
-          message: 'Missing required fields: personalInfo, academicInfo, and quizSummary are required'
+          status: "failed",
+          message:
+            "Missing required fields: personalInfo, academicInfo, and quizSummary are required",
         });
       }
 
       // Check if user already has a pending application for the same subject
       const existingApplication = await TutorApplicationModel.findOne({
         user: userId,
-        'academicInfo.subject': academicInfo.subject,
-        applicationStatus: { $in: ['pending', 'under_review'] }
+        "academicInfo.subject": academicInfo.subject,
+        applicationStatus: { $in: ["pending", "under_review"] },
       });
 
       if (existingApplication) {
@@ -105,20 +117,22 @@ class TutorController {
           userId: userId.toString(),
           subject: academicInfo.subject,
           existingStatus: existingApplication.applicationStatus,
-          existingId: existingApplication._id.toString()
+          existingId: existingApplication._id.toString(),
         });
         return res.status(400).json({
-          status: 'failed',
+          status: "failed",
           message: `You already have a ${existingApplication.applicationStatus} application for ${academicInfo.subject}. Please wait for the current application to be processed.`,
           existingApplication: {
             id: existingApplication._id,
             status: existingApplication.applicationStatus,
-            submittedAt: existingApplication.createdAt
-          }
+            submittedAt: existingApplication.createdAt,
+          },
         });
       }
 
-      console.log("No existing application found, proceeding with submission...");
+      console.log(
+        "No existing application found, proceeding with submission..."
+      );
 
       // Save quiz result first
       let quizResultId = null;
@@ -130,7 +144,7 @@ class TutorController {
           score = 0,
           timeSpent = 0,
           topicPerformance = {},
-          answeredQuestions = 0
+          answeredQuestions = 0,
         } = quizSummary;
 
         // Convert to numbers safely
@@ -139,32 +153,33 @@ class TutorController {
         const validCorrectAnswers = Number(correctAnswers) || validScore;
         const validIncorrectAnswers = validTotalQuestions - validScore;
         const validTimeSpent = Number(timeSpent) || 0;
-        
+
         // Calculate percentage safely
-        const percentage = validTotalQuestions > 0 
-          ? Math.round((validScore / validTotalQuestions) * 100) 
-          : 0;
+        const percentage =
+          validTotalQuestions > 0
+            ? Math.round((validScore / validTotalQuestions) * 100)
+            : 0;
 
         // Ensure we have required subject and topics
         if (!academicInfo?.subject || !academicInfo?.topics?.length) {
           return res.status(400).json({
-            status: 'failed',
-            message: 'Academic subject and topics are required for quiz result'
+            status: "failed",
+            message: "Academic subject and topics are required for quiz result",
           });
         }
 
         // Process topic performance
         const processedTopicPerformance = {};
-        if (topicPerformance && typeof topicPerformance === 'object') {
-          Object.keys(topicPerformance).forEach(topic => {
+        if (topicPerformance && typeof topicPerformance === "object") {
+          Object.keys(topicPerformance).forEach((topic) => {
             const perf = topicPerformance[topic];
-            if (perf && typeof perf === 'object') {
+            if (perf && typeof perf === "object") {
               const total = Number(perf.total) || 0;
               const correct = Number(perf.correct) || 0;
               processedTopicPerformance[topic] = {
                 total,
                 correct,
-                percentage: total > 0 ? Math.round((correct / total) * 100) : 0
+                percentage: total > 0 ? Math.round((correct / total) * 100) : 0,
               };
             }
           });
@@ -173,7 +188,9 @@ class TutorController {
         const quizResult = new QuizResultModel({
           user: userId,
           subject: academicInfo.subject,
-          topics: Array.isArray(academicInfo.topics) ? academicInfo.topics : [academicInfo.subject],
+          topics: Array.isArray(academicInfo.topics)
+            ? academicInfo.topics
+            : [academicInfo.subject],
           totalQuestions: validTotalQuestions,
           correctAnswers: validCorrectAnswers,
           incorrectAnswers: validIncorrectAnswers,
@@ -181,19 +198,21 @@ class TutorController {
           percentage: percentage,
           timeSpent: validTimeSpent,
           topicPerformance: processedTopicPerformance,
-          answers: Array.isArray(quizSummary.answers) ? quizSummary.answers : [],
-          quizType: 'onboarding'
+          answers: Array.isArray(quizSummary.answers)
+            ? quizSummary.answers
+            : [],
+          quizType: "onboarding",
         });
 
         try {
           await quizResult.save();
           quizResultId = quizResult._id;
-          console.log('Quiz result saved successfully:', quizResultId);
+          console.log("Quiz result saved successfully:", quizResultId);
         } catch (quizError) {
-          console.error('Quiz result save error:', quizError);
+          console.error("Quiz result save error:", quizError);
           return res.status(500).json({
-            status: 'failed',
-            message: 'Failed to save quiz result'
+            status: "failed",
+            message: "Failed to save quiz result",
           });
         }
       }
@@ -202,7 +221,7 @@ class TutorController {
       const documents = {};
       if (req.files) {
         const files = req.files;
-        
+
         if (files.certificate && files.certificate[0]) {
           const cert = files.certificate[0];
           documents.certificate = {
@@ -210,10 +229,10 @@ class TutorController {
             originalName: cert.originalname,
             mimetype: cert.mimetype,
             size: cert.size,
-            url: `/uploads/tutor-documents/${cert.filename}`
+            url: `/uploads/tutor-documents/${cert.filename}`,
           };
         }
-        
+
         if (files.profilePicture && files.profilePicture[0]) {
           const profile = files.profilePicture[0];
           documents.profilePicture = {
@@ -221,7 +240,7 @@ class TutorController {
             originalName: profile.originalname,
             mimetype: profile.mimetype,
             size: profile.size,
-            url: `/uploads/tutor-documents/${profile.filename}`
+            url: `/uploads/tutor-documents/${profile.filename}`,
           };
         }
       }
@@ -230,66 +249,66 @@ class TutorController {
       const application = new TutorApplicationModel({
         user: userId,
         personalInfo: {
-          fullName: personalInfo.fullName,
+          name: personalInfo.name,
           email: personalInfo.email,
           phoneNumber: personalInfo.phoneNumber,
           university: personalInfo.university,
           degree: personalInfo.degree,
           gpa: personalInfo.gpa,
-          country: personalInfo.country
+          country: personalInfo.country,
         },
         academicInfo: {
           subject: academicInfo.subject,
-          topics: Array.isArray(academicInfo.topics) ? academicInfo.topics : []
+          topics: Array.isArray(academicInfo.topics) ? academicInfo.topics : [],
         },
         documents,
         quizResult: quizResultId,
-        applicationStatus: 'pending'
+        applicationStatus: "pending",
       });
 
       try {
         await application.save();
-        console.log('Application saved successfully:', application._id);
+        console.log("Application saved successfully:", application._id);
       } catch (appError) {
-        console.error('Application save error:', appError);
+        console.error("Application save error:", appError);
         // If application save fails but quiz result was saved, we should handle cleanup
         if (quizResultId) {
           await QuizResultModel.findByIdAndDelete(quizResultId);
         }
         return res.status(500).json({
-          status: 'failed',
-          message: 'Failed to save application'
+          status: "failed",
+          message: "Failed to save application",
         });
       }
 
       // Update user's onboarding status
       try {
         await UserModel.findByIdAndUpdate(userId, {
-          onboardingStatus: 'under_review'
+          onboardingStatus: "under_review",
         });
-        console.log('User onboarding status updated');
+        console.log("User onboarding status updated");
       } catch (userUpdateError) {
-        console.error('User update error:', userUpdateError);
+        console.error("User update error:", userUpdateError);
         // This is not critical, so we don't fail the request
       }
 
       res.status(201).json({
-        status: 'success',
-        message: 'Application submitted successfully',
+        status: "success",
+        message: "Application submitted successfully",
         application: application._id,
         data: {
           applicationId: application._id,
           quizResultId: quizResultId,
-          status: application.applicationStatus
-        }
+          status: application.applicationStatus,
+        },
       });
-
     } catch (error) {
-      console.error('Submit application error:', error);
+      console.error("Submit application error:", error);
       res.status(500).json({
-        status: 'failed',
-        message: 'Unable to submit application',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        status: "failed",
+        message: "Unable to submit application",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   };
@@ -300,27 +319,26 @@ class TutorController {
       const userId = req.user._id;
 
       const application = await TutorApplicationModel.findOne({ user: userId })
-        .populate('quizResult')
-        .populate('user', 'name email onboardingStatus')
+        .populate("quizResult")
+        .populate("user", "name email onboardingStatus")
         .sort({ createdAt: -1 });
 
       if (!application) {
         return res.status(404).json({
-          status: 'failed',
-          message: 'No application found'
+          status: "failed",
+          message: "No application found",
         });
       }
 
       res.status(200).json({
-        status: 'success',
-        application
+        status: "success",
+        application,
       });
-
     } catch (error) {
-      console.error('Get application status error:', error);
+      console.error("Get application status error:", error);
       res.status(500).json({
-        status: 'failed',
-        message: 'Unable to fetch application status'
+        status: "failed",
+        message: "Unable to fetch application status",
       });
     }
   };
@@ -329,18 +347,18 @@ class TutorController {
   static getAllApplications = async (req, res) => {
     try {
       const { page = 1, limit = 20, status, subject } = req.query;
-      
+
       let query = {};
       if (status) {
         query.applicationStatus = status;
       }
       if (subject) {
-        query['academicInfo.subject'] = subject;
+        query["academicInfo.subject"] = subject;
       }
 
       const applications = await TutorApplicationModel.find(query)
-        .populate('user', 'name email')
-        .populate('quizResult')
+        .populate("user", "name email")
+        .populate("quizResult")
         .sort({ createdAt: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
@@ -348,21 +366,20 @@ class TutorController {
       const total = await TutorApplicationModel.countDocuments(query);
 
       res.status(200).json({
-        status: 'success',
+        status: "success",
         applications,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
           total,
-          pages: Math.ceil(total / limit)
-        }
+          pages: Math.ceil(total / limit),
+        },
       });
-
     } catch (error) {
-      console.error('Get all applications error:', error);
+      console.error("Get all applications error:", error);
       res.status(500).json({
-        status: 'failed',
-        message: 'Unable to fetch applications'
+        status: "failed",
+        message: "Unable to fetch applications",
       });
     }
   };
@@ -374,18 +391,19 @@ class TutorController {
       const { status, reviewNotes } = req.body;
       const reviewerId = req.user._id;
 
-      if (!['approved', 'rejected', 'under_review'].includes(status)) {
+      if (!["approved", "rejected", "under_review"].includes(status)) {
         return res.status(400).json({
-          status: 'failed',
-          message: 'Invalid status. Must be approved, rejected, or under_review'
+          status: "failed",
+          message:
+            "Invalid status. Must be approved, rejected, or under_review",
         });
       }
 
       const application = await TutorApplicationModel.findById(applicationId);
       if (!application) {
         return res.status(404).json({
-          status: 'failed',
-          message: 'Application not found'
+          status: "failed",
+          message: "Application not found",
         });
       }
 
@@ -395,34 +413,33 @@ class TutorController {
       application.reviewedBy = reviewerId;
       application.reviewedAt = new Date();
 
-      if (status === 'approved') {
+      if (status === "approved") {
         application.approvedAt = new Date();
-        
+
         // Update user role and onboarding status
         await UserModel.findByIdAndUpdate(application.user, {
-          $addToSet: { roles: 'tutor' },
-          onboardingStatus: 'completed'
+          $addToSet: { roles: "tutor" },
+          onboardingStatus: "completed",
         });
-      } else if (status === 'rejected') {
+      } else if (status === "rejected") {
         // Reset user onboarding status if rejected
         await UserModel.findByIdAndUpdate(application.user, {
-          onboardingStatus: 'incomplete'
+          onboardingStatus: "incomplete",
         });
       }
 
       await application.save();
 
       res.status(200).json({
-        status: 'success',
-        message: 'Application reviewed successfully',
-        application
+        status: "success",
+        message: "Application reviewed successfully",
+        application,
       });
-
     } catch (error) {
-      console.error('Review application error:', error);
+      console.error("Review application error:", error);
       res.status(500).json({
-        status: 'failed',
-        message: 'Unable to review application'
+        status: "failed",
+        message: "Unable to review application",
       });
     }
   };
@@ -435,33 +452,34 @@ class TutorController {
 
       const existingApplication = await TutorApplicationModel.findOne({
         user: userId,
-        'academicInfo.subject': subject,
-        applicationStatus: { $in: ['pending', 'under_review'] }
+        "academicInfo.subject": subject,
+        applicationStatus: { $in: ["pending", "under_review"] },
       });
 
       const canApply = !existingApplication;
-      let message = 'You can apply for this subject';
-      
+      let message = "You can apply for this subject";
+
       if (!canApply) {
         message = `You already have a ${existingApplication.applicationStatus} application for ${subject}`;
       }
 
       res.status(200).json({
-        status: 'success',
+        status: "success",
         canApply,
         message,
-        existingApplication: existingApplication ? {
-          id: existingApplication._id,
-          status: existingApplication.applicationStatus,
-          createdAt: existingApplication.createdAt
-        } : null
+        existingApplication: existingApplication
+          ? {
+              id: existingApplication._id,
+              status: existingApplication.applicationStatus,
+              createdAt: existingApplication.createdAt,
+            }
+          : null,
       });
-
     } catch (error) {
-      console.error('Check can apply error:', error);
+      console.error("Check can apply error:", error);
       res.status(500).json({
-        status: 'failed',
-        message: 'Unable to check application status'
+        status: "failed",
+        message: "Unable to check application status",
       });
     }
   };
