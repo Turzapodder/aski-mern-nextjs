@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import DashboardComponent from '@/components/DashboardComponent'
+import TutorDashboard from '@/components/TutorDashboard'
 
 // Mock User Data - replace with actual data fetching
 const mockUser = {
@@ -170,7 +171,14 @@ const UserDashboard = () => {
               </div>
             )}
 
-            <DashboardComponent />
+            {/* Conditionally render dashboard based on user role */}
+            {userData?.user?.roles[0] === 'tutor' ? (
+              <TutorDashboard
+              user={userData?.user}
+              />
+            ) : (
+              <DashboardComponent />
+            )}
             
 
 

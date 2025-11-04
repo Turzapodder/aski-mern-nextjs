@@ -223,9 +223,62 @@ const DashboardComponent = () => {
         <div className="mb-12">
           <UploadProjectForm 
               maxWidth=""
-              onSubmit={(formData) => {
+              onSubmit={async (formData) => {
                 console.log('Form submitted:', formData)
-                // Handle form submission
+                
+                try {
+                  // Create FormData for file upload
+                  const submitFormData = new FormData()
+                  
+                  // Prepare assignment data
+                  const assignmentData = {
+                    title: formData.projectName,
+                    description: formData.description,
+                    subject: formData.projectName,
+                    topics: formData.tags,
+                    deadline: formData.deadline || new Date().toISOString(),
+                    estimatedCost: 0,
+                    priority: 'medium',
+                    status: 'pending'
+                  }
+                  
+                  // Add assignment data to FormData
+                  Object.keys(assignmentData).forEach(key => {
+                    if (key === 'topics') {
+                      submitFormData.append(key, JSON.stringify(assignmentData[key]))
+                    } else {
+                      submitFormData.append(key, assignmentData[key])
+                    }
+                  })
+                  
+                  // Add file if exists
+                  if (formData.file) {
+                    submitFormData.append('attachments', formData.file)
+                  }
+                  
+                  // Submit to assignment API
+                  const response = await fetch('http://localhost:8000/api/assignments', {
+                    method: 'POST',
+                    body: submitFormData,
+                    credentials: 'include' // Include cookies for authentication
+                  })
+                  
+                  if (!response.ok) {
+                    const errorData = await response.json()
+                    console.error('Server error:', errorData)
+                    throw new Error(`Failed to create assignment: ${errorData.message || response.statusText}`)
+                  }
+                  
+                  const result = await response.json()
+                  console.log('Assignment created successfully:', result)
+                  
+                  // Show success message or redirect
+                  alert('Assignment posted successfully!')
+                  
+                } catch (error) {
+                  console.error('Failed to submit assignment:', error)
+                  alert('Failed to post assignment. Please try again.')
+                }
               }}
               onCancel={() => {
                 console.log('Form cancelled')

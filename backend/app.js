@@ -20,6 +20,8 @@ import chatRoutes from "./routes/chatRoutes.js";
 import tutorRoutes from "./routes/tutorRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import assignmentRoutes from "./routes/assignmentRoutes.js";
+import proposalRoutes from "./routes/proposalRoutes.js";
 import socketManager from "./config/socket.js";
 import "./config/passport-jwt-strategy.js";
 import setTokensCookies from "./utils/setTokensCookies.js";
@@ -410,6 +412,8 @@ const startServer = async () => {
     app.use("/api/tutor", tutorRoutes);
     app.use("/api/student", studentRoutes);
     app.use("/api/profile", profileRoutes);
+    app.use("/api/assignments", assignmentRoutes);
+    app.use("/api/proposals", proposalRoutes);
 
     // Google OAuth routes with enhanced error handling and logging
     app.get("/auth/google", (req, res, next) => {
