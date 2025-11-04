@@ -5,6 +5,8 @@ import { chatApi } from './services/chat'
 import { tutorApi } from './services/tutor'
 import { studentApi } from './services/student'
 import { profileApi } from './services/profile'
+import { assignmentsApi } from './services/assignments'
+import { proposalsApi } from './services/proposals'
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +15,8 @@ export const store = configureStore({
     [tutorApi.reducerPath]: tutorApi.reducer,
     [studentApi.reducerPath]: studentApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
+    [assignmentsApi.reducerPath]: assignmentsApi.reducer,
+    [proposalsApi.reducerPath]: proposalsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -20,7 +24,9 @@ export const store = configureStore({
       chatApi.middleware,
       tutorApi.middleware,
       studentApi.middleware,
-      profileApi.middleware
+      profileApi.middleware,
+      assignmentsApi.middleware,
+      proposalsApi.middleware
     ),
 })
 

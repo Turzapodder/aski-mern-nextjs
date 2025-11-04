@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useLogoutUserMutation } from '@/lib/services/auth'
+import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import {  CopyMinus, Menu, X} from 'lucide-react'
 
 interface SidebarItem {
@@ -23,6 +23,7 @@ interface CollapsibleSidebarProps {
 
 const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) => {
   const [logoutUser] = useLogoutUserMutation()
+  const { data: userData } = useGetUserQuery()
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -50,10 +51,19 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     router.push(href)
   }
 
+  // Check if user is a tutor
+  const isTutor = userData?.user?.roles?.[0] === 'tutor'
+
   const sidebarSections: SidebarSection[] = [
     {
       title: 'MAIN MENU',
-      items: [
+      items: isTutor ? [
+        { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
+        { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
+        { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
+        { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
+        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' }
+      ] : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
         { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/projects', active: activeItem === 'projects' },

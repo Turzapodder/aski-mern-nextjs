@@ -17,7 +17,7 @@ interface UploadProjectFormProps {
 interface FormData {
   projectName: string
   description: string
-  publishTime: string
+  deadline: string
   tags: string[]
   file?: File
 }
@@ -33,7 +33,7 @@ const UploadProjectForm = ({
   const [formData, setFormData] = useState<FormData>({
     projectName: '',
     description: '',
-    publishTime: 'now',
+    deadline: '',
     tags: ['Design', 'Blog']
   })
   
@@ -178,28 +178,35 @@ const UploadProjectForm = ({
       
       // Create FormData for file upload
       const submitFormData = new FormData()
-      submitFormData.append('sessionId', sessionId)
       
-      // Prepare form data object
-      const formDataObj = {
-        projectName: formData.projectName,
+      // Prepare form data object for assignment
+      const assignmentData = {
+        title: formData.projectName,
         description: formData.description,
         subject: formData.projectName, // Using projectName as subject for now
         topics: formData.tags,
-        deadline: new Date().toISOString(), // Default deadline
+        deadline: formData.deadline || new Date().toISOString(),
         estimatedCost: 0,
-        attachments: [] // Will be handled by multer
+        priority: 'medium',
+        status: 'draft'
       }
       
-      submitFormData.append('formData', JSON.stringify(formDataObj))
+      // Add assignment data to FormData
+      Object.keys(assignmentData).forEach(key => {
+        if (key === 'topics') {
+          submitFormData.append(key, JSON.stringify(assignmentData[key]))
+        } else {
+          submitFormData.append(key, assignmentData[key])
+        }
+      })
       
       // Add file if exists
       if (formData.file) {
         submitFormData.append('attachments', formData.file)
       }
       
-      // Save form data to backend with file
-      const response = await fetch('http://localhost:8000/api/student/form/save', {
+      // Save assignment data to backend
+      const response = await fetch('http://localhost:8000/api/assignments', {
         method: 'POST',
         body: submitFormData
       })
@@ -207,15 +214,15 @@ const UploadProjectForm = ({
       if (!response.ok) {
         const errorData = await response.json()
         console.error('Server error:', errorData)
-        throw new Error(`Failed to save form data: ${errorData.message || response.statusText}`)
+        throw new Error(`Failed to save assignment: ${errorData.message || response.statusText}`)
       }
       
       const result = await response.json()
-      console.log('Form saved successfully:', result)
+      console.log('Assignment saved successfully:', result)
       
-      // Store session ID in localStorage for retrieval after registration
-      localStorage.setItem('pendingFormSessionId', sessionId)
-      console.log('Session ID stored in localStorage:', sessionId)
+      // Store assignment ID in localStorage for retrieval after registration
+      localStorage.setItem('pendingAssignmentId', result.data._id)
+      console.log('Assignment ID stored in localStorage:', result.data._id)
       
       // Redirect to registration
       router.push('/account/register')
@@ -227,12 +234,6 @@ const UploadProjectForm = ({
     }
   }
 
-  const handleSaveDraft = () => {
-    if (onSaveDraft) {
-      onSaveDraft(formData)
-    }
-    setIsDraft(true)
-  }
 
   const addTag = (tag: string) => {
     if (tag && !formData.tags.includes(tag) && formData.tags.length < 12) {
@@ -496,36 +497,23 @@ const UploadProjectForm = ({
               )}
             </div>
 
-            {/* Publish Time */}
+            {/* Deadline */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-gray-900 font-medium">Choose Publish Time</label>
+                <label className="text-gray-900 font-medium">Assignment Deadline <span className="text-red-500">*</span></label>
                 <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center">
                   <span className="text-gray-500 text-xs">i</span>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                {['now', '14:17', '18:30'].map((time) => (
-                  <button
-                    key={time}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, publishTime: time }))}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      formData.publishTime === time
-                        ? 'bg-primary-300 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {time === 'now' ? 'Now' : time}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-                >
-                  •••
-                </button>
-              </div>
+              <input
+                type="datetime-local"
+                value={formData.deadline}
+                onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                required
+                min={new Date().toISOString().slice(0, 16)}
+              />
+              <p className="text-gray-400 text-xs mt-1">Select when this assignment should be completed</p>
             </div>
           </>
         )}
@@ -561,17 +549,10 @@ const UploadProjectForm = ({
               Cancel
             </button>
             <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              Save Draft
-            </button>
-            <button
               type="submit"
               className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
-             Schedule
+             Post Now
             </button>
           </div>
         </div>
