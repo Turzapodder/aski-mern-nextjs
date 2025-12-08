@@ -61,7 +61,11 @@ const Login = () => {
 
           setTimeout(() => {
             const redirect = searchParams.get('redirect');
-            if (redirect === 'whatsapp') {
+            const user = response.data.user; // Assuming the response contains the user object
+
+            if (user && user.roles.includes('tutor') && user.onboardingStatus !== 'completed') {
+              router.push('/account/tutor-onboarding');
+            } else if (redirect === 'whatsapp') {
               window.location.href = 'https://wa.me/';
             } else {
               router.push('/user/dashboard');
