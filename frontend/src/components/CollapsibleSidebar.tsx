@@ -66,7 +66,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
       ] : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
-        { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/projects', active: activeItem === 'projects' },
+        { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
       ],

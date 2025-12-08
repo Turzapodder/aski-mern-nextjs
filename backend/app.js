@@ -61,7 +61,7 @@ const startServer = async () => {
     // Display startup banner
     console.log(
       chalk.cyan(
-        figlet.textSync("N A Y O N", {
+        figlet.textSync("A S K I", {
           font: "Small",
           horizontalLayout: "default",
           verticalLayout: "default",
@@ -802,7 +802,7 @@ setInterval(monitorMemory, 60000); // Check every minute
 // Initial server start
 (async () => {
   try {
-    logger.info("🚀 Starting NAYON server with auto-restart capability...");
+    logger.info("🚀 Starting Aski server with auto-restart capability...");
     await startServer();
   } catch (error) {
     logger.error("Failed to start server initially:", error);

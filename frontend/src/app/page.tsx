@@ -4,7 +4,21 @@ import { Send, ArrowRight, Sparkles } from "lucide-react";
 import UploadProjectForm from "@/components/UploadProjectForm";
 import Link from "next/link";
 
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+
 const LandingPage = () => {
+  const router = useRouter();
+
+  const handleWhatsAppClick = () => {
+    const isAuth = Cookies.get('is_auth');
+    if (isAuth === 'true') {
+      window.open('https://wa.me/', '_blank');
+    } else {
+      router.push('/account/login?redirect=whatsapp');
+    }
+  };
+
   return (
     <div className='min-h-screen bg-white'>
       {/* Header */}
@@ -85,14 +99,31 @@ const LandingPage = () => {
             </a>
             <div className='space-y-6'>
               <h1 className='text-5xl lg:text-6xl font-smibold text-gray-900 leading-tight text-center'>
-                The best place to learn not from
-                <span className='block text-primary-300'>Ai</span>
+                The best place to learn
+                <span className='block text-primary-300 font-cursive'>not from Ai</span>
               </h1>
 
               <p className='text-md text-gray-600 leading-relaxed text-center'>
                 Discover thousands of fun and interactive learning activities to
                 support your child's growth and learning process.
               </p>
+            </div>
+
+            {/* WhatsApp Action */}
+            <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-6">
+              <button
+                onClick={handleWhatsAppClick}
+                className="group w-full flex items-center justify-center space-x-3 bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-[0_8px_30px_rgb(37,211,102,0.3)] hover:shadow-[0_8px_30px_rgb(37,211,102,0.5)] transform hover:-translate-y-1"
+              >
+                <Send className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+                <span>Send us your problem</span>
+              </button>
+
+              <div className="flex items-center space-x-3 w-full">
+                <div className="h-px bg-gray-200 flex-1"></div>
+                <span className="text-gray-400 font-medium text-sm uppercase tracking-wider">or upload manually</span>
+                <div className="h-px bg-gray-200 flex-1"></div>
+              </div>
             </div>
 
             {/* Upload Project Form */}
@@ -110,7 +141,7 @@ const LandingPage = () => {
                 console.log("Draft saved:", formData);
                 // Handle draft saving
               }}
-              advanced={true}
+              advanced={false}
             />
           </div>
         </div>
