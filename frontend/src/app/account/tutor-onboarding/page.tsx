@@ -12,6 +12,7 @@ import {
   useGetTutorApplicationStatusQuery,
 } from "@/lib/services/tutor";
 import { useRouter } from "next/navigation";
+import { countries } from "countries-list";
 
 // Define proper types
 interface User {
@@ -89,6 +90,7 @@ const validationSchema = [
     topics: Yup.array()
       .min(1, "Select at least one topic")
       .required("Topics are required"),
+    profilePicture: Yup.mixed().required("Profile picture is required"),
   }),
   // Step 2 & 3
   Yup.object({}),
@@ -112,6 +114,9 @@ export default function TutorOnboarding() {
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [existingApplication, setExistingApplication] = useState<any>(null);
+  const countryList = Object.values(countries).map((c: any) => c.name).sort();
+
+
 
   const [generateQuiz] = useGenerateQuizMutation();
   const [submitApplication] = useSubmitTutorApplicationMutation();
@@ -512,14 +517,22 @@ export default function TutorOnboarding() {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Country*
               </label>
-              <input
-                type='text'
+              <select
                 name='country'
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  formik.handleChange(e);
+                }}
                 onBlur={formik.handleBlur}
                 value={formik.values.country}
-                className='w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-              />
+                className='w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white'
+              >
+                <option value=''>Select a country</option>
+                {countryList.map((country: string) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
               {formik.touched.country && formik.errors.country && (
                 <div className='text-red-500 text-sm mt-1'>
                   {formik.errors.country}
@@ -897,11 +910,11 @@ export default function TutorOnboarding() {
                   <div
                     className={`flex items-center space-x-3 pt-4 ${
                       step.id === currentStep
-                        ? "text-primary-950"
-                        : step.id < currentStep
+                      ? "text-primary-950"
+                      : step.id < currentStep
                         ? "text-primary-950"
                         : "text-gray-400"
-                    }`}
+                      }`}
                   >
                     <step.icon className='h-6 w-6 z-10 relative' />
                     <div>
@@ -937,8 +950,8 @@ export default function TutorOnboarding() {
                       {isSubmitting
                         ? "Processing..."
                         : currentStep === 3
-                        ? "Submit Application"
-                        : "Continue to Quiz"}
+                          ? "Submit Application"
+                          : "Continue to Quiz"}
                     </button>
                   )}
                   {errorMessage && currentStep === 1 && (

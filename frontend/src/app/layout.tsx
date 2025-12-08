@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import StoreProvider from "./StoreProvider";
 import "./globals.css";
-import { Poppins,  Orbitron } from 'next/font/google'
+import { Poppins, Orbitron, Dancing_Script } from 'next/font/google'
 
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-poppins',
+})
+
+const dancingScript = Dancing_Script({
+  subsets: ['latin'],
+  variable: '--font-dancing-script',
 })
 
 // const funnelDisplay = Funnel_Display({
@@ -32,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${poppins.variable} ${orbitron.variable}`}>
+    <html lang="en" className={`${poppins.variable} ${orbitron.variable} ${dancingScript.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
