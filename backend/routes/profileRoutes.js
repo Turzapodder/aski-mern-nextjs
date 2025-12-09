@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import { uploadProfile } from "../config/s3Config.js";
 import path from "path";
 import fs from "fs";
