@@ -154,7 +154,7 @@ const TaskItem = ({ task }: { task: Assignment }) => {
             </span>
           </div>
         </div>
-        <Link href={`/user/assignments-detail/${task._id}`} className="p-1 hover:bg-gray-100 rounded">
+        <Link href={`/user/assignments/view-details/${task._id}`} className="p-1 hover:bg-gray-100 rounded">
           <MoreVertical className="w-6 h-6 text-black" />
         </Link>
       </div>
@@ -236,69 +236,6 @@ const DashboardComponent = () => {
         <div className="mb-12">
           <UploadProjectForm
             maxWidth=""
-            onSubmit={async (formData) => {
-              console.log('Form submitted:', formData)
-
-              try {
-                // Create FormData for file upload
-                const submitFormData = new FormData()
-
-                // Prepare assignment data
-                const assignmentData = {
-                  title: formData.title,
-                  description: formData.description,
-                  subject: formData.subject,
-                  topics: formData.topics,
-                  deadline: formData.deadline || new Date().toISOString(),
-                  estimatedCost: formData.budget || 0,
-                  priority: 'medium',
-                  status: 'pending'
-                }
-
-                // Add assignment data to FormData
-                Object.keys(assignmentData).forEach(key => {
-                  if (key === 'topics') {
-                    // Append each topic separately so multer parses it as an array (or single value)
-                    assignmentData.topics.forEach((topic: string) => {
-                      submitFormData.append('topics', topic)
-                    })
-                  } else {
-                    submitFormData.append(key, (assignmentData as any)[key])
-                  }
-                })
-
-                // Add files if exist
-                if (formData.files && formData.files.length > 0) {
-                  formData.files.forEach((file: File) => {
-                    submitFormData.append('attachments', file)
-                  })
-                }
-
-                // Submit to assignment API
-                const response = await fetch('http://localhost:8000/api/assignments', {
-                  method: 'POST',
-                  body: submitFormData,
-                  credentials: 'include' // Include cookies for authentication
-                })
-
-                if (!response.ok) {
-                  const errorData = await response.json()
-                  console.error('Server error:', errorData)
-                  throw new Error(`Failed to create assignment: ${errorData.message || response.statusText}`)
-                }
-
-                const result = await response.json()
-                console.log('Assignment created successfully:', result)
-
-                // Show success message or redirect
-                alert('Assignment posted successfully!')
-                // Optionally refetch assignments here if not using RTK Query auto-refetch
-
-              } catch (error) {
-                console.error('Failed to submit assignment:', error)
-                alert('Failed to post assignment. Please try again.')
-              }
-            }}
             onCancel={() => {
               console.log('Form cancelled')
               // Handle form cancellation

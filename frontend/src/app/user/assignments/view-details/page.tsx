@@ -77,7 +77,7 @@ const AllAssignmentsPage = () => {
   };
 
   const handleViewDetails = (assignmentId: string) => {
-    router.push(`/user/assignments/${assignmentId}`);
+    router.push(`/user/assignments/view-details/${assignmentId}`);
   };
 
   const handleSendProposal = (assignment: Assignment) => {

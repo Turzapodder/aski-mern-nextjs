@@ -647,51 +647,6 @@ const AssignmentDetails = () => {
                   ))}
                 </>
               )}
-
-              <button className='w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200'>
-                <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center'>
-                  <FileText size={20} className='text-primary-600' />
-                </div>
-                <div className='flex-1 text-left'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    Integration Formula Sheet
-                  </div>
-                  <div className='text-xs text-gray-500'>PDF • 2.3 MB</div>
-                </div>
-                <div className='text-primary-600'>
-                  <Copy size={16} />
-                </div>
-              </button>
-
-              <button className='w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200'>
-                <div className='w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center'>
-                  <FileText size={20} className='text-secondary-600' />
-                </div>
-                <div className='flex-1 text-left'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    Lecture Notes - Integration by Parts
-                  </div>
-                  <div className='text-xs text-gray-500'>PDF • 1.8 MB</div>
-                </div>
-                <div className='text-primary-600'>
-                  <Copy size={16} />
-                </div>
-              </button>
-
-              <button className='w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200'>
-                <div className='w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center'>
-                  <FileText size={20} className='text-green-600' />
-                </div>
-                <div className='flex-1 text-left'>
-                  <div className='text-sm font-medium text-gray-900'>
-                    Practice Problems
-                  </div>
-                  <div className='text-xs text-gray-500'>PDF • 1.2 MB</div>
-                </div>
-                <div className='text-primary-600'>
-                  <Copy size={16} />
-                </div>
-              </button>
             </div>
             {activeStep === "details" && userRole !== 'user' && (
               <button
