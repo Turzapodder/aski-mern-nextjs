@@ -154,10 +154,10 @@ const TaskItem = ({ task }: { task: Assignment }) => {
             </span>
           </div>
         </div>
+        <Link href={`/user/assignments-detail/${task._id}`} className="p-1 hover:bg-gray-100 rounded">
+          <MoreVertical className="w-6 h-6 text-black" />
+        </Link>
       </div>
-      <Link href={`/user/assignments/${task._id}`} className="p-1 hover:bg-gray-100 rounded">
-        <MoreVertical className="w-6 h-6 text-black" />
-      </Link>
     </div>
   );
 };
@@ -222,11 +222,12 @@ const ProjectSection = ({
 
 const DashboardComponent = () => {
   const { data: assignmentsData, isLoading } = useGetAssignmentsQuery({});
-  const assignments = assignmentsData?.assignments || [];
+  const assignments = assignmentsData?.data || [];
 
   const ongoingAssignments = assignments.filter(a => ['assigned', 'submitted', 'in_progress'].includes(a.status));
   const completedAssignments = assignments.filter(a => a.status === 'completed');
   const pendingAssignments = assignments.filter(a => ['pending', 'draft'].includes(a.status));
+
 
   return (
     <div className=" bg-[#f6f6f6] ">
@@ -266,9 +267,11 @@ const DashboardComponent = () => {
                   }
                 })
 
-                // Add file if exists
-                if (formData.file) {
-                  submitFormData.append('attachments', formData.file)
+                // Add files if exist
+                if (formData.files && formData.files.length > 0) {
+                  formData.files.forEach((file: File) => {
+                    submitFormData.append('attachments', file)
+                  })
                 }
 
                 // Submit to assignment API
@@ -313,6 +316,11 @@ const DashboardComponent = () => {
           assignments={ongoingAssignments}
           bgColor="bg-white"
           shadow="shadow-lg"
+        /><ProjectSection
+          title="Pending Projects"
+          assignments={pendingAssignments}
+          bgColor="bg-gray-100"
+          shadow="shadow-2xs"
         />
         <ProjectSection
           title="Completed Projects"
@@ -320,12 +328,7 @@ const DashboardComponent = () => {
           bgColor="bg-gray-100"
           shadow="shadow-2xs"
         />
-        <ProjectSection
-          title="Pending Projects"
-          assignments={pendingAssignments}
-          bgColor="bg-white"
-          shadow="shadow-lg"
-        />
+
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import express from "express";
-import multer from "multer";
+import { uploadProfile } from "../config/s3Config.js";
 import path from "path";
 import fs from "fs";
 import ProfileController from "../controllers/profileController.js";
@@ -8,60 +8,7 @@ import checkUserAuth from "../middlewares/auth-middleware.js";
 
 const router = express.Router();
 
-const ensureUploadDir = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(
-      process.cwd(),
-      "uploads",
-      "user-documents"
-    );
-    ensureUploadDir(uploadPath);
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${name}-${uniqueSuffix}${ext}`);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  // Allowed file types
-  const allowedMimes = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "text/plain",
-  ];
-
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error("Invalid file type. Only images, PDFs, and documents allowed.")
-    );
-  }
-};
-
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
-    files: 5,
-  },
-});
+// Local multer configuration removed in favor of S3
 
 // Middleware stack for protected routes
 const protectedRoutes = [AccessTokenAutoRefresh, checkUserAuth];
@@ -141,7 +88,7 @@ router.put(
 router.post(
   "/:userId/upload",
   protectedRoutes,
-  upload.fields([
+  uploadProfile.fields([
     { name: "profileImage", maxCount: 1 },
     { name: "documents", maxCount: 5 },
   ]),

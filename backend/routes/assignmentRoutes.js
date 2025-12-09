@@ -1,5 +1,5 @@
 import express from 'express';
-import multer from 'multer';
+import { uploadAssignment } from '../config/s3Config.js';
 import path from 'path';
 import fs from 'fs';
 import AssignmentController from '../controllers/assignmentController.js';
@@ -8,88 +8,7 @@ import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
 
 const router = express.Router();
 
-// Ensure upload directories exist
-const ensureUploadDirs = () => {
-  const dirs = [
-    'uploads/assignments',
-    'uploads/submissions'
-  ];
-  
-  dirs.forEach(dir => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  });
-};
-
-ensureUploadDirs();
-
-// Configure multer for assignment file uploads
-const assignmentStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/assignments/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `assignment-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
-// Configure multer for submission file uploads
-const submissionStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/submissions/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `submission-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
-// File filter for assignments
-const assignmentFileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.ms-powerpoint',
-    'text/plain',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'video/mp4',
-    'video/avi',
-    'video/mov',
-    'video/wmv'
-  ];
-  
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types: PDF, DOC, DOCX, PPT, PPTX, TXT, Images, Videos`), false);
-  }
-};
-
-// Multer configurations
-const uploadAssignmentFiles = multer({
-  storage: assignmentStorage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit per file
-    files: 10 // Maximum 10 files
-  },
-  fileFilter: assignmentFileFilter
-});
-
-const uploadSubmissionFiles = multer({
-  storage: submissionStorage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit per file
-    files: 10 // Maximum 10 files
-  },
-  fileFilter: assignmentFileFilter
-});
+// Local multer configuration removed in favor of S3
 
 // Apply authentication middleware to all routes
 router.use(AccessTokenAutoRefresh);
@@ -98,7 +17,7 @@ router.use(checkUserAuth);
 // Assignment CRUD Routes
 
 // Create new assignment
-router.post('/', uploadAssignmentFiles.array('attachments', 10), AssignmentController.createAssignment);
+router.post('/', uploadAssignment.array('attachments', 10), AssignmentController.createAssignment);
 
 // Get all assignments (with filtering and pagination)
 router.get('/', AssignmentController.getAllAssignments);
@@ -113,7 +32,7 @@ router.get('/user/:userId', AssignmentController.getAssignmentsByUserId);
 router.get('/:id', AssignmentController.getAssignment);
 
 // Update assignment
-router.put('/:id', uploadAssignmentFiles.array('attachments', 10), AssignmentController.updateAssignment);
+router.put('/:id', uploadAssignment.array('attachments', 10), AssignmentController.updateAssignment);
 
 // Delete assignment (soft delete)
 router.delete('/:id', AssignmentController.deleteAssignment);
@@ -124,7 +43,7 @@ router.delete('/:id', AssignmentController.deleteAssignment);
 router.patch('/:id/assign-tutor', AssignmentController.assignTutor);
 
 // Submit work (by tutor)
-router.post('/:id/submit', uploadSubmissionFiles.array('submissionFiles', 10), AssignmentController.submitWork);
+router.post('/:id/submit', uploadAssignment.array('submissionFiles', 10), AssignmentController.submitWork);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
@@ -148,14 +67,14 @@ router.use((error, req, res, next) => {
       });
     }
   }
-  
+
   if (error.message.includes('Invalid file type')) {
     return res.status(400).json({
       status: 'failed',
       message: error.message
     });
   }
-  
+
   next(error);
 });
 
