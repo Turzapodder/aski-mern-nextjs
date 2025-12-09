@@ -1,12 +1,14 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X, Upload, FileImage, Play, Plus } from 'lucide-react'
+import { X, Upload, FileImage, Play, Plus, Loader } from 'lucide-react'
 import { useGenerateSessionIdQuery, useSaveStudentFormMutation } from '@/lib/services/student'
+import { useCreateAssignmentMutation } from '@/lib/services/assignments'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 
 interface UploadProjectFormProps {
-  onSubmit?: (formData: FormData) => void
+  onSubmit?: (formData: FormData) => void // Kept for backward compatibility or override
+  onSuccess?: () => void // New prop for success callback
   onCancel?: () => void
   onSaveDraft?: (formData: FormData) => void
   className?: string
@@ -40,6 +42,7 @@ const SUBJECTS = [
 
 const UploadProjectForm = ({
   onSubmit,
+  onSuccess,
   onCancel,
   onSaveDraft,
   className = "",
@@ -63,13 +66,15 @@ const UploadProjectForm = ({
   const [isDragging, setIsDragging] = useState(false)
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [fileError, setFileError] = useState<string>('')
+  const [submitError, setSubmitError] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // Get session ID for anonymous users
+  // API Mutations
   const { data: sessionData } = useGenerateSessionIdQuery()
   const [saveStudentForm] = useSaveStudentFormMutation()
+  const [createAssignment, { isLoading: isCreating }] = useCreateAssignmentMutation()
 
   // Set session ID when received
   useEffect(() => {
@@ -175,8 +180,9 @@ const UploadProjectForm = ({
     fileInputRef.current?.click()
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError('')
 
     // Check if user is logged in
     const isAuth = Cookies.get('is_auth')
@@ -184,11 +190,80 @@ const UploadProjectForm = ({
     if (isAuth === 'true') {
       // User is logged in, proceed normally
       if (onSubmit) {
+        // If onSubmit is provided, use it (override behavior)
         onSubmit(formData)
+      } else {
+        // Default behavior: Submit to API
+        await handleInternalSubmit()
       }
     } else {
       // User is not logged in, save form and redirect to registration
       handleAnonymousSubmit()
+    }
+  }
+
+  const handleInternalSubmit = async () => {
+    try {
+      // Create FormData for file upload
+      const submitFormData = new FormData()
+
+      // Prepare assignment data
+      const assignmentData = {
+        title: formData.title,
+        description: formData.description,
+        subject: formData.subject || 'General',
+        topics: formData.topics,
+        deadline: formData.deadline || new Date().toISOString(),
+        estimatedCost: formData.budget || 0,
+        priority: 'medium',
+        status: 'pending'
+      }
+
+      // Add assignment data to FormData
+      Object.keys(assignmentData).forEach(key => {
+        if (key === 'topics') {
+          // Append each topic separately
+          assignmentData.topics.forEach((topic: string) => {
+            submitFormData.append('topics', topic)
+          })
+        } else {
+          submitFormData.append(key, (assignmentData as any)[key])
+        }
+      })
+
+      // Add files if exist
+      if (formData.files && formData.files.length > 0) {
+        formData.files.forEach((file: File) => {
+          submitFormData.append('attachments', file)
+        })
+      }
+
+      // Call the mutation
+      await createAssignment(submitFormData).unwrap()
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        deadline: '',
+        subject: '',
+        topics: [],
+        budget: undefined,
+        files: []
+      })
+      setPreviewUrls([])
+      if (fileInputRef.current) fileInputRef.current.value = ''
+
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        alert('Assignment posted successfully!')
+      }
+
+    } catch (error: any) {
+      console.error('Failed to create assignment:', error)
+      setSubmitError(error?.data?.message || 'Failed to post assignment. Please try again.')
     }
   }
 
@@ -551,6 +626,13 @@ const UploadProjectForm = ({
           </div>
         )}
 
+        {/* Submit Error */}
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            {submitError}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-4">
@@ -589,15 +671,24 @@ const UploadProjectForm = ({
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              disabled={isCreating}
+              className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+              disabled={isCreating}
+              className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Post Now
+              {isCreating ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                'Post Now'
+              )}
             </button>
           </div>
         </div>
