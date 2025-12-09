@@ -1,38 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Clock, 
-  Calendar, 
-  DollarSign, 
-  AlertCircle, 
+import {
+  Clock,
+  Calendar,
+  DollarSign,
+  AlertCircle,
   BookOpen,
   Eye,
   Filter,
   Search,
   Send
 } from "lucide-react";
-import { useGetAssignmentsQuery } from "@/lib/services/assignments";
+import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
 import SendProposalModal from "@/components/SendProposalModal";
-
-interface Assignment {
-  _id: string;
-  title: string;
-  description: string;
-  subject: string;
-  topics: string[];
-  deadline: string;
-  estimatedCost: number;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: string;
-  createdAt: string;
-  student: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-}
 
 const AllAssignmentsPage = () => {
   const router = useRouter();
@@ -48,11 +30,11 @@ const AllAssignmentsPage = () => {
   const userRole = currentUser?.roles?.[0];
 
   // Use RTK Query to fetch assignments
-  const { 
-    data: assignmentsData, 
-    isLoading: loading, 
+  const {
+    data: assignmentsData,
+    isLoading: loading,
     error,
-    refetch 
+    refetch
   } = useGetAssignmentsQuery({
     page: 1,
     limit: 50,
@@ -62,7 +44,7 @@ const AllAssignmentsPage = () => {
   });
 
   const assignments = assignmentsData?.data || [];
-  
+
   // Use assignments directly since API already handles filtering
   const filteredAssignments = assignments;
 
@@ -125,12 +107,12 @@ const AllAssignmentsPage = () => {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">
-            {error && 'data' in error ? 
-              (error.data as any)?.message || 'Failed to load assignments' : 
+            {error && 'data' in error ?
+              (error.data as any)?.message || 'Failed to load assignments' :
               'Failed to load assignments'
             }
           </p>
-          <button 
+          <button
             onClick={() => refetch()}
             className="bg-primary-300 text-white px-4 py-2 rounded-lg hover:bg-primary-400 transition-colors"
           >
@@ -213,7 +195,7 @@ const AllAssignmentsPage = () => {
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
               <p className="text-gray-600">
-                {searchTerm || statusFilter !== "all" || priorityFilter !== "all" 
+                {searchTerm || statusFilter !== "all" || priorityFilter !== "all"
                   ? "Try adjusting your filters to see more results."
                   : "There are no assignments available at the moment."
                 }
@@ -298,9 +280,9 @@ const AllAssignmentsPage = () => {
                       <Eye className="h-4 w-4" />
                       <span>View Details</span>
                     </button>
-                    
+
                     {/* Show Send Proposal button only for tutors */}
-                    {userRole === 'tutor' && assignment.status === 'open' && (
+                    {userRole === 'tutor' && assignment.status === 'pending' && (
                       <button
                         onClick={() => handleSendProposal(assignment)}
                         className="w-full inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2"

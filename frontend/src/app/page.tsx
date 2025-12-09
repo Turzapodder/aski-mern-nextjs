@@ -132,6 +132,8 @@ const LandingPage = () => {
               onSubmit={(formData) => {
                 console.log("Form submitted:", formData);
                 // Handle form submission
+                // Note: Actual submission logic would go here, similar to DashboardComponent
+                // but for anonymous users it might redirect to register/login first
               }}
               onCancel={() => {
                 console.log("Form cancelled");

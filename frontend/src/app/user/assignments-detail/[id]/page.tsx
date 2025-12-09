@@ -1,5 +1,5 @@
 "use client";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   MapPin,
   Clock,
@@ -26,9 +26,9 @@ import { useGetAssignmentByIdQuery } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
 
 const AssignmentDetails = () => {
-  const searchParams = useSearchParams();
+  const params = useParams();
   const router = useRouter();
-  const id = searchParams.get("id");
+  const id = params.id as string;
   const [showProposal, setShowProposal] = useState(false);
   const [proposal, setProposal] = useState("");
   const [budget, setBudget] = useState("");

@@ -21,11 +21,11 @@ class AssignmentController {
       let attachments = [];
       if (req.files && req.files.length > 0) {
         attachments = req.files.map(file => ({
-          filename: file.filename,
+          filename: file.key,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          url: `/uploads/assignments/${file.filename}`
+          url: file.location
         }));
       }
 
@@ -124,15 +124,15 @@ class AssignmentController {
   // Get all assignments (with filters)
   static getAllAssignments = async (req, res) => {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        status, 
-        subject, 
-        priority, 
-        sortBy = 'createdAt', 
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        subject,
+        priority,
+        sortBy = 'createdAt',
         sortOrder = 'desc',
-        search 
+        search
       } = req.query;
 
       const userId = req.user._id;
@@ -301,11 +301,11 @@ class AssignmentController {
       // Process new attachments if provided
       if (req.files && req.files.length > 0) {
         const newAttachments = req.files.map(file => ({
-          filename: file.filename,
+          filename: file.key,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          url: `/uploads/assignments/${file.filename}`
+          url: file.location
         }));
         updateData.attachments = [...(assignment.attachments || []), ...newAttachments];
       }
@@ -316,7 +316,7 @@ class AssignmentController {
         { ...updateData, updatedAt: new Date() },
         { new: true, runValidators: true }
       ).populate('student', 'name email profileImage')
-       .populate('assignedTutor', 'name email profileImage');
+        .populate('assignedTutor', 'name email profileImage');
 
       res.status(200).json({
         status: 'success',
@@ -411,13 +411,13 @@ class AssignmentController {
 
       const assignment = await AssignmentModel.findByIdAndUpdate(
         id,
-        { 
+        {
           assignedTutor: tutorId,
           status: 'assigned'
         },
         { new: true }
       ).populate('student', 'name email')
-       .populate('assignedTutor', 'name email profileImage');
+        .populate('assignedTutor', 'name email profileImage');
 
       if (!assignment) {
         return res.status(404).json({
@@ -477,11 +477,11 @@ class AssignmentController {
       let submissionFiles = [];
       if (req.files && req.files.length > 0) {
         submissionFiles = req.files.map(file => ({
-          filename: file.filename,
+          filename: file.key,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          url: `/uploads/submissions/${file.filename}`
+          url: file.location
         }));
       }
 

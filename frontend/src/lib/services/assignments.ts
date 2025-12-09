@@ -60,7 +60,7 @@ export interface Assignment {
 export interface AssignmentsResponse {
   status: string;
   message: string;
-  assignments: Assignment[];
+  data: Assignment[];
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -73,7 +73,7 @@ export interface AssignmentsResponse {
 export interface AssignmentResponse {
   status: string;
   message: string;
-  assignment: Assignment;
+  data: Assignment;
 }
 
 export interface CreateAssignmentRequest {
@@ -115,7 +115,7 @@ export const assignmentsApi = createApi({
     getAssignments: builder.query<AssignmentsResponse, AssignmentFilters>({
       query: (filters = {}) => {
         const params = new URLSearchParams();
-        
+
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null && value !== '') {
             params.append(key, value.toString());

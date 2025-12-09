@@ -21,7 +21,7 @@ interface FormData {
   subject: string
   topics: string[]
   budget?: number
-  file?: File
+  files: File[]
 }
 
 const SUBJECTS = [
@@ -52,7 +52,8 @@ const UploadProjectForm = ({
     deadline: '',
     subject: '',
     topics: [],
-    budget: undefined
+    budget: undefined,
+    files: []
   })
 
   const [newTopic, setNewTopic] = useState('')
@@ -60,7 +61,7 @@ const UploadProjectForm = ({
   const [isAdvanced, setIsAdvanced] = useState(advanced)
   const [sessionId, setSessionId] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [fileError, setFileError] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -77,14 +78,12 @@ const UploadProjectForm = ({
     }
   }, [sessionData])
 
-  // Clean up preview URL when component unmounts or file changes
+  // Clean up preview URLs when component unmounts or files change
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
+      previewUrls.forEach(url => URL.revokeObjectURL(url))
     }
-  }, [previewUrl])
+  }, [previewUrls])
 
   const validateFile = (file: File): string => {
     const maxSize = 10 * 1024 * 1024 // 10MB
@@ -102,33 +101,38 @@ const UploadProjectForm = ({
     return ''
   }
 
-  const handleFileSelect = (file: File) => {
-    const error = validateFile(file)
+  const handleFilesSelect = (selectedFiles: File[]) => {
+    const validFiles: File[] = []
+    let error = ''
 
-    if (error) {
+    selectedFiles.forEach(file => {
+      const fileError = validateFile(file)
+      if (fileError) {
+        error = fileError
+      } else {
+        validFiles.push(file)
+      }
+    })
+
+    if (error && validFiles.length === 0) {
       setFileError(error)
       return
     }
 
     setFileError('')
 
-    // Clean up previous preview URL
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
+    // Generate preview URLs for new files
+    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file))
+    setPreviewUrls(prev => [...prev, ...newPreviewUrls])
 
-    // Create new preview URL
-    const newPreviewUrl = URL.createObjectURL(file)
-    setPreviewUrl(newPreviewUrl)
-
-    setFormData(prev => ({ ...prev, file }))
+    setFormData(prev => ({ ...prev, files: [...prev.files, ...validFiles] }))
     setIsDraft(false)
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      handleFileSelect(file)
+    const files = e.target.files
+    if (files && files.length > 0) {
+      handleFilesSelect(Array.from(files))
     }
   }
 
@@ -148,22 +152,22 @@ const UploadProjectForm = ({
 
     const files = e.dataTransfer.files
     if (files.length > 0) {
-      handleFileSelect(files[0])
+      handleFilesSelect(Array.from(files))
     }
   }
 
-  const handleRemoveFile = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-      setPreviewUrl('')
-    }
+  const handleRemoveFile = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index])
 
-    setFormData(prev => ({ ...prev, file: undefined }))
-    setFileError('')
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
+    setFormData(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }))
 
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    if (formData.files.length === 1) {
+      setFileError('')
+      // Reset file input if all files removed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -222,9 +226,11 @@ const UploadProjectForm = ({
         }
       })
 
-      // Add file if exists
-      if (formData.file) {
-        submitFormData.append('attachments', formData.file)
+      // Add files if exist
+      if (formData.files && formData.files.length > 0) {
+        formData.files.forEach(file => {
+          submitFormData.append('attachments', file)
+        })
       }
 
       // Save assignment data to backend
@@ -446,81 +452,54 @@ const UploadProjectForm = ({
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept="image/*,video/*,application/pdf"
                   className="hidden"
                   onChange={handleFileInputChange}
                 />
 
-                {formData.file ? (
-                  // File Preview
-                  <div className="relative">
-                    <div className="mb-4">
-                      {isImage(formData.file) ? (
-                        <div className="relative inline-block">
-                          <img
-                            src={previewUrl}
-                            alt="Preview"
-                            className="max-w-full max-h-48 rounded-lg shadow-md"
-                          />
-                          <div className="absolute top-2 right-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveFile()
-                              }}
-                              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : isVideo(formData.file) ? (
-                        <div className="relative inline-block">
-                          <video
-                            src={previewUrl}
-                            controls
-                            className="max-w-full max-h-48 rounded-lg shadow-md"
-                          />
-                          <div className="absolute top-2 right-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveFile()
-                              }}
-                              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          <div className="bg-gray-100 rounded-lg p-4 flex items-center space-x-3">
-                            <FileImage size={24} className="text-gray-500" />
-                            <div className="text-left">
-                              <p className="font-medium text-gray-900">{formData.file.name}</p>
-                              <p className="text-sm text-gray-500">{formatFileSize(formData.file.size)}</p>
+                {formData.files.length > 0 ? (
+                  // Files Preview List
+                  <div className="grid grid-cols-1 gap-4">
+                    {formData.files.map((file, index) => (
+                      <div key={index} className="relative bg-gray-50 rounded-lg p-3 flex items-center justify-between group">
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                          {isImage(file) ? (
+                            <div className="w-10 h-10 relative flex-shrink-0">
+                              <img
+                                src={previewUrls[index]}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded"
+                              />
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveFile()
-                              }}
-                              className="text-red-500 hover:text-red-700 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
+                          ) : isVideo(file) ? (
+                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                              <Play size={20} className="text-gray-500" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                              <FileImage size={20} className="text-gray-500" />
+                            </div>
+                          )}
+                          <div className="min-w-0 text-left">
+                            <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                           </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-1">{formData.file.name}</p>
-                      <p className="text-xs text-gray-400">{formatFileSize(formData.file.size)}</p>
-                      <p className="text-xs text-primary-600 mt-2">Click to replace or drag a new file</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveFile(index)
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="mt-2 text-center">
+                      <p className="text-xs text-primary-600">Click to add more files</p>
                     </div>
                   </div>
                 ) : (
@@ -530,13 +509,13 @@ const UploadProjectForm = ({
                       <Upload size={20} className="text-gray-400" />
                     </div>
                     <p className="text-gray-600 font-medium mb-1">
-                      {isDragging ? 'Drop your file here' : 'Upload an image, video or PDF'}
+                      {isDragging ? 'Drop your files here' : 'Upload images, videos or PDFs'}
                     </p>
                     <p className="text-gray-400 text-sm mb-2">
                       Drag and drop or click to browse
                     </p>
                     <p className="text-gray-400 text-xs">
-                      Max file size: 10MB
+                      Max file size: 10MB each
                     </p>
                   </>
                 )}
@@ -586,13 +565,13 @@ const UploadProjectForm = ({
                     subject: '',
                     topics: [],
                     budget: undefined,
-                    file: undefined
+                    files: []
                   }))
                   setNewTopic('')
                   setFileError('')
-                  if (previewUrl) {
-                    URL.revokeObjectURL(previewUrl)
-                    setPreviewUrl('')
+                  if (previewUrls.length > 0) {
+                    previewUrls.forEach(url => URL.revokeObjectURL(url))
+                    setPreviewUrls([])
                   }
                   if (fileInputRef.current) {
                     fileInputRef.current.value = ''

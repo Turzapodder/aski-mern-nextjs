@@ -67,11 +67,11 @@ class ProfileController {
           roles: user.roles,
           prefill: tutorApplication
             ? {
-                personalInfo: tutorApplication.personalInfo,
-                academicInfo: tutorApplication.academicInfo,
-                documents: tutorApplication.documents,
-                applicationStatus: tutorApplication.applicationStatus,
-              }
+              personalInfo: tutorApplication.personalInfo,
+              academicInfo: tutorApplication.academicInfo,
+              documents: tutorApplication.documents,
+              applicationStatus: tutorApplication.applicationStatus,
+            }
             : null,
         },
       });
@@ -287,15 +287,16 @@ class ProfileController {
       // Process profile image
       if (files.profileImage && files.profileImage[0]) {
         const file = files.profileImage[0];
-        const imageUrl = `${baseUrl}/uploads/user-documents/${file.filename}`;
+        // S3 returns location in file.location
+        const imageUrl = file.location;
 
         response.profileImage = {
-          filename: file.filename,
+          filename: file.key, // S3 key
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
           url: imageUrl,
-          absoluteUrl: `${baseUrl}${imageUrl}`,
+          absoluteUrl: imageUrl,
         };
 
         // Update user's profileImage in database
@@ -305,12 +306,12 @@ class ProfileController {
       // Process documents
       if (files.documents && files.documents.length > 0) {
         response.documents = files.documents.map((file) => ({
-          filename: file.filename,
+          filename: file.key,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          url: `/uploads/user-documents/${file.filename}`,
-          absoluteUrl: `${baseUrl}/uploads/user-documents/${file.filename}`,
+          url: file.location,
+          absoluteUrl: file.location,
         }));
 
         // Determine which profile to update (tutor or student)

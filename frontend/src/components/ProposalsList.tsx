@@ -1,18 +1,18 @@
 "use client";
 import { useState } from "react";
-import { 
-  Clock, 
-  DollarSign, 
-  Star, 
-  User, 
-  FileText, 
-  CheckCircle, 
+import {
+  Clock,
+  DollarSign,
+  Star,
+  User,
+  FileText,
+  CheckCircle,
   X,
   MessageSquare,
   Calendar,
   Award
 } from "lucide-react";
-import { 
+import {
   useGetProposalsByAssignmentQuery,
   useAcceptProposalMutation,
   useRejectProposalMutation
@@ -25,14 +25,14 @@ interface ProposalsListProps {
 
 const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
   const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
-  
-  const { 
-    data: proposalsData, 
-    isLoading, 
+
+  const {
+    data: proposalsData,
+    isLoading,
     error,
     refetch
   } = useGetProposalsByAssignmentQuery(assignmentId);
-  
+
   const [acceptProposal] = useAcceptProposalMutation();
   const [rejectProposal] = useRejectProposalMutation();
 
@@ -104,7 +104,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Proposals</h3>
         <div className="text-center py-8">
           <div className="text-red-600 mb-2">Failed to load proposals</div>
-          <button 
+          <button
             onClick={() => refetch()}
             className="text-primary-600 hover:text-primary-700 font-medium"
           >
@@ -128,8 +128,8 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
           <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h4 className="text-lg font-medium text-gray-900 mb-2">No proposals yet</h4>
           <p className="text-gray-600">
-            {isStudent 
-              ? "Tutors haven't submitted any proposals for this assignment yet." 
+            {isStudent
+              ? "Tutors haven't submitted any proposals for this assignment yet."
               : "You haven't submitted any proposals for this assignment yet."
             }
           </p>
@@ -137,8 +137,8 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
       ) : (
         <div className="space-y-4">
           {proposals.map((proposal) => (
-            <div 
-              key={proposal._id} 
+            <div
+              key={proposal._id}
               className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
             >
               {/* Header */}
