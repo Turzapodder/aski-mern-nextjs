@@ -14,34 +14,33 @@ aws.config.update({
 
 const s3 = new aws.S3();
 
-const fileFilter = (req, file, cb) => {
-    const allowedMimes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'video/mp4',
-        'video/avi',
-        'video/mov',
-        'video/wmv'
-    ];
+// const fileFilter = (req, file, cb) => {
+//     const allowedMimes = [
+//         'image/jpeg',
+//         'image/png',
+//         'image/gif',
+//         'image/webp',
+//         'application/pdf',
+//         'application/msword',
+//         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+//         'text/plain',
+//         'video/mp4',
+//         'video/avi',
+//         'video/mov',
+//         'video/wmv'
+//     ];
 
-    if (allowedMimes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type'), false);
-    }
-};
+//     if (allowedMimes.includes(file.mimetype)) {
+//         cb(null, true);
+//     } else {
+//         cb(new Error('Invalid file type'), false);
+//     }
+// };
 
 export const uploadProfile = multer({
     storage: multerS3({
         s3: s3,
         bucket: process.env.AWS_S3_BUCKET,
-        acl: 'public-read',
         metadata: function (req, file, cb) {
             cb(null, { fieldName: file.fieldname });
         },
@@ -50,7 +49,6 @@ export const uploadProfile = multer({
             cb(null, `profiles/${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     }),
-    fileFilter: fileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
@@ -58,7 +56,6 @@ export const uploadAssignment = multer({
     storage: multerS3({
         s3: s3,
         bucket: process.env.AWS_S3_BUCKET,
-        acl: 'public-read',
         metadata: function (req, file, cb) {
             cb(null, { fieldName: file.fieldname });
         },
@@ -67,6 +64,5 @@ export const uploadAssignment = multer({
             cb(null, `assignments/${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     }),
-    fileFilter: fileFilter,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });

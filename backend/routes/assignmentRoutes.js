@@ -1,7 +1,6 @@
 import express from 'express';
+import multer from 'multer';
 import { uploadAssignment } from '../config/s3Config.js';
-import path from 'path';
-import fs from 'fs';
 import AssignmentController from '../controllers/assignmentController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
