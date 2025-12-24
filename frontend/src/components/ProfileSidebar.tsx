@@ -22,7 +22,7 @@ const sidebarItems: SidebarItem[] = [
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ activeTab, onTabChange }) => {
     return (
-        <div className="w-64 bg-white h-full flex flex-col py-6">
+        <div className="w-64 h-full flex flex-col py-6">
             <div className="px-6 mb-8">
                 <h2 className="text-xl font-bold text-gray-900">User profile management</h2>
             </div>
