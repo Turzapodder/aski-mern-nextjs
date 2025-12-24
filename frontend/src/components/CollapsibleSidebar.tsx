@@ -71,14 +71,14 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
       ],
     },
-    {
-      title: 'STARTED',
-      items: [
-        { name: 'Finalize Homepage Wireframe', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=1' },
-        { name: 'Review Client Feedback Form', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=2' },
-        { name: 'Update Progress Report Document', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=3' }
-      ],
-    },
+    // {
+    //   title: 'STARTED',
+    //   items: [
+    //     { name: 'Finalize Homepage Wireframe', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=1' },
+    //     { name: 'Review Client Feedback Form', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=2' },
+    //     { name: 'Update Progress Report Document', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=3' }
+    //   ],
+    // },
   ]
 
   return (
