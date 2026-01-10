@@ -11,7 +11,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className='flex h-screen bg-gray-100'>
+    <div className='flex h-screen bg-gray-100 font-sans'>
       {/* Collapsible Sidebar */}
       <CollapsibleSidebar
         activeItem='dashboard'
@@ -20,7 +20,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Main Content Area - with dynamic left margin based on sidebar state */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
+        className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${
           sidebarCollapsed ? "ml-16" : "ml-64"
         }`}
       >
@@ -33,7 +33,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         />
 
         {/* Main Content */}
-        <main className='flex-1 p-6 gray-bg overflow-x-hidden'>
+        <main className='flex-1 p-6 gray-bg overflow-x-hidden overflow-y-auto'>
           {children}
         </main>
       </div>
