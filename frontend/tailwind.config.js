@@ -10,6 +10,7 @@ module.exports = {
 		extend: {
 			fontFamily: {
 				sans: [
+					'var(--font-space-grotesk)',
 					'var(--font-poppins)'
 				],
 				funnel: [

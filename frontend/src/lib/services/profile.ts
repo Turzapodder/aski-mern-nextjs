@@ -25,13 +25,15 @@ export interface TutorProfile {
   professionalTitle?: string;
   qualification?: string;
   expertiseSubjects?: string[];
+  skills?: string[];
   experienceYears?: number;
   currentInstitution?: string;
   availableDays?: string[];
-  availableTimeSlots?: string[];
+  availableTimeSlots?: Array<string | { day: string; slots: string[] }>;
   hourlyRate?: number;
   teachingMode?: "Online" | "Offline" | "Hybrid";
   achievements?: string;
+  bio?: string;
   documents?: Array<{
     filename: string;
     originalName: string;
@@ -136,7 +138,9 @@ export const profileApi = createApi({
   tagTypes: ["Profile", "VerifiedTutors"],
   baseQuery: fetchBaseQuery({
     baseUrl: `${
-      process.env.REACT_APP_API_URL || "http://localhost:8000"
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.REACT_APP_API_URL ||
+      "http://localhost:8000"
     }/api/profile`,
     credentials: "include",
     prepareHeaders: (headers) => {

@@ -37,7 +37,9 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
     relevantExperience: ''
   });
 
-  const [errors, setErrors] = useState<Partial<ProposalFormData>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ProposalFormData, string>>
+  >({});
 
   const handleInputChange = (field: keyof ProposalFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -68,7 +70,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<ProposalFormData> = {};
+    const newErrors: Partial<Record<keyof ProposalFormData, string>> = {};
 
     if (!formData.title.trim()) {
       newErrors.title = 'Title is required';

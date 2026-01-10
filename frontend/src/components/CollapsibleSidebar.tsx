@@ -52,7 +52,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
   }
 
   // Check if user is a tutor
-  const isTutor = userData?.user?.roles?.[0] === 'tutor'
+  const isTutor = userData?.user?.roles?.includes('tutor')
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -62,7 +62,8 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
-        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' }
+        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
+        { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
       ] : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },

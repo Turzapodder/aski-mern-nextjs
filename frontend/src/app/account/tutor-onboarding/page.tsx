@@ -2,7 +2,16 @@
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import { UserRoundPen, BookOpenCheck, CircleCheck, Rabbit } from "lucide-react";
+import {
+  UserRoundPen,
+  BookOpenCheck,
+  CircleCheck,
+  Rabbit,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import MultiSelect from "@/components/MultiSelect";
 import Quiz from "@/components/Quiz";
 import { subjectTopics } from "@/lib/constants";
@@ -286,7 +295,7 @@ export default function TutorOnboarding() {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (currentStep === 3 && countdown === 0) {
-      router.push("/");
+      router.push("/user/dashboard");
     }
   }, [currentStep, countdown, router]);
 
@@ -392,7 +401,7 @@ export default function TutorOnboarding() {
                         Upload new photo
                       </button>
                       <p className='text-xs text-gray-500'>
-                        At least 800×800 px recommended.
+                        At least 800x800 px recommended.
                         <br />
                         JPG or PNG is allowed
                       </p>
@@ -425,7 +434,7 @@ export default function TutorOnboarding() {
                         Upload new photo
                       </button>
                       <p className='text-xs text-gray-500 text-center'>
-                        At least 800×800 px recommended.
+                        At least 800x800 px recommended.
                         <br />
                         JPG or PNG is allowed
                       </p>
@@ -717,15 +726,15 @@ export default function TutorOnboarding() {
           const getStatusIcon = (status: string) => {
             switch (status) {
               case "pending":
-                return "⏳";
+                return <Clock className='h-14 w-14 text-yellow-500' />;
               case "under_review":
-                return "👀";
+                return <AlertTriangle className='h-14 w-14 text-blue-500' />;
               case "approved":
-                return "✅";
+                return <CheckCircle2 className='h-14 w-14 text-green-500' />;
               case "rejected":
-                return "❌";
+                return <XCircle className='h-14 w-14 text-red-500' />;
               default:
-                return "📋";
+                return <AlertTriangle className='h-14 w-14 text-gray-400' />;
             }
           };
 
@@ -733,7 +742,7 @@ export default function TutorOnboarding() {
             <div className='min-h-[400px] p-8'>
               <div className='max-w-2xl mx-auto'>
                 <div className='text-center mb-8'>
-                  <div className='text-6xl mb-4'>
+                  <div className='mb-4 flex justify-center'>
                     {getStatusIcon(existingApplication.applicationStatus)}
                   </div>
                   <h2 className='text-3xl font-bold mb-4'>
@@ -839,7 +848,7 @@ export default function TutorOnboarding() {
                   )}
 
                   <button
-                    onClick={() => router.push("/")}
+                    onClick={() => router.push("/user/dashboard")}
                     className='px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors'
                   >
                     Go to Dashboard
@@ -882,7 +891,7 @@ export default function TutorOnboarding() {
 
             <div className='mt-4'>
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/user/dashboard")}
                 className='px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-black transition-colors'
               >
                 Check your inbox{" "}
@@ -968,3 +977,5 @@ export default function TutorOnboarding() {
     </div>
   );
 }
+
+

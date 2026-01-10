@@ -122,7 +122,7 @@ const TaskItem = ({ task }: { task: Assignment }) => {
           {/* Task Title and Subtitle */}
           <div className="col-span-1 md:col-span-1 lg:col-span-2">
             <h3 className="font-semibold text-lg text-gray-900">{task.title}</h3>
-            <p className="text-sm text-gray-500">{task.subject} • {task.topics.slice(0, 2).join(', ')}</p>
+            <p className="text-sm text-gray-500">{task.subject} - {task.topics.slice(0, 2).join(', ')}</p>
           </div>
 
           {/* Due Date Section */}

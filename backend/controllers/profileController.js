@@ -229,30 +229,56 @@ class ProfileController {
    * Validate tutor profile data
    */
   static validateTutorProfile = (data) => {
-    return {
-      professionalTitle: data.professionalTitle?.trim() || undefined,
-      qualification: data.qualification?.trim() || undefined,
-      expertiseSubjects: Array.isArray(data.expertiseSubjects)
-        ? data.expertiseSubjects.filter((s) => s.trim()).map((s) => s.trim())
-        : [],
-      experienceYears: data.experienceYears
-        ? Math.max(0, parseInt(data.experienceYears))
-        : undefined,
-      currentInstitution: data.currentInstitution?.trim() || undefined,
-      availableDays: Array.isArray(data.availableDays)
-        ? data.availableDays.filter((d) => d.trim()).map((d) => d.trim())
-        : [],
-      availableTimeSlots: Array.isArray(data.availableTimeSlots)
-        ? data.availableTimeSlots.filter((t) => t.trim()).map((t) => t.trim())
-        : [],
-      hourlyRate: data.hourlyRate
-        ? Math.max(0, parseInt(data.hourlyRate))
-        : undefined,
-      teachingMode: data.teachingMode || undefined,
-      achievements: data.achievements?.trim() || undefined,
-      documents: data.documents || [],
-      verificationStatus: data.verificationStatus || "Pending",
-    };
+      return {
+        professionalTitle: data.professionalTitle?.trim() || undefined,
+        qualification: data.qualification?.trim() || undefined,
+        expertiseSubjects: Array.isArray(data.expertiseSubjects)
+          ? data.expertiseSubjects.filter((s) => s.trim()).map((s) => s.trim())
+          : [],
+        skills: Array.isArray(data.skills)
+          ? data.skills.filter((s) => s.trim()).map((s) => s.trim())
+          : [],
+        experienceYears: data.experienceYears
+          ? Math.max(0, parseInt(data.experienceYears))
+          : undefined,
+        currentInstitution: data.currentInstitution?.trim() || undefined,
+        availableDays: Array.isArray(data.availableDays)
+          ? data.availableDays.filter((d) => d.trim()).map((d) => d.trim())
+          : [],
+        availableTimeSlots: Array.isArray(data.availableTimeSlots)
+          ? data.availableTimeSlots
+              .map((slot) => {
+                if (typeof slot === "string") {
+                  const trimmed = slot.trim();
+                  return trimmed ? trimmed : null;
+                }
+                if (slot && typeof slot === "object") {
+                  const day =
+                    typeof slot.day === "string" ? slot.day.trim() : "";
+                  const slots = Array.isArray(slot.slots)
+                    ? slot.slots
+                        .filter((s) => typeof s === "string")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                    : [];
+                  if (!day || slots.length === 0) {
+                    return null;
+                  }
+                  return { day, slots };
+                }
+                return null;
+              })
+              .filter(Boolean)
+          : [],
+        hourlyRate: data.hourlyRate
+          ? Math.max(0, parseInt(data.hourlyRate))
+          : undefined,
+        teachingMode: data.teachingMode || undefined,
+        achievements: data.achievements?.trim() || undefined,
+        bio: data.bio?.trim() || undefined,
+        documents: data.documents || [],
+        verificationStatus: data.verificationStatus || "Pending",
+      };
   };
 
   /**

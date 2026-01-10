@@ -172,7 +172,7 @@ const UserDashboard = () => {
             )}
 
             {/* Conditionally render dashboard based on user role */}
-            {userData?.user?.roles[0] === 'tutor' ? (
+            {userData?.user?.roles?.includes('tutor') ? (
               <TutorDashboard
               user={userData?.user}
               />

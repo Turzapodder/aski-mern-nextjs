@@ -27,7 +27,7 @@ const AllAssignmentsPage = () => {
   // Get current user data
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
-  const userRole = currentUser?.roles?.[0];
+  const isTutor = currentUser?.roles?.includes('tutor');
 
   // Use RTK Query to fetch assignments
   const {
@@ -126,7 +126,7 @@ const AllAssignmentsPage = () => {
   console.log(assignmentsData);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -135,7 +135,7 @@ const AllAssignmentsPage = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
@@ -180,7 +180,7 @@ const AllAssignmentsPage = () => {
             </div>
 
             {/* Results Count */}
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-start md:justify-end">
               <span className="text-sm text-gray-600">
                 {assignments.length} assignment{assignments.length !== 1 ? 's' : ''} found
               </span>
@@ -203,8 +203,8 @@ const AllAssignmentsPage = () => {
             </div>
           ) : (
             assignments.map((assignment) => (
-              <div key={assignment._id} className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
+              <div key={assignment._id} className="bg-white rounded-lg p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                   <div className="flex-1">
                     {/* Title and Subject */}
                     <div className="mb-3">
@@ -248,7 +248,7 @@ const AllAssignmentsPage = () => {
                     )}
 
                     {/* Assignment Info */}
-                    <div className="flex items-center space-x-6 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
                         <span>Due: {formatDate(assignment.deadline)}</span>
@@ -272,20 +272,20 @@ const AllAssignmentsPage = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="ml-6 flex-shrink-0 space-y-2">
+                  <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:items-stretch lg:ml-6">
                     <button
                       onClick={() => handleViewDetails(assignment._id)}
-                      className="w-full inline-flex items-center px-4 py-2 bg-primary-300 text-white rounded-lg hover:bg-primary-400 transition-colors space-x-2"
+                      className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary-300 text-white rounded-lg hover:bg-primary-400 transition-colors space-x-2 sm:w-auto lg:w-full"
                     >
                       <Eye className="h-4 w-4" />
                       <span>View Details</span>
                     </button>
 
                     {/* Show Send Proposal button only for tutors */}
-                    {userRole === 'tutor' && assignment.status === 'pending' && (
+                    {isTutor && assignment.status === 'pending' && (
                       <button
                         onClick={() => handleSendProposal(assignment)}
-                        className="w-full inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2"
+                        className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2 sm:w-auto lg:w-full"
                       >
                         <Send className="h-4 w-4" />
                         <span>Send Proposal</span>

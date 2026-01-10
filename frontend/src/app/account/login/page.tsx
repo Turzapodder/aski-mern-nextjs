@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useFormik } from 'formik';
 import { loginSchema } from "@/validation/schemas";
 import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useLoginUserMutation } from "@/lib/services/auth";
 import { useConvertFormToAssignmentMutation } from '@/lib/services/student'
 
@@ -61,9 +61,11 @@ const Login = () => {
 
           setTimeout(() => {
             const redirect = searchParams.get('redirect');
-            const user = response.data.user; // Assuming the response contains the user object
+            const user = response.data.user;
+            const isTutor = user?.roles?.includes('tutor');
+            const onboardingStatus = user?.onboardingStatus;
 
-            if (user && user.roles.includes('tutor') && user.onboardingStatus !== 'completed') {
+            if (isTutor && onboardingStatus && onboardingStatus !== 'completed') {
               router.push('/account/tutor-onboarding');
             } else if (redirect === 'whatsapp') {
               window.location.href = 'https://wa.me/';
@@ -226,4 +228,10 @@ const Login = () => {
   );
 }
 
-export default Login
+const LoginPage = () => (
+  <Suspense fallback={<div className="min-h-screen bg-white" />}>
+    <Login />
+  </Suspense>
+)
+
+export default LoginPage
