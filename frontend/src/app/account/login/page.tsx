@@ -65,7 +65,7 @@ const Login = () => {
             const isTutor = user?.roles?.includes('tutor');
             const onboardingStatus = user?.onboardingStatus;
 
-            if (isTutor && onboardingStatus && onboardingStatus !== 'completed') {
+            if (isTutor && onboardingStatus && onboardingStatus !== 'completed' && onboardingStatus !== 'approved') {
               router.push('/account/tutor-onboarding');
             } else if (redirect === 'whatsapp') {
               window.location.href = 'https://wa.me/';
