@@ -204,6 +204,52 @@ class AssignmentController {
     }
   };
 
+  // Get calendar assignments for current user
+  static getMyAssignmentsCalendar = async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const { status } = req.query;
+
+      const filter = {
+        isActive: true,
+        $or: [{ student: userId }, { assignedTutor: userId }],
+      };
+
+      if (status === "IN_PROGRESS") {
+        filter.status = { $in: ["assigned", "submitted"] };
+      } else if (status) {
+        filter.status = status;
+      }
+
+      const assignments = await AssignmentModel.find(filter)
+        .select("title deadline status student assignedTutor")
+        .populate("student", "name")
+        .populate("assignedTutor", "name")
+        .sort({ deadline: 1 })
+        .lean();
+
+      const data = assignments.map((assignment) => ({
+        id: assignment._id,
+        title: assignment.title,
+        deadline: assignment.deadline,
+        status: assignment.status,
+        assignedTutorName: assignment.assignedTutor?.name || "",
+        studentName: assignment.student?.name || "",
+      }));
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Unable to fetch assignments",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
+
   // Get assignments by user ID
   static getAssignmentsByUserId = async (req, res) => {
     try {

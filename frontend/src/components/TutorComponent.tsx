@@ -1,7 +1,23 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, Filter, Bookmark, ChevronDown, CheckCircle, Flame, Star, BookOpen, User, GraduationCap, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
+
+interface Tutor {
+  id: string
+  name: string
+  avatar?: string
+  bio?: string
+  publicStats?: {
+    averageRating?: number
+    totalProjects?: number
+    completedProjects?: number
+    totalReviews?: number
+  }
+  hourlyRate?: number
+  skills?: string[]
+  subjects?: string[]
+}
 
 interface Teacher {
   id: string
@@ -26,104 +42,97 @@ interface Teacher {
 
 const TutorComponent = () => {
   const [isTeacherAccountActive, setIsTeacherAccountActive] = useState(false)
+  const [tutors, setTutors] = useState<Tutor[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState({
+    subject: '',
+    minRating: '',
+    maxRate: '',
+    skills: '',
+    availability: ''
+  })
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const toggleTeacherAccount = () => {
     setIsTeacherAccountActive(!isTeacherAccountActive)
   }
 
-  const economicsTeachers: Teacher[] = [
-    {
-      id: '1',
-      name: 'Carole Towne',
-      subject: 'Economics teacher',
-      bio: "Ready to unravel the complexities of supply, demand, and market forces? Dive into my Economics course now!",
-      lessons: 132,
-      courses: 24,
-      students: 250,
-      rating: 4.9,
-      price: 32,
-      originalPrice: 46,
-      isTopTutor: true,
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-      theme: 'dark'
-    },
-    {
-      id: '2',
-      name: 'Ralph Legros',
-      subject: 'Economics teacher',
-      bio: "From micro to macroeconomics, discover the keys to understanding economic phenomena in my comprehensive courses.",
-      lessons: 174,
-      courses: 32,
-      students: 250,
-      rating: 4.9,
-      price: 23,
-      originalPrice: 32,
-      isCertified: true,
-      badges: ['+2'],
-      image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
-      theme: 'dark'
-    },
-    {
-      id: '3',
-      name: 'Jenny Wilson',
-      subject: 'Economics teacher',
-      bio: "Economics isn't just a subject - it's the lens through which we view society. I will help you explore its profound implications.",
-      lessons: 116,
-      courses: 17,
-      students: 150,
-      rating: 4.9,
-      price: 17,
-      isTopTutor: true,
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
-      theme: 'light'
-    }
-  ]
+  const fetchTutors = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (filters.subject) params.set('subject', filters.subject)
+      if (filters.minRating) params.set('minRating', filters.minRating)
+      if (filters.maxRate) params.set('maxRate', filters.maxRate)
+      if (filters.skills) params.set('skills', filters.skills)
+      if (filters.availability) params.set('availability', filters.availability)
 
-  const englishTeachers: Teacher[] = [
-    {
-      id: '4',
-      name: 'Jeff Blanda-Bartoletti',
-      subject: 'English teacher',
-      bio: "Ready to sharpen your language skills and literary analysis? My courses offer the tools to excel in English studies.",
-      lessons: 185,
-      courses: 16,
-      students: 100,
-      rating: 4.9,
-      price: 20,
-      badges: ['IELTS'],
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-      theme: 'light'
-    },
-    {
-      id: '5',
-      name: 'Darla Fritsch',
-      subject: 'English teacher',
-      bio: "Transform your relationship with words and stories. Explore my English courses to unleash your creative potential.",
-      lessons: 157,
-      courses: 12,
-      students: 50,
-      rating: 4.9,
-      price: 12,
-      isNewTutor: true,
-      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop',
-      theme: 'light'
-    },
-    {
-      id: '6',
-      name: 'Juliet Heidenreich',
-      subject: 'English teacher',
-      bio: "Hello Student! 👋 Let's talk results: My students reach B2 in 9 months; no fear of speaking in 3 months. Ready? Join! 🚀",
-      lessons: 292,
-      courses: 36,
-      students: 300,
-      rating: 4.9,
-      price: 32,
-      originalPrice: 42,
-      isHighDemand: true,
-      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop',
-      theme: 'dark'
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const queryString = params.toString()
+      const response = await fetch(
+        `${baseUrl}/api/tutors${queryString ? `?${queryString}` : ''}`
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to load tutors')
+      }
+
+      const result = await response.json()
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to load tutors')
+      }
+
+      setTutors(Array.isArray(result.data) ? result.data : [])
+    } catch (fetchError: any) {
+      setError(fetchError?.message || 'Unable to load tutors')
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  useEffect(() => {
+    fetchTutors()
+  }, [filters])
+
+  const teacherSections = useMemo(() => {
+    const sections = new Map<string, Teacher[]>()
+
+    tutors.forEach((tutor, index) => {
+      const rating = tutor.publicStats?.averageRating ?? 0
+      const totalProjects = tutor.publicStats?.totalProjects ?? 0
+      const completedProjects = tutor.publicStats?.completedProjects ?? 0
+      const totalReviews = tutor.publicStats?.totalReviews ?? 0
+      const subjectName = tutor.subjects?.[0] || 'Tutors'
+      const sectionTitle = subjectName ? `${subjectName} teachers` : 'Tutors'
+
+      const teacher: Teacher = {
+        id: tutor.id,
+        name: tutor.name,
+        subject: subjectName ? `${subjectName} teacher` : 'Tutor',
+        bio: tutor.bio || 'No bio available yet.',
+        lessons: completedProjects,
+        courses: totalProjects,
+        students: totalReviews,
+        rating,
+        price: tutor.hourlyRate || 0,
+        isTopTutor: rating >= 4.8,
+        isNewTutor: totalProjects > 0 && totalProjects < 5,
+        isHighDemand: completedProjects >= 20,
+        badges: tutor.skills?.slice(0, 1),
+        image: tutor.avatar || '/assets/tutor-profile.svg',
+        theme: index % 3 === 0 ? 'dark' : 'light'
+      }
+
+      if (!sections.has(sectionTitle)) {
+        sections.set(sectionTitle, [])
+      }
+      sections.get(sectionTitle)?.push(teacher)
+    })
+
+    return Array.from(sections.entries())
+  }, [tutors])
 
   const TeacherCard = ({ teacher }: { teacher: Teacher }) => {
     const isDark = teacher.theme === 'dark'
@@ -131,7 +140,6 @@ const TutorComponent = () => {
     return (
       <div className={`rounded-2xl p-6 relative flex flex-col h-full transition-transform hover:scale-[1.01] duration-200 ${isDark ? 'bg-[#18181b] text-white' : 'bg-white text-gray-900 border border-gray-100 shadow-sm'
         }`}>
-        {/* Header: Avatar, Name, Badges */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex gap-3">
             <div className="relative">
@@ -155,17 +163,17 @@ const TutorComponent = () => {
                 )}
                 {teacher.isCertified && (
                   <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-purple-100 text-purple-700">
-                    🏆 Certified
+                    Certified
                   </span>
                 )}
                 {teacher.isNewTutor && (
                   <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-blue-100 text-blue-700">
-                    🆕 New Tutor
+                    New Tutor
                   </span>
                 )}
                 {teacher.isHighDemand && (
                   <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-rose-100 text-rose-700">
-                    🔥 High Demand
+                    High Demand
                   </span>
                 )}
                 {teacher.badges && teacher.badges.map((badge, idx) => (
@@ -197,18 +205,15 @@ const TutorComponent = () => {
           </button>
         </div>
 
-        {/* Bio */}
         <p className={`text-[13px] leading-relaxed mb-6 flex-grow ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {teacher.bio}
         </p>
 
-        {/* Stats */}
         <div className={`grid grid-cols-2 gap-y-2 text-xs mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           <div className="flex items-center gap-2">
             <GraduationCap className="w-4 h-4" />
             <span>{teacher.lessons} lessons conducted</span>
           </div>
-          {/* Placeholder for alignment if needed, or maybe just span grid */}
           <div className="col-span-1"></div>
 
           <div className="flex items-center gap-2">
@@ -221,7 +226,6 @@ const TutorComponent = () => {
           </div>
         </div>
 
-        {/* Footer: Price & Action */}
         <div className="flex items-center justify-between mt-auto">
           <div className="flex items-baseline gap-1">
             {isDark && <Flame className="w-5 h-5 text-orange-500 fill-orange-500" />}
@@ -244,7 +248,6 @@ const TutorComponent = () => {
 
   return (
     <div className="max-w-[1600px] mx-auto p-6 md:p-8">
-      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Teachers</h1>
@@ -253,7 +256,6 @@ const TutorComponent = () => {
           </p>
         </div>
 
-        {/* Toggle Switch */}
         <div className="flex items-center shrink-0">
           <button
             onClick={toggleTeacherAccount}
@@ -270,13 +272,16 @@ const TutorComponent = () => {
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-10 items-center">
         <div className="relative flex-grow w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search teachers"
+            value={filters.subject}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, subject: event.target.value }))
+            }
             className="w-full pl-11 pr-4 py-3 bg-white border-none rounded-xl shadow-sm outline-none text-gray-700 placeholder-gray-400 ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-100"
           />
         </div>
@@ -288,7 +293,10 @@ const TutorComponent = () => {
             <ChevronDown className="w-4 h-4 text-gray-500 ml-1" />
           </div>
 
-          <button className="p-3 bg-white rounded-xl shadow-sm ring-1 ring-gray-100 hover:bg-gray-50">
+          <button
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            className={`p-3 bg-white rounded-xl shadow-sm ring-1 ring-gray-100 hover:bg-gray-50 ${filtersOpen ? 'ring-purple-200' : ''}`}
+          >
             <Filter className="w-5 h-5 text-gray-600" />
           </button>
 
@@ -298,40 +306,121 @@ const TutorComponent = () => {
         </div>
       </div>
 
-      {/* Economics Teachers Section */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-gray-800">Economics teachers</h2>
-          <button className="text-sm font-semibold text-purple-600 flex items-center hover:text-purple-700">
-            View all <ArrowRight className="w-4 h-4 ml-1" />
-          </button>
+      {filtersOpen && (
+        <div className="w-full rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 mb-8">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500">Min rating</label>
+              <input
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                value={filters.minRating}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, minRating: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-2 text-sm text-gray-700 outline-none focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
+                placeholder="e.g. 4.5"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500">Max rate</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={filters.maxRate}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, maxRate: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-2 text-sm text-gray-700 outline-none focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
+                placeholder="e.g. 1500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500">Skills</label>
+              <input
+                type="text"
+                value={filters.skills}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, skills: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-2 text-sm text-gray-700 outline-none focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
+                placeholder="e.g. Algebra, Geometry"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500">Availability</label>
+              <input
+                type="text"
+                value={filters.availability}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, availability: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-2 text-sm text-gray-700 outline-none focus:border-purple-200 focus:ring-2 focus:ring-purple-100"
+                placeholder="e.g. Sunday, Monday"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-gray-500">
+              Use comma-separated values for skills and availability.
+            </p>
+            <button
+              onClick={() =>
+                setFilters({
+                  subject: '',
+                  minRating: '',
+                  maxRate: '',
+                  skills: '',
+                  availability: ''
+                })
+              }
+              className="text-xs font-semibold text-purple-600 hover:text-purple-700"
+            >
+              Clear filters
+            </button>
+          </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {economicsTeachers.map(teacher => (
-            <TeacherCard key={teacher.id} teacher={teacher} />
+      {loading && (
+        <div className="text-sm text-gray-500 mb-8">Loading tutors...</div>
+      )}
+      {error && (
+        <div className="text-sm text-red-600 mb-8">{error}</div>
+      )}
+      {!loading && !error && tutors.length === 0 && (
+        <div className="text-sm text-gray-500 mb-8">No tutors found.</div>
+      )}
+
+      {!loading && !error && tutors.length > 0 && (
+        <>
+          {teacherSections.map(([sectionTitle, sectionTeachers]) => (
+            <div className="mb-12" key={sectionTitle}>
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-lg font-bold text-gray-800">{sectionTitle}</h2>
+                <button className="text-sm font-semibold text-purple-600 flex items-center hover:text-purple-700">
+                  View all <ArrowRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sectionTeachers.map(teacher => (
+                  <TeacherCard key={teacher.id} teacher={teacher} />
+                ))}
+              </div>
+            </div>
           ))}
-        </div>
-      </div>
-
-      {/* English Teachers Section */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-gray-800">English teachers</h2>
-          <button className="text-sm font-semibold text-purple-600 flex items-center hover:text-purple-700">
-            View all <ArrowRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {englishTeachers.map(teacher => (
-            <TeacherCard key={teacher.id} teacher={teacher} />
-          ))}
-        </div>
-      </div>
+        </>
+      )}
 
     </div>
   )
 }
 
 export default TutorComponent
+
+
+

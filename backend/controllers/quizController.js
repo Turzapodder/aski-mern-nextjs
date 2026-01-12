@@ -1,7 +1,90 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import QuizResultModel from '../models/QuizResult.js';
-// Initialize Google Generative AI with API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+
+const hasGeminiKey = Boolean(process.env.GEMINI_KEY);
+const genAI = hasGeminiKey ? new GoogleGenerativeAI(process.env.GEMINI_KEY) : null;
+
+const cleanText = (value) =>
+  typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+
+const buildFallbackQuiz = (subject, topics, questionCount) => {
+  const safeSubject = cleanText(subject) || "General";
+  const topicList =
+    Array.isArray(topics) && topics.length > 0
+      ? topics.map((topic) => cleanText(topic)).filter(Boolean)
+      : [safeSubject];
+
+  const templates = [
+    (topic) => ({
+      question: `Which option best describes the core idea of ${topic}?`,
+      options: [
+        `It focuses on the fundamentals of ${topic}.`,
+        `It describes a different subject outside ${safeSubject}.`,
+        `It ignores ${topic} entirely.`,
+        `It is unrelated to ${topic} and ${safeSubject}.`,
+      ],
+      correctAnswer: 0,
+      explanation: `${topic} centers on its key concepts within ${safeSubject}.`,
+      topic,
+    }),
+    (topic) => ({
+      question: `Which scenario is the most direct application of ${topic}?`,
+      options: [
+        `Using ${topic} to solve a ${safeSubject} problem.`,
+        `Avoiding ${topic} while solving ${safeSubject} problems.`,
+        `Switching to an unrelated topic outside ${safeSubject}.`,
+        `Skipping ${topic} altogether.`,
+      ],
+      correctAnswer: 0,
+      explanation: `Applying ${topic} directly is the most relevant scenario.`,
+      topic,
+    }),
+    (topic) => ({
+      question: `What is the main goal when studying ${topic}?`,
+      options: [
+        `Understand and apply ${topic} principles.`,
+        `Memorize unrelated facts from ${safeSubject}.`,
+        `Avoid practicing ${topic}.`,
+        `Skip ${topic} and focus on other topics.`,
+      ],
+      correctAnswer: 0,
+      explanation: `The goal is to understand and apply ${topic}.`,
+      topic,
+    }),
+    (topic) => ({
+      question: `Which statement is most accurate about ${topic}?`,
+      options: [
+        `${topic} builds essential understanding in ${safeSubject}.`,
+        `${topic} has no relevance to ${safeSubject}.`,
+        `${topic} only applies outside ${safeSubject}.`,
+        `${topic} cannot be learned or applied.`,
+      ],
+      correctAnswer: 0,
+      explanation: `${topic} supports core knowledge in ${safeSubject}.`,
+      topic,
+    }),
+  ];
+
+  return Array.from({ length: questionCount }).map((_, index) => {
+    const topic = topicList[index % topicList.length];
+    const template = templates[index % templates.length];
+    return template(topic);
+  });
+};
+
+const extractQuizJson = (text) => {
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+  return JSON.parse(text);
+};
+
+const isRateLimitError = (error) => {
+  const status = error?.status || error?.response?.status;
+  const message = error?.message || "";
+  return status === 429 || /quota|rate limit/i.test(message);
+};
 
 /**
  * Generate a quiz based on subject and topics
@@ -16,6 +99,24 @@ export const generateQuiz = async (req, res) => {
       return res.status(400).json({ 
         success: false,
         error: 'Invalid request. Subject and topics array are required.' 
+      });
+    }
+
+    const fallbackQuiz = buildFallbackQuiz(subject, topics, questionCount);
+
+    if (!genAI) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          subject,
+          topics,
+          questionCount: fallbackQuiz.length,
+          questions: fallbackQuiz.map((question, index) => ({
+            id: index + 1,
+            ...question,
+          })),
+        },
+        warning: "Quiz generated using fallback content.",
       });
     }
 
@@ -34,41 +135,45 @@ export const generateQuiz = async (req, res) => {
     Ensure the difficulty level is appropriate for beginner to intermediate level.
     Make sure the JSON is properly formatted with no syntax errors.`;
 
-    // Generate content with retry mechanism
     let attempts = 0;
     const maxAttempts = 3;
     let quiz;
+    let lastError;
 
     while (attempts < maxAttempts) {
       try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const text = response.text();        // Extract JSON from response (in case there's extra text)
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          quiz = JSON.parse(jsonMatch[0]);
-          break;
-        } else {
-          quiz = JSON.parse(text);
+        const text = response.text();
+        quiz = extractQuizJson(text);
+        break;
+      } catch (error) {
+        lastError = error;
+        if (isRateLimitError(error)) {
           break;
         }
-      } catch (parseError) {
-        attempts++;
-        if (attempts >= maxAttempts) {
-          console.error("Failed to parse AI response after multiple attempts:", parseError);
-          return res.status(500).json({ 
-            success: false,
-            error: 'Failed to generate a properly formatted quiz after multiple attempts'
-          });
-        }
+        attempts += 1;
       }
     }
 
     // Validate quiz structure
     if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
-      return res.status(500).json({ 
-        success: false,
-        error: 'Generated quiz has invalid format' 
+      const warningMessage = isRateLimitError(lastError)
+        ? "Quiz generated using fallback content due to rate limits."
+        : "Quiz generated using fallback content due to a generation error.";
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          subject,
+          topics,
+          questionCount: fallbackQuiz.length,
+          questions: fallbackQuiz.map((question, index) => ({
+            id: index + 1,
+            ...question,
+          })),
+        },
+        warning: warningMessage,
       });
     }
 

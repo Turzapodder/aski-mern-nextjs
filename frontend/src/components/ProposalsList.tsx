@@ -40,7 +40,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
-      await acceptProposal(proposalId).unwrap();
+      await acceptProposal({ id: proposalId }).unwrap();
       refetch();
     } catch (error) {
       console.error('Failed to accept proposal:', error);
@@ -49,7 +49,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
 
   const handleRejectProposal = async (proposalId: string) => {
     try {
-      await rejectProposal(proposalId).unwrap();
+      await rejectProposal({ id: proposalId }).unwrap();
       refetch();
     } catch (error) {
       console.error('Failed to reject proposal:', error);
@@ -211,7 +211,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
                         className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
                       >
                         <FileText className="h-4 w-4" />
-                        <span>{attachment.name}</span>
+                        <span>{attachment.originalName}</span>
                       </a>
                     ))}
                   </div>
@@ -235,7 +235,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
                 <div className="mb-4 bg-blue-50 rounded-lg p-3">
                   <h6 className="font-medium text-blue-900 mb-2">Student Response</h6>
                   <p className="text-blue-800 text-sm">
-                    {proposal.studentResponse}
+                    {proposal.studentResponse.message}
                   </p>
                 </div>
               )}
