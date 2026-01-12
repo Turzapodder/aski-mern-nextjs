@@ -99,16 +99,17 @@ export interface AssignmentFilters {
 }
 
 // Define the assignments API
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:8000'
+
 export const assignmentsApi = createApi({
   reducerPath: 'assignmentsApi',
   tagTypes: ['Assignment', 'Assignments'],
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000/api/assignments',
+    baseUrl: `${apiBaseUrl}/api/assignments`,
     credentials: 'include',
-    prepareHeaders: (headers) => {
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
   }),
   endpoints: (builder) => ({
     // Get all assignments with filters
@@ -145,11 +146,6 @@ export const assignmentsApi = createApi({
         url: '',
         method: 'POST',
         body: formData,
-        // Don't set Content-Type header for FormData, let the browser set it
-        prepareHeaders: (headers) => {
-          headers.delete('Content-Type');
-          return headers;
-        },
       }),
       invalidatesTags: ['Assignments'],
     }),
@@ -185,10 +181,6 @@ export const assignmentsApi = createApi({
         url: `/${id}/submit`,
         method: 'POST',
         body: formData,
-        prepareHeaders: (headers) => {
-          headers.delete('Content-Type');
-          return headers;
-        },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Assignment', id },
