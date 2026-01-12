@@ -1,11 +1,10 @@
 'use client'
 import React, { useState } from 'react'
 import { BarChart3, TrendingUp, Users, Clock, BookOpen, Target, Calendar, Award } from 'lucide-react'
-import DashboardLayout from '@/components/DashboardLayout'
 
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
-  
+
   // Mock analytics data
   const stats = {
     totalSessions: 24,
@@ -15,7 +14,7 @@ const AnalyticsPage = () => {
     completionRate: 92,
     responseTime: '2.3 min'
   }
-  
+
   const weeklyData = [
     { day: 'Mon', sessions: 3, hours: 4.5 },
     { day: 'Tue', sessions: 2, hours: 3 },
@@ -25,7 +24,7 @@ const AnalyticsPage = () => {
     { day: 'Sat', sessions: 4, hours: 6 },
     { day: 'Sun', sessions: 3, hours: 4.5 }
   ]
-  
+
   const subjectBreakdown = [
     { subject: 'Mathematics', sessions: 8, percentage: 33 },
     { subject: 'Physics', sessions: 6, percentage: 25 },
@@ -33,13 +32,13 @@ const AnalyticsPage = () => {
     { subject: 'Biology', sessions: 3, percentage: 13 },
     { subject: 'Computer Science', sessions: 2, percentage: 8 }
   ]
-  
+
   const recentAchievements = [
     { title: 'Top Tutor', description: 'Highest rated tutor this month', icon: Award, color: 'text-yellow-600' },
     { title: 'Quick Responder', description: 'Average response time under 3 minutes', icon: Clock, color: 'text-blue-600' },
     { title: 'Student Favorite', description: '10+ positive reviews', icon: Users, color: 'text-primary-600' }
   ]
-  
+
   const StatCard = ({ title, value, subtitle, icon: Icon, trend }: any) => (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between">
@@ -60,7 +59,7 @@ const AnalyticsPage = () => {
       )}
     </div>
   )
-  
+
   return (
     <div>
       <div className="min-h-screen bg-gray-50 p-6">
@@ -76,18 +75,17 @@ const AnalyticsPage = () => {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-4 py-2 text-sm font-medium capitalize ${
-                    timeRange === range
+                  className={`px-4 py-2 text-sm font-medium capitalize ${timeRange === range
                       ? 'bg-primary-300 text-white'
                       : 'text-gray-700 hover:text-gray-900'
-                  } ${range === 'week' ? 'rounded-l-lg' : range === 'year' ? 'rounded-r-lg' : ''}`}
+                    } ${range === 'week' ? 'rounded-l-lg' : range === 'year' ? 'rounded-r-lg' : ''}`}
                 >
                   {range}
                 </button>
               ))}
             </div>
           </div>
-          
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <StatCard
@@ -128,7 +126,7 @@ const AnalyticsPage = () => {
               trend={-12}
             />
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Weekly Activity Chart */}
             <div className="bg-white rounded-lg shadow p-6">
@@ -139,8 +137,8 @@ const AnalyticsPage = () => {
                     <span className="text-sm font-medium text-gray-700 w-12">{day.day}</span>
                     <div className="flex-1 mx-4">
                       <div className="bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-primary-300 h-2 rounded-full" 
+                        <div
+                          className="bg-primary-300 h-2 rounded-full"
                           style={{ width: `${(day.sessions / 5) * 100}%` }}
                         ></div>
                       </div>
@@ -153,7 +151,7 @@ const AnalyticsPage = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Subject Breakdown */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Subject Breakdown</h3>
@@ -164,8 +162,8 @@ const AnalyticsPage = () => {
                     <div className="flex items-center space-x-3">
                       <div className="flex-1 w-24">
                         <div className="bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full" 
+                          <div
+                            className="bg-blue-500 h-2 rounded-full"
                             style={{ width: `${subject.percentage}%` }}
                           ></div>
                         </div>
@@ -177,7 +175,7 @@ const AnalyticsPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Recent Achievements */}
             <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
@@ -199,7 +197,7 @@ const AnalyticsPage = () => {
                 })}
               </div>
             </div>
-            
+
             {/* Performance Summary */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Summary</h3>
@@ -208,7 +206,7 @@ const AnalyticsPage = () => {
                   <div className="text-3xl font-bold text-primary-600 mb-2">A+</div>
                   <p className="text-sm text-gray-600">Overall Grade</p>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Punctuality</span>
@@ -227,7 +225,7 @@ const AnalyticsPage = () => {
                     <span className="text-sm font-medium text-gray-900">94%</span>
                   </div>
                 </div>
-                
+
                 <div className="pt-4 border-t border-gray-200">
                   <button className="w-full bg-primary-300 hover:bg-primary-600 text-white py-2 px-4 rounded-lg text-sm font-medium">
                     View Detailed Report

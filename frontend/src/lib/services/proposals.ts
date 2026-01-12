@@ -192,7 +192,7 @@ export const proposalsApi = createApi({
         url: '',
         method: 'POST',
         body: formData,
-        prepareHeaders: (headers) => {
+        prepareHeaders: (headers: Headers) => {
           // Don't set Content-Type for FormData, let the browser set it
           headers.delete('Content-Type');
           return headers;

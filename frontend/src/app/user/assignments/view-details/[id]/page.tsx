@@ -49,7 +49,7 @@ const AssignmentDetails = () => {
   // Fetch current user data
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
-  const userRole = currentUser?.roles?.[0];
+  const isTutor = currentUser?.roles?.includes('tutor');
   const assignment = assignmentData?.data;
 
   const handleSendProposal = () => {
@@ -161,18 +161,18 @@ const AssignmentDetails = () => {
   console.log(assignment);
 
   return (
-    <div className='w-full mx-auto'>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+    <div className='w-full max-w-6xl mx-auto px-4 py-6 sm:px-6'>
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8'>
         {/* Left Column - Main Content */}
         <div className='lg:col-span-2 space-y-6'>
           {/* Header */}
-          <div className='bg-white rounded-lg p-6 shadow-sm'>
-            <div className='flex items-start justify-between mb-4'>
+          <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
+            <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4'>
               <div className='flex-1'>
                 <h1 className='text-2xl font-bold text-gray-900 mb-2'>
                   {assignment.title}
                 </h1>
-                <div className='flex items-center space-x-4 text-sm text-gray-600'>
+                <div className='flex flex-wrap items-center gap-3 text-sm text-gray-600'>
                   <div className='flex items-center space-x-1'>
                     <Clock size={16} />
                     <span>{formatDeadline(assignment.deadline)}</span>
@@ -183,12 +183,12 @@ const AssignmentDetails = () => {
                   </div>
                 </div>
               </div>
-              <div className='flex space-x-2'>
-                <button className='bg-primary-300 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors'>
+              <div className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
+                <button className='w-full sm:w-auto bg-primary-300 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors'>
                   Submit Solution
                 </button>
 
-                <button className='border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2'>
+                <button className='w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2'>
                   <Heart size={16} />
                 </button>
               </div>
@@ -204,23 +204,21 @@ const AssignmentDetails = () => {
             </div>
 
             {/* Assignment Timeline - Hidden for tutors */}
-            {userRole !== 'tutor' && (
+            {!isTutor && (
               <div className='mt-6 pt-4 border-t border-gray-200'>
                 <h3 className='text-sm font-medium text-gray-700 mb-4'>
                   Assignment Progress
                 </h3>
-                <div className='relative'>
-                  {/* Timeline Track */}
-                  <div className='absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0'>
-                    {/* Completed Progress */}
-                    <div
-                      className='absolute top-0 left-0 h-full bg-primary-500'
-                      style={{ width: progressWidth }}
-                    ></div>
-                  </div>
+                <div className='relative overflow-x-auto'>
+                  <div className='min-w-[520px]'>
+                    <div className='absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0'>
+                      <div
+                        className='absolute top-0 left-0 h-full bg-primary-500'
+                        style={{ width: progressWidth }}
+                      ></div>
+                    </div>
 
-                  {/* Timeline Steps */}
-                  <div className='relative z-10 flex justify-between'>
+                    <div className='relative z-10 flex justify-between'>
                     {/* Step 1: Details */}
                     <div
                       className='flex flex-col items-center w-24 cursor-pointer'
@@ -383,6 +381,7 @@ const AssignmentDetails = () => {
                       </div>
                     </div>
                   </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -390,7 +389,7 @@ const AssignmentDetails = () => {
 
           {/* Active Step Content */}
           {activeStep === "details" && (
-            <div className='bg-white rounded-lg p-6 shadow-sm'>
+            <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
               <h2 className='text-lg font-semibold text-gray-900 mb-4'>
                 Assignment Description
               </h2>
@@ -420,7 +419,7 @@ const AssignmentDetails = () => {
 
           {/* Only show these sections when in details view */}
           {activeStep === "details" && (
-            <div className='bg-white rounded-lg p-6 shadow-sm mt-6'>
+            <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm mt-6'>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 <div className='flex items-center space-x-3'>
                   <div className='w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center'>
@@ -464,7 +463,7 @@ const AssignmentDetails = () => {
 
           {/* Topics - Only show in details view */}
           {activeStep === "details" && assignment.topics && assignment.topics.length > 0 && (
-            <div className='bg-white rounded-lg p-6 shadow-sm mt-6'>
+            <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm mt-6'>
               <h2 className='text-lg font-semibold text-gray-900 mb-4'>
                 Topics
               </h2>
@@ -489,7 +488,7 @@ const AssignmentDetails = () => {
 
           {/* Project Engagement - Only show in details view */}
           {activeStep === "details" && (
-            <div className='bg-white rounded-lg p-6 shadow-sm mt-6'>
+            <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm mt-6'>
               <h2 className='text-lg font-semibold text-gray-900 mb-4'>
                 Project Activity
               </h2>
@@ -522,9 +521,9 @@ const AssignmentDetails = () => {
 
 
               {/* Proposal Component at the bottom of the page */}
-              {showProposal && userRole !== 'user' && (
+              {showProposal && isTutor && (
                 <div className='mt-8 w-full'>
-                  <div className='bg-white rounded-lg p-6 shadow-sm'>
+                  <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
                     <ProposalsComponent
                       proposal={proposal}
                       setProposal={setProposal}
@@ -557,7 +556,7 @@ const AssignmentDetails = () => {
         {/* Right Column - Course Info */}
         <div className='space-y-6'>
           {/* Assignment Budget */}
-          <div className='bg-white rounded-lg p-6 shadow-sm'>
+          <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
             <div className='text-center'>
               <div className='text-sm text-gray-600 mb-2'>
                 Budget:
@@ -568,7 +567,7 @@ const AssignmentDetails = () => {
           </div>
 
           {/* About the Student */}
-          <div className='bg-white rounded-lg p-6 shadow-sm'>
+          <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
             <h3 className='text-lg font-semibold text-gray-900 mb-4'>
               Student Information
             </h3>
@@ -605,7 +604,7 @@ const AssignmentDetails = () => {
           </div>
 
           {/* Resources */}
-          <div className='bg-white rounded-lg p-6 shadow-sm'>
+          <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
             <h3 className='text-lg font-semibold text-gray-900 mb-4'>
               Resources
             </h3>
@@ -634,8 +633,8 @@ const AssignmentDetails = () => {
                       <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center'>
                         <FileText size={20} className='text-primary-600' />
                       </div>
-                      <div className='flex-1 text-left'>
-                        <div className='text-sm font-medium text-gray-900'>
+                      <div className='flex-1 min-w-0 text-left'>
+                        <div className='text-sm font-medium text-gray-900 truncate'>
                           {attachment.originalName}
                         </div>
                         <div className='text-xs text-gray-500'>Attachment</div>
@@ -648,7 +647,7 @@ const AssignmentDetails = () => {
                 </>
               )}
             </div>
-            {activeStep === "details" && userRole !== 'user' && (
+            {activeStep === "details" && isTutor && (
               <button
                 onClick={handleSendProposal}
                 className='bg-secondary-300 my-3 w-full flex justify-center hover:bg-secondary-200 text-gray-900 px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2'
