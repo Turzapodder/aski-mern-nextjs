@@ -1,0 +1,576 @@
+'use client'
+
+import { useEffect, useMemo, useState } from "react"
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  ChevronRight,
+  Clock,
+  Sparkles,
+  Wallet
+} from "lucide-react"
+import { useGetUserQuery } from "@/lib/services/auth"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip"
+import WithdrawModal from "./components/WithdrawModal"
+
+type WithdrawalEntry = {
+  _id?: string
+  transactionId?: string
+  amount?: number
+  status?: string
+  requestedAt?: string
+  completedAt?: string
+}
+
+const formatAmount = (amount: number) => `BDT ${amount.toFixed(2)}`
+
+const formatDate = (value?: string) => {
+  if (!value) return "-"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "-"
+  return date.toLocaleDateString()
+}
+
+const statusClasses: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800",
+  COMPLETED: "bg-emerald-100 text-emerald-700",
+  FAILED: "bg-rose-100 text-rose-700"
+}
+
+const weekLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const weekRatios = [0.35, 0.52, 0.62, 0.4, 0.7, 0.56, 0.45]
+const snapshotRatios = [0.65, 0.38, 0.52, 0.7, 0.45, 0.6, 0.34]
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value))
+
+const getTimeValue = (value?: string) => {
+  if (!value) return 0
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime()
+}
+
+export default function WalletPage() {
+  const { data: userData, isLoading, refetch } = useGetUserQuery()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const user = userData?.user
+  const isTutor = user?.roles?.includes("tutor")
+
+  const wallet = user?.wallet || {
+    availableBalance: 0,
+    escrowBalance: 0,
+    totalEarnings: 0,
+    withdrawalHistory: [],
+    bankDetails: {}
+  }
+
+  const withdrawalHistory: WithdrawalEntry[] = Array.isArray(
+    wallet.withdrawalHistory
+  )
+    ? wallet.withdrawalHistory
+    : []
+
+  const sortedHistory = useMemo(() => {
+    return [...withdrawalHistory].sort(
+      (a, b) => getTimeValue(b.requestedAt) - getTimeValue(a.requestedAt)
+    )
+  }, [withdrawalHistory])
+
+  const pageSize = 10
+  const totalPages = Math.max(1, Math.ceil(sortedHistory.length / pageSize))
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
+  const pagedHistory = useMemo(() => {
+    const safePage = Math.min(currentPage, totalPages)
+    const startIndex = (safePage - 1) * pageSize
+    return sortedHistory.slice(startIndex, startIndex + pageSize)
+  }, [currentPage, sortedHistory, totalPages])
+
+  const pendingWithdrawals = useMemo(
+    () =>
+      sortedHistory
+        .filter((entry) => entry?.status === "PENDING")
+        .slice(0, 3),
+    [sortedHistory]
+  )
+
+  const trendBase =
+    wallet.totalEarnings || wallet.availableBalance || wallet.escrowBalance || 1
+  const trendFactor = clamp(trendBase / 5000, 0.8, 1.2)
+
+  const earningsBars = weekRatios.map((ratio) =>
+    clamp(Math.round((22 + ratio * 90) * trendFactor), 20, 120)
+  )
+  const depositsBars = weekRatios.map((ratio) =>
+    clamp(Math.round((14 + ratio * 60) * trendFactor), 14, 95)
+  )
+  const snapshotBars = snapshotRatios.map((ratio) =>
+    clamp(Math.round((18 + ratio * 85) * trendFactor), 18, 110)
+  )
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading wallet...</div>
+  }
+
+  if (!isTutor) {
+    return (
+      <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
+        Access Denied
+      </div>
+    )
+  }
+
+  const canWithdraw = wallet.availableBalance > 0
+
+  return (
+    <div className="min-h-screen bg-[#f4f5fb]">
+      <div
+        className="relative overflow-hidden"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at top, rgba(140,158,255,0.18), transparent 60%)"
+        }}
+      >
+        <div className="pointer-events-none absolute -top-24 right-10 h-64 w-64 rounded-full bg-gradient-to-br from-[#cfd7ff] to-[#eef1ff] blur-3xl opacity-70" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full bg-gradient-to-br from-[#e6f7d8] to-[#f8fbff] blur-3xl opacity-70" />
+
+        <div className="relative w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 xl:px-14 2xl:px-20">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-gray-400">
+                Wallet
+              </p>
+              <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl lg:text-4xl">
+                Earnings Dashboard
+              </h1>
+              <p className="text-sm text-gray-500">
+                Track balances, payouts, and recent activity.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <span className="w-full rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-500 shadow-sm sm:w-auto">
+                Updated just now
+              </span>
+              <span className="flex w-full items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-600 shadow-sm sm:w-auto">
+                <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                Secure payouts
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[1.25fr_1fr] xl:grid-cols-[1.3fr_1fr]">
+            <div className="space-y-6">
+              <div className="rounded-3xl bg-gradient-to-r from-[#cfd7ff] via-[#dfe6ff] to-[#f1f4ff] p-5 shadow-[0_24px_50px_-30px_rgba(67,56,202,0.45)] sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <Sparkles className="h-4 w-4 text-indigo-500" />
+                      Invite your friend
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">
+                      Share the platform and earn rewards on every successful
+                      referral.
+                    </p>
+                  </div>
+                  <Button className="w-full rounded-full bg-gray-900 px-6 text-sm text-white hover:bg-black sm:w-auto">
+                    Invite friend
+                    <ArrowUpRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
+                      Statistics
+                    </p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <p className="text-2xl font-semibold text-gray-900">
+                        {formatAmount(wallet.availableBalance)}
+                      </p>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">
+                        +12.4%
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">Available today</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full text-xs font-semibold text-gray-500 hover:text-gray-800"
+                  >
+                    See more
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="mt-6 flex items-end justify-between gap-2 sm:gap-3">
+                  {weekLabels.map((label, index) => (
+                    <div
+                      key={label}
+                      className="flex flex-1 flex-col items-center gap-2"
+                    >
+                      <div className="flex h-24 w-5 flex-col items-center justify-end gap-1 rounded-full bg-[#f4f6fb] p-1 sm:h-28 sm:w-6">
+                        <span
+                          className="w-full rounded-full bg-[#9edb68]"
+                          style={{ height: `${depositsBars[index]}px` }}
+                        />
+                        <span
+                          className="w-full rounded-full bg-[#b9c2ff]"
+                          style={{ height: `${earningsBars[index]}px` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#b9c2ff]" />
+                    Earnings
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#9edb68]" />
+                    Deposits
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-gray-300" />
+                    Spendings
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Last transactions
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full text-xs font-semibold text-gray-500 hover:text-gray-800"
+                  >
+                    See more
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+
+                {sortedHistory.length === 0 ? (
+                  <p className="mt-4 text-sm text-gray-500">
+                    No transactions yet.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-3 sm:hidden">
+                      {pagedHistory.map((item) => {
+                        const status = item.status || "PENDING"
+                        return (
+                          <div
+                            key={item.transactionId || item._id}
+                            className="rounded-2xl border border-gray-100 bg-[#f6f7fb] p-4"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
+                                  Withdrawal
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-gray-900">
+                                  - {formatAmount(Number(item.amount) || 0)}
+                                </p>
+                              </div>
+                              <Badge
+                                className={
+                                  statusClasses[status] ||
+                                  "bg-gray-100 text-gray-700"
+                                }
+                              >
+                                {status}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 text-xs text-gray-500">
+                              {formatDate(item.requestedAt)}
+                            </div>
+                            <p className="mt-2 text-xs text-gray-600">
+                              Withdrawal to bank
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="hidden overflow-x-auto sm:block">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-400">
+                            <th className="py-2 font-medium">Date</th>
+                            <th className="py-2 font-medium">Description</th>
+                            <th className="py-2 text-right font-medium">
+                              Amount
+                            </th>
+                            <th className="py-2 text-right font-medium">
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pagedHistory.map((item) => {
+                            const status = item.status || "PENDING"
+                            return (
+                              <tr
+                                key={item.transactionId || item._id}
+                                className="border-b border-gray-100 last:border-0"
+                              >
+                                <td className="py-3 text-gray-600">
+                                  {formatDate(item.requestedAt)}
+                                </td>
+                                <td className="py-3 text-gray-700">
+                                  Withdrawal to bank
+                                </td>
+                                <td className="py-3 text-right text-gray-900">
+                                  - {formatAmount(Number(item.amount) || 0)}
+                                </td>
+                            <td className="py-3 text-right">
+                              <Badge
+                                className={
+                                  statusClasses[status] ||
+                                  "bg-gray-100 text-gray-700"
+                                }
+                              >
+                                {status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                      </table>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === 1}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-xs text-gray-500">
+                          Page {Math.min(currentPage, totalPages)} of{" "}
+                          {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === totalPages}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(totalPages, prev + 1)
+                            )
+                          }
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
+                      Available balance
+                    </p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <Wallet className="h-5 w-5 text-gray-500" />
+                      <p className="text-2xl font-semibold text-gray-900">
+                        {formatAmount(wallet.availableBalance)}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Ready for withdrawal
+                    </p>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            onClick={() => setIsModalOpen(true)}
+                            disabled={!canWithdraw}
+                            className="w-full rounded-full bg-gray-900 text-white hover:bg-black sm:w-auto"
+                          >
+                            Withdraw balance
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!canWithdraw && (
+                        <TooltipContent>No balance available</TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 sm:gap-4">
+                  <div className="rounded-2xl bg-[#f6f7fb] p-4">
+                    <p className="text-xs uppercase tracking-[0.15em] text-gray-400">
+                      Escrow balance
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-gray-900">
+                      {formatAmount(wallet.escrowBalance)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Held for active projects
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f6f7fb] p-4">
+                    <p className="text-xs uppercase tracking-[0.15em] text-gray-400">
+                      Total earnings
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-gray-900">
+                      {formatAmount(wallet.totalEarnings)}
+                    </p>
+                    <p className="text-xs text-gray-500">All time</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Withdrawals in progress
+                  </h2>
+                  <span className="text-xs font-semibold text-gray-400">
+                    {pendingWithdrawals.length}
+                  </span>
+                </div>
+
+                {pendingWithdrawals.length === 0 ? (
+                  <div className="mt-4 rounded-2xl bg-[#f6f7fb] p-4 text-sm text-gray-500">
+                    No pending withdrawals right now.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {pendingWithdrawals.map((entry) => (
+                      <div
+                        key={entry.transactionId || entry._id}
+                        className="flex flex-col gap-3 rounded-2xl bg-[#f6f7fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {formatAmount(Number(entry.amount) || 0)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Requested {formatDate(entry.requestedAt)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          Pending
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-3xl bg-[#1b1c21] p-5 text-white shadow-[0_24px_60px_-40px_rgba(15,23,42,0.65)] sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+                      Earnings snapshot
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold">
+                      Weekly cashflow
+                    </h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full text-xs font-semibold text-white/70 hover:text-white"
+                  >
+                    See more
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="mt-6 overflow-x-auto">
+                  <div className="flex min-w-[280px] items-end justify-between gap-2 sm:min-w-0">
+                    {weekLabels.map((label, index) => {
+                      const height = snapshotBars[index]
+                      const isAccent = index % 2 === 0
+                      return (
+                        <div
+                          key={label}
+                          className="flex flex-1 flex-col items-center gap-2"
+                        >
+                          <div className="flex h-24 w-5 flex-col items-center justify-end gap-1 rounded-full bg-white/10 p-1 sm:h-28 sm:w-6">
+                            <span
+                              className={`w-full rounded-full ${
+                                isAccent ? "bg-[#c8ff6d]" : "bg-[#9aa7ff]"
+                              }`}
+                              style={{ height: `${height}px` }}
+                            />
+                            <span className="h-3 w-full rounded-full bg-white" />
+                          </div>
+                          <span className="text-[11px] text-white/50">
+                            {label}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-4 text-xs text-white/60">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#c8ff6d]" />
+                    Incoming
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#9aa7ff]" />
+                    Settled
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-white" />
+                    Fees
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <WithdrawModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        availableBalance={wallet.availableBalance}
+        bankDetails={wallet.bankDetails}
+        onSuccess={() => {
+          refetch()
+        }}
+      />
+    </div>
+  )
+}

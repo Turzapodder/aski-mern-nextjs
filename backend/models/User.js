@@ -33,13 +33,15 @@ const TutorProfileSchema = new mongoose.Schema(
     professionalTitle: { type: String, trim: true },
     qualification: { type: String, trim: true },
     expertiseSubjects: { type: [String], default: [] },
+    skills: { type: [String], default: [] },
     experienceYears: { type: Number, min: 0 },
     currentInstitution: { type: String, trim: true },
     availableDays: { type: [String], default: [] },
-    availableTimeSlots: { type: [String], default: [] },
+    availableTimeSlots: { type: [mongoose.Schema.Types.Mixed], default: [] },
     hourlyRate: { type: Number, min: 0 },
     teachingMode: { type: String, enum: ["Online", "Offline", "Hybrid"] },
     achievements: { type: String, trim: true },
+    bio: { type: String, trim: true },
     documents: [
       {
         filename: String,
@@ -101,6 +103,45 @@ const userSchema = new mongoose.Schema(
     studentProfile: { type: StudentProfileSchema, default: {} },
     tutorProfile: { type: TutorProfileSchema, default: {} },
 
+    // Wallet
+    wallet: {
+      availableBalance: { type: Number, default: 0, min: 0 },
+      escrowBalance: { type: Number, default: 0, min: 0 },
+      totalEarnings: { type: Number, default: 0, min: 0 },
+      currency: { type: String, default: "BDT" },
+      bankDetails: {
+        accountName: { type: String, trim: true },
+        accountNumber: { type: String, trim: true },
+        bankName: { type: String, trim: true },
+        branchName: { type: String, trim: true },
+        routingNumber: { type: String, trim: true },
+      },
+      withdrawalHistory: [
+        {
+          amount: { type: Number, min: 0 },
+          status: {
+            type: String,
+            enum: ["PENDING", "COMPLETED", "FAILED"],
+            default: "PENDING",
+          },
+          requestedAt: { type: Date },
+          completedAt: { type: Date },
+          transactionId: { type: String, trim: true },
+        },
+      ],
+    },
+
+    // Public stats
+    publicStats: {
+      totalProjects: { type: Number, default: 0, min: 0 },
+      completedProjects: { type: Number, default: 0, min: 0 },
+      averageRating: { type: Number, default: 0, min: 0, max: 5 },
+      totalReviews: { type: Number, default: 0, min: 0 },
+      responseTime: { type: Number, default: 0, min: 0 },
+      successRate: { type: Number, default: 0, min: 0, max: 100 },
+      joinedDate: { type: Date, default: Date.now },
+    },
+
     // Onboarding Status
     onboardingStatus: {
       type: String,
@@ -144,6 +185,7 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ roles: 1 });
 userSchema.index({ status: 1 });
 userSchema.index({ onboardingStatus: 1 });
+userSchema.index({ "publicStats.averageRating": -1 });
 
 // Middleware: Update lastSeen on any modification
 userSchema.pre("save", function (next) {

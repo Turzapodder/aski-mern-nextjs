@@ -29,7 +29,7 @@ const AllAssignmentsPage = () => {
     // Get current user data
     const { data: userData } = useGetUserQuery();
     const currentUser = userData?.user;
-    const userRole = currentUser?.roles?.[0];
+    const isTutor = currentUser?.roles?.includes('tutor');
 
     // Use RTK Query to fetch assignments
     const {
@@ -284,7 +284,7 @@ const AllAssignmentsPage = () => {
                                         </button>
 
                                         {/* Show Send Proposal button only for tutors */}
-                                        {userRole === 'tutor' && assignment.status === 'pending' && (
+                                        {isTutor && assignment.status === 'pending' && (
                                             <button
                                                 onClick={() => handleSendProposal(assignment)}
                                                 className="w-full inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2"

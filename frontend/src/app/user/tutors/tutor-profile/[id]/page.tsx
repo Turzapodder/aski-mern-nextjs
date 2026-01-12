@@ -1,40 +1,114 @@
-'use client'
-import React, { useState } from 'react'
+﻿'use client'
+import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Star, MapPin, CheckCircle, ShieldCheck, Video, MessageSquare, MonitorPlay, Sparkles, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Globe, Award, Zap, ChevronDown } from 'lucide-react'
+import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Award, Zap, ChevronDown, User, GraduationCap } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
+interface PublicTutor {
+    _id: string
+    name: string
+    profileImage?: string
+    about?: string
+    tutorProfile?: {
+        bio?: string
+        expertiseSubjects?: string[]
+        skills?: string[]
+        hourlyRate?: number
+        experienceYears?: number
+        verificationStatus?: string
+    }
+    publicStats?: {
+        averageRating?: number
+        totalReviews?: number
+        totalProjects?: number
+        completedProjects?: number
+        responseTime?: number
+    }
+}
+
 const TutorProfilePage = () => {
-    const params = useParams()
+    const params = useParams<{ id: string }>()
     const [activeTab, setActiveTab] = useState('about')
     const [selectedDate, setSelectedDate] = useState('Tue, 2 April, 2024')
     const [selectedTime, setSelectedTime] = useState<string | null>('13:30')
+    const [tutor, setTutor] = useState<PublicTutor | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    // Mock data tailored to the "Jenny Wilson" design
-    const tutorData = {
-        name: "Jenny Wilson",
-        subject: "Economics teacher",
-        rating: 4.9,
-        reviewsCount: 236,
-        isTopTutor: true,
-        isVerified: true,
-        bio: "Hello Student! 👋 Economics isn't just a subject - it's the lens through which we view society. I will help you explore its profound implications. From micro to macroeconomics, discover the keys to understanding economic phenomena in my comprehensive courses 🚀",
-        tags: [
-            "Economics", "Financial Theory", "Management", "Politics", "Finance",
-            "International Economy", "Business English", "Time Management",
-            "Global Economy", "Oxford", "Microeconomics", "IELTS"
-        ],
-        stats: {
-            experience: "7+ years",
-            courses: 24,
-            students: "250+",
-            lessons: 132
-        },
-        price: 32,
-        response_time: "3-hour",
-        booked_stats: "5 lessons booked in 48 hours",
-        videoThumbnail: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=400&fit=crop"
-    }
+    useEffect(() => {
+        const fetchTutor = async () => {
+            if (!params?.id) {
+                setLoading(false)
+                return
+            }
+
+            setLoading(true)
+            setError(null)
+
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+                const response = await fetch(
+                    `${baseUrl}/api/tutors/profile/${encodeURIComponent(params.id)}`
+                )
+
+                if (!response.ok) {
+                    throw new Error('Tutor not found')
+                }
+
+                const result = await response.json()
+                if (!result?.success) {
+                    throw new Error(result?.error || 'Tutor not found')
+                }
+
+                setTutor(result?.data?.tutor || null)
+            } catch (fetchError: any) {
+                setError(fetchError?.message || 'Unable to load tutor')
+                setTutor(null)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchTutor()
+    }, [params?.id])
+
+    const tutorData = useMemo(() => {
+        if (!tutor) return null
+
+        const subjects = tutor.tutorProfile?.expertiseSubjects || []
+        const skills = tutor.tutorProfile?.skills || []
+        const tags = Array.from(new Set([...subjects, ...skills])).slice(0, 12)
+        const rating = tutor.publicStats?.averageRating ?? 0
+        const totalReviews = tutor.publicStats?.totalReviews ?? 0
+        const totalProjects = tutor.publicStats?.totalProjects ?? 0
+        const completedProjects = tutor.publicStats?.completedProjects ?? 0
+        const responseTime = tutor.publicStats?.responseTime ?? 0
+        const experienceYears = tutor.tutorProfile?.experienceYears
+
+        return {
+            name: tutor.name,
+            subject: subjects[0] ? `${subjects[0]} tutor` : 'Tutor',
+            rating,
+            reviewsCount: totalReviews,
+            isTopTutor: rating >= 4.8,
+            isVerified: tutor.tutorProfile?.verificationStatus === 'Verified',
+            bio: tutor.tutorProfile?.bio || tutor.about || 'No bio provided yet.',
+            tags: tags.length > 0 ? tags : subjects,
+            stats: {
+                experience: experienceYears ? `${experienceYears}+ years` : 'N/A',
+                courses: totalProjects,
+                students: totalReviews,
+                lessons: completedProjects
+            },
+            price: tutor.tutorProfile?.hourlyRate || 0,
+            response_time: responseTime ? `${responseTime}-hour` : 'Flexible',
+            booked_stats: completedProjects
+                ? `${completedProjects} lessons completed`
+                : 'New tutor',
+            videoThumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=400&fit=crop',
+            profileImage: tutor.profileImage || '/assets/tutor-profile.svg'
+        }
+    }, [tutor])
 
     const scheduleSlots = [
         "8:30", "9:00", "9:30", "10:00", "10:30", "11:00", "11:30",
@@ -73,21 +147,34 @@ const TutorProfilePage = () => {
         }
     ]
 
+    if (loading) {
+        return (
+            <div className="mx-auto px-4 py-8 bg-[#FAFAFA] min-h-screen font-sans">
+                <div className="text-sm text-gray-500">Loading tutor profile...</div>
+            </div>
+        )
+    }
+
+    if (error || !tutorData) {
+        return (
+            <div className="mx-auto px-4 py-8 bg-[#FAFAFA] min-h-screen font-sans">
+                <div className="text-sm text-gray-600">{error || 'Tutor not found'}</div>
+            </div>
+        )
+    }
+
     return (
         <div className="mx-auto px-4 py-8 bg-[#FAFAFA] min-h-screen font-sans">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                {/* Main Content Column */}
                 <div className="lg:col-span-2 space-y-6">
 
-                    {/* Header Card */}
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <div className="flex flex-col sm:flex-row gap-5 mb-6">
-                            {/* Avatar */}
                             <div className="relative shrink-0">
                                 <div className="w-[88px] h-[88px] rounded-2xl overflow-hidden relative">
                                     <Image
-                                        src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop"
+                                        src={tutorData.profileImage}
                                         alt={tutorData.name}
                                         fill
                                         className="object-cover"
@@ -100,7 +187,6 @@ const TutorProfilePage = () => {
                                 )}
                             </div>
 
-                            {/* Info */}
                             <div className="flex-grow">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -128,7 +214,6 @@ const TutorProfilePage = () => {
                                     <button className="text-gray-400 hover:text-purple-600 transition-colors">
                                         <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
                                             <span className="w-4 h-6 border-2 border-purple-300 border-t-0 border-r-0 rotate-[-45deg] translate-y-[-2px]"></span>
-                                            {/* Using bookmark icon for clarity */}
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#A855F7" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
                                         </div>
                                     </button>
@@ -136,12 +221,10 @@ const TutorProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* Bio */}
                         <p className="text-gray-600 text-[15px] leading-relaxed mb-6">
                             {tutorData.bio}
                         </p>
 
-                        {/* Tags */}
                         <div className="flex flex-wrap gap-2 mb-8">
                             {tutorData.tags.map((tag, i) => (
                                 <span key={i} className={`text-xs font-semibold px-3 py-1.5 rounded-full text-white ${["Economics", "Financial Theory", "Management", "Politics", "Finance", "International Economy", "Business English", "Time Management", "Global Economy", "Oxford", "Microeconomics", "IELTS"].includes(tag) ? 'bg-[#18181b]' : 'bg-[#18181b]'
@@ -151,7 +234,6 @@ const TutorProfilePage = () => {
                             ))}
                         </div>
 
-                        {/* Stats */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2 text-gray-600">
                                 <Award className="w-4 h-4 text-gray-400" />
@@ -162,17 +244,16 @@ const TutorProfilePage = () => {
                                 <span className="text-sm font-medium">{tutorData.stats.courses} courses</span>
                             </div>
                             <div className="flex items-center gap-2 text-gray-600">
-                                <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-xs">👥</span>
+                                <User className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm font-medium">{tutorData.stats.students} students</span>
                             </div>
                             <div className="flex items-center gap-2 text-gray-600">
-                                <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-xs">🎓</span>
+                                <GraduationCap className="w-4 h-4 text-gray-400" />
                                 <span className="text-sm font-medium">{tutorData.stats.lessons} lessons conducted</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Navigation Tabs */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="flex items-center border-b border-gray-100 overflow-x-auto">
                             {['About me', 'Schedule', 'Courses (24)', 'Resume', 'Reviews (236)'].map((tab) => (
@@ -190,7 +271,6 @@ const TutorProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* About Me Section */}
                     <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">About me</h2>
                         <p className="text-gray-600 leading-relaxed text-[15px]">
@@ -198,7 +278,6 @@ const TutorProfilePage = () => {
                         </p>
                     </div>
 
-                    {/* Schedule Section */}
                     <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-900">Schedule</h2>
@@ -217,7 +296,6 @@ const TutorProfilePage = () => {
                         </div>
 
                         <div className="border border-gray-200 rounded-2xl overflow-hidden mb-6">
-                            {/* Calendar Header */}
                             <div className="bg-[#18181b] text-white p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <button className="p-1 hover:bg-white/10 rounded-full"><ChevronLeft className="w-5 h-5" /></button>
@@ -230,7 +308,6 @@ const TutorProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Calendar Grid */}
                             <div className="p-6 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-3">
                                 {scheduleSlots.map((time) => (
                                     <button
@@ -250,10 +327,8 @@ const TutorProfilePage = () => {
 
                 </div>
 
-                {/* Right Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
 
-                    {/* Booking Card */}
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-4">
                         <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video group cursor-pointer">
                             <Image
@@ -299,7 +374,6 @@ const TutorProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Reviews Summary widget placed here to match the 2-column layout feeling of the image although review details are usually main content */}
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-baseline gap-2">
@@ -365,7 +439,6 @@ const TutorProfilePage = () => {
                         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
                             <p className="text-xs text-gray-400 mb-2">Invaluable experience, tons of useful knowledge.</p>
 
-                            {/* More reviews placeholder */}
                         </div>
                     </div>
 

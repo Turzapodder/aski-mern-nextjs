@@ -24,6 +24,9 @@ router.get('/', AssignmentController.getAllAssignments);
 // Get assignment statistics
 router.get('/stats', AssignmentController.getAssignmentStats);
 
+// Get assignments for current user (calendar)
+router.get('/me', AssignmentController.getMyAssignmentsCalendar);
+
 // Get assignments by user ID
 router.get('/user/:userId', AssignmentController.getAssignmentsByUserId);
 

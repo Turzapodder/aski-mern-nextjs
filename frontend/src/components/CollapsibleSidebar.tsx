@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
-import {  CopyMinus, Menu, X} from 'lucide-react'
+import { CopyMinus, Menu, X } from 'lucide-react'
 
 interface SidebarItem {
   name: string
@@ -52,7 +52,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
   }
 
   // Check if user is a tutor
-  const isTutor = userData?.user?.roles?.[0] === 'tutor'
+  const isTutor = userData?.user?.roles?.includes('tutor')
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -62,7 +62,8 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
-        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' }
+        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
+        { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
       ] : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
@@ -75,17 +76,12 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     //   title: 'STARTED',
     //   items: [
     //     { name: 'Finalize Homepage Wireframe', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=1' },
-    //     { name: 'Review Client Feedback Form', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=2' },
-    //     { name: 'Update Progress Report Document', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=3' }
-    //   ],
-    // },
   ]
 
   return (
     <aside
-      className={`bg-[#f6f6f6] transition-all duration-300 py-4 flex flex-col h-screen fixed left-0 top-0 z-50 ${
-        isCollapsed ? "w-16" : "w-64"
-      }`}
+      className={`bg-[#f6f6f6] transition-all duration-300 py-4 flex flex-col h-full ${isCollapsed ? "w-16" : "w-64"
+        }`}
     >
       {/* Header */}
       <div className="p-4">
@@ -95,9 +91,8 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
               <img
                 src="/assets/main-logo.svg"
                 alt="logo"
-                className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${
-                  !isCollapsed && "mr-3"
-                }`}
+                className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${!isCollapsed && "mr-3"
+                  }`}
               />
             </div>
           )}
@@ -107,64 +102,63 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
           >
             {isCollapsed ? <Menu size={20} /> : <CopyMinus size={20} />}
           </button>
-        </div>
-      </div>
+        </div >
+      </div >
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-hidden p-4 space-y-6">
-        {sidebarSections.map((section) => {
-          return (
-            <div key={section.title}>
-              {/* Section Header */}
-              {!isCollapsed && (
-                <div className="mb-3">
-                  <h3 className="text-sm text-black uppercase tracking-wider">
-                    {section.title}
-                  </h3>
-                </div>
-              )}
+      < nav className="flex-1 overflow-hidden p-4 space-y-6" >
+        {
+          sidebarSections.map((section) => {
+            return (
+              <div key={section.title}>
+                {/* Section Header */}
+                {!isCollapsed && (
+                  <div className="mb-3">
+                    <h3 className="text-sm text-black uppercase tracking-wider">
+                      {section.title}
+                    </h3>
+                  </div>
+                )}
 
-              {/* Section Items */}
-              <ul className="space-y-1">
-                {section.items.map((item) => (
-                  <li key={item.name}>
-                    <button
-                      onClick={() => handleNavigation(item.href)}
-                      className={`w-full flex items-center truncate px-3 py-4 rounded-lg transition-colors text-sm group ${
-                        item.active
+                {/* Section Items */}
+                <ul className="space-y-1">
+                  {section.items.map((item) => (
+                    <li key={item.name}>
+                      <button
+                        onClick={() => handleNavigation(item.href)}
+                        className={`w-full flex items-center truncate px-3 py-4 rounded-lg transition-colors text-sm group ${item.active
                           ? "bg-white text-gray-900 font-medium"
                           : "text-black hover:bg-gray-200 hover:text-black"
-                      }`}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      <div
-                        className={`flex items-center ${
-                          isCollapsed ? "justify-center w-full" : ""
-                        }`}
-                      >
-                        <img
-                          src={item.icon}
-                          alt={item.name}
-                          className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain ${
-                            !isCollapsed && "mr-3"
                           }`}
-                        />
+                        title={isCollapsed ? item.name : undefined}
+                      >
+                        <div
+                          className={`flex items-center ${isCollapsed ? "justify-center w-full" : ""
+                            }`}
+                        >
+                          <img
+                            src={item.icon}
+                            alt={item.name}
+                            className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain ${!isCollapsed && "mr-3"
+                              }`}
+                          />
 
-                        {!isCollapsed && (
-                          <span className="truncate">{item.name}</span>
-                        )}
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </nav>
+                          {!isCollapsed && (
+                            <span className="truncate">{item.name}</span>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })
+        }
+      </nav >
 
       {/* Logout */}
-      <div className="p-4 ">
+      < div className="p-4 " >
         <button
           onClick={handleLogout}
           className="w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-white hover:text-gray-900 group"
@@ -177,8 +171,8 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
           />
           {!isCollapsed && <span>Logout</span>}
         </button>
-      </div>
-    </aside>
+      </div >
+    </aside >
   );
 }
 

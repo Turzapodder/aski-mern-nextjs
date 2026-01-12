@@ -152,7 +152,14 @@ class UserController {
 
             //Send  success Response with Tokens
             res.status(200).json({
-                user: { id: user._id, email: user.email, name: user.name, roles: user.roles },
+                user: { 
+                    id: user._id, 
+                    email: user.email, 
+                    name: user.name, 
+                    roles: user.roles, 
+                    onboardingStatus: user.onboardingStatus,
+                    status: user.status
+                },
                 status: "success",
                 message: "Login Successful",
                 access_token: accessToken,

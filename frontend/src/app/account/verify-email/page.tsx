@@ -2,10 +2,9 @@
 import Link from "next/link";
 import { useFormik } from 'formik';
 import { verifyEmailSchema } from '@/validation/schemas';
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVerifyEmailMutation } from "@/lib/services/auth";
-import { verify } from "crypto";
 
 
 const initialValues = {
@@ -165,4 +164,10 @@ const VerifyEmail = () => {
   );
 }
 
-export default VerifyEmail
+const VerifyEmailPage = () => (
+  <Suspense fallback={<div className="min-h-screen bg-white" />}>
+    <VerifyEmail />
+  </Suspense>
+)
+
+export default VerifyEmailPage

@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useFormik } from 'formik';
 import { registerSchema } from '@/validation/schemas'
 import { useCreateUserMutation } from "@/lib/services/auth";
@@ -359,4 +359,10 @@ const Register = () => {
   )
 }
 
-export default Register
+const RegisterPage = () => (
+  <Suspense fallback={<div className="min-h-screen bg-white" />}>
+    <Register />
+  </Suspense>
+)
+
+export default RegisterPage
