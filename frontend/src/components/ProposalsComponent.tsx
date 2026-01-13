@@ -25,21 +25,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
       </h2>
 
       <div className="space-y-6">
-        {/* Proposal Letter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Proposal Letter <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={proposal}
-            onChange={(e) => setProposal(e.target.value)}
-            placeholder="Describe your approach to solving this calculus assignment. Include your qualifications, methodology, and timeline..."
-            rows={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-300 resize-none"
-            required
-          />
-        </div>
-
+        {/* Proposal Letter (Removed) */}
         {/* Budget */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -73,7 +59,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
           </button>
           <button
             onClick={submitProposal}
-            disabled={!proposal.trim() || !budget.trim()}
+            disabled={!budget.trim()}
             className="px-6 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
           >
             <Send size={16} />

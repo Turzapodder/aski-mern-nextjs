@@ -137,17 +137,10 @@ export default function WalletPage() {
   const canWithdraw = wallet.availableBalance > 0
 
   return (
-    <div className="min-h-screen bg-[#f4f5fb]">
+    <div className="min-h-screen">
       <div
         className="relative overflow-hidden"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at top, rgba(140,158,255,0.18), transparent 60%)"
-        }}
       >
-        <div className="pointer-events-none absolute -top-24 right-10 h-64 w-64 rounded-full bg-gradient-to-br from-[#cfd7ff] to-[#eef1ff] blur-3xl opacity-70" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full bg-gradient-to-br from-[#e6f7d8] to-[#f8fbff] blur-3xl opacity-70" />
-
         <div className="relative w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 xl:px-14 2xl:px-20">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
             <div>

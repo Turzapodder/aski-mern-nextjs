@@ -55,6 +55,8 @@ export interface Assignment {
   viewCount: number;
   lastViewedAt?: string;
   chatId?: string;
+  proposalCount?: number;
+  discussionCount?: number;
 }
 
 export interface AssignmentsResponse {

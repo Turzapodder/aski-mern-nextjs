@@ -1,5 +1,6 @@
 import AssignmentModel from '../models/Assignment.js';
 import UserModel from '../models/User.js';
+import ProposalModel from '../models/Proposal.js';
 import mongoose from 'mongoose';
 
 class AssignmentController {
@@ -91,10 +92,14 @@ class AssignmentController {
 
       // Check if user has permission to view this assignment
       const isStudent = assignment.student._id.toString() === userId.toString();
-      const isTutor = assignment.assignedTutor && assignment.assignedTutor._id.toString() === userId.toString();
+      const isAssignedTutor = assignment.assignedTutor && assignment.assignedTutor._id.toString() === userId.toString();
       const isAdmin = req.user.roles.includes('admin');
+      
+      // Allow any tutor to view pending assignments that haven't been assigned yet
+      const isTutorRole = req.user.roles.includes('tutor');
+      const isPending = assignment.status === 'pending' && !assignment.assignedTutor;
 
-      if (!isStudent && !isTutor && !isAdmin) {
+      if (!isStudent && !isAssignedTutor && !isAdmin && !(isTutorRole && isPending)) {
         return res.status(403).json({
           status: 'failed',
           message: 'Access denied'
@@ -106,9 +111,17 @@ class AssignmentController {
       assignment.lastViewedAt = new Date();
       await assignment.save();
 
+      // Get additional stats
+      const proposalCount = await ProposalModel.countDocuments({ assignment: id });
+      const discussionCount = await ProposalModel.countDocuments({ assignment: id, status: 'pending' });
+
       res.status(200).json({
         status: 'success',
-        data: assignment
+        data: {
+          ...assignment.toObject(),
+          proposalCount,
+          discussionCount
+        }
       });
 
     } catch (error) {

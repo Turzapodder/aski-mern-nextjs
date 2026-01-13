@@ -269,15 +269,15 @@ const AllAssignmentsPage = () => {
 
                                         {/* Student Info */}
                                         <div className="mt-3 text-sm text-gray-600">
-                                            <span className="font-medium">Student:</span> {assignment.student.name} ({assignment.student.email})
+                                            <span className="font-medium">Posted By:</span> {assignment.student.name}
                                         </div>
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="ml-6 flex-shrink-0 space-y-2">
+                                    <div className="ml-6 flex justify-center gap-2">
                                         <button
                                             onClick={() => handleViewDetails(assignment._id)}
-                                            className="w-full inline-flex items-center px-4 py-2 bg-primary-300 text-white rounded-lg hover:bg-primary-400 transition-colors space-x-2"
+                                            className="w-auto h-12 flex items-center px-4 py-2 bg-primary-300 text-white rounded-lg hover:bg-primary-400 transition-colors space-x-2"
                                         >
                                             <Eye className="h-4 w-4" />
                                             <span>View Details</span>
@@ -287,7 +287,7 @@ const AllAssignmentsPage = () => {
                                         {isTutor && assignment.status === 'pending' && (
                                             <button
                                                 onClick={() => handleSendProposal(assignment)}
-                                                className="w-full inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2"
+                                                className="w-auto h12 flex  items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2"
                                             >
                                                 <Send className="h-4 w-4" />
                                                 <span>Send Proposal</span>

@@ -2,7 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
-import { CopyMinus, Menu, X } from 'lucide-react'
+import Link from 'next/link'
+import { CopyMinus, Menu, X, LogOut } from 'lucide-react'
 
 interface SidebarItem {
   name: string
@@ -59,6 +60,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
       title: 'MAIN MENU',
       items: isTutor ? [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
+        { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' || (activeItem === 'tutors' && window.location.pathname.includes(userData?.user?._id || '')) },
         { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
@@ -157,21 +159,51 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         }
       </nav >
 
-      {/* Logout */}
-      < div className="p-4 " >
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-white hover:text-gray-900 group"
-          title={isCollapsed ? "Logout" : undefined}
-        >
-          <img
-            src="/assets/icons/logout.png"
-            alt="/assets/icons/logout.png"
-            className="w-[30px] h-[30px] flex-shrink-0 mr-3"
-          />
-          {!isCollapsed && <span>Logout</span>}
-        </button>
-      </div >
+      {/* User Profile & Logout */}
+      <div className="p-4 border-t border-gray-200">
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <Link href="/user/profile" className="flex items-center space-x-3 overflow-hidden flex-1 min-w-0 mr-2 group">
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 flex-shrink-0">
+                {userData?.user?.profilePicture ? (
+                  <img
+                    src={userData.user.profilePicture}
+                    alt={userData.user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-500 font-semibold text-lg">
+                    {userData?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                  {userData?.user?.name || 'User'}
+                </span>
+                <span className="text-xs text-gray-500 truncate hover:text-primary-500 hover:underline">
+                  Visit Profile
+                </span>
+              </div>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleLogout}
+            className="w-full flex justify-center items-center p-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            title="Logout"
+          >
+            <LogOut size={20} />
+          </button>
+        )}
+      </div>
     </aside >
   );
 }
