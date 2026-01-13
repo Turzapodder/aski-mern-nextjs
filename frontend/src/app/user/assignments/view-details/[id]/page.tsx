@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useState } from "react";
-import ProposalsComponent from "@/components/ProposalsComponent";
+import SendProposalModal from "@/components/SendProposalModal";
 import TutorProposalsComponent from "@/components/TutorProposalsComponent";
 import ProposalsList from "@/components/ProposalsList";
 import PaymentComponent from "@/components/PaymentComponent";
@@ -30,8 +30,6 @@ const AssignmentDetails = () => {
   const router = useRouter();
   const id = params.id as string;
   const [showProposal, setShowProposal] = useState(false);
-  const [proposal, setProposal] = useState("");
-  const [budget, setBudget] = useState("");
 
   // State to track which step is active
   const [activeStep, setActiveStep] = useState<string>("details");
@@ -53,28 +51,7 @@ const AssignmentDetails = () => {
   const assignment = assignmentData?.data;
 
   const handleSendProposal = () => {
-    // Scroll to bottom of the page where proposal component will be shown
     setShowProposal(true);
-
-    // Scroll to the bottom of the page after a short delay to ensure the component is rendered
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth",
-      });
-    }, 100);
-  };
-
-  const submitProposal = () => {
-    console.log("Proposal submitted:", { proposal, budget });
-    // Handle proposal submission
-    alert("Proposal submitted successfully!");
-    setProposal("");
-    setBudget("");
-    setShowProposal(false);
-    // Move to payment step
-    setActiveStep("payment");
-    setProgressWidth("50%");
   };
 
   const handlePaymentComplete = () => {
@@ -184,9 +161,7 @@ const AssignmentDetails = () => {
                 </div>
               </div>
               <div className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
-                <button className='w-full sm:w-auto bg-primary-300 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors'>
-                  Submit Solution
-                </button>
+                {/* Submit Solution button removed */}
 
                 <button className='w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2'>
                   <Heart size={16} />
@@ -219,168 +194,168 @@ const AssignmentDetails = () => {
                     </div>
 
                     <div className='relative z-10 flex justify-between'>
-                    {/* Step 1: Details */}
-                    <div
-                      className='flex flex-col items-center w-24 cursor-pointer'
-                      onClick={() => {
-                        setActiveStep("details");
-                        setProgressWidth("25%");
-                      }}
-                    >
+                      {/* Step 1: Details */}
                       <div
-                        className={`w-10 h-10 rounded-full ${activeStep === "details" ||
-                          activeStep === "proposals" ||
-                          activeStep === "payment" ||
-                          activeStep === "completion"
-                          ? "bg-primary-500 text-white"
-                          : "bg-white border border-gray-200 text-gray-400"
-                          } flex items-center justify-center mb-2 shadow-md transition-colors`}
+                        className='flex flex-col items-center w-24 cursor-pointer'
+                        onClick={() => {
+                          setActiveStep("details");
+                          setProgressWidth("25%");
+                        }}
                       >
-                        <CheckCircle size={18} />
-                      </div>
-                      <div
-                        className={`text-xs font-medium ${activeStep === "details"
-                          ? "text-gray-900"
-                          : "text-gray-700"
-                          } text-center`}
-                      >
-                        Details
-                      </div>
-                      <div
-                        className={`text-xs ${activeStep === "details" ||
-                          activeStep === "proposals" ||
-                          activeStep === "payment" ||
-                          activeStep === "completion"
-                          ? "text-primary-300 font-medium"
-                          : "text-gray-400"
-                          }`}
-                      >
-                        Completed
-                      </div>
-                    </div>
-
-                    {/* Step 2: Proposals */}
-                    <div
-                      className='flex flex-col items-center w-24 cursor-pointer'
-                      onClick={() => {
-                        setActiveStep("proposals");
-                        setProgressWidth("25%");
-                        setShowProposal(true);
-                      }}
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-full ${activeStep === "proposals"
-                          ? "bg-white border-2 border-primary-500 text-primary-500"
-                          : activeStep === "payment" ||
+                        <div
+                          className={`w-10 h-10 rounded-full ${activeStep === "details" ||
+                            activeStep === "proposals" ||
+                            activeStep === "payment" ||
                             activeStep === "completion"
                             ? "bg-primary-500 text-white"
                             : "bg-white border border-gray-200 text-gray-400"
-                          } flex items-center justify-center mb-2 shadow-sm transition-colors`}
-                      >
-                        <MessageSquare size={18} />
-                      </div>
-                      <div
-                        className={`text-xs font-medium ${activeStep === "proposals"
-                          ? "text-gray-900"
-                          : "text-gray-700"
-                          } text-center`}
-                      >
-                        Proposals
-                      </div>
-                      <div
-                        className={`text-xs ${activeStep === "proposals"
-                          ? "text-primary-300 font-medium"
-                          : activeStep === "payment" ||
+                            } flex items-center justify-center mb-2 shadow-md transition-colors`}
+                        >
+                          <CheckCircle size={18} />
+                        </div>
+                        <div
+                          className={`text-xs font-medium ${activeStep === "details"
+                            ? "text-gray-900"
+                            : "text-gray-700"
+                            } text-center`}
+                        >
+                          Details
+                        </div>
+                        <div
+                          className={`text-xs ${activeStep === "details" ||
+                            activeStep === "proposals" ||
+                            activeStep === "payment" ||
                             activeStep === "completion"
                             ? "text-primary-300 font-medium"
                             : "text-gray-400"
-                          }`}
-                      >
-                        {activeStep === "proposals"
-                          ? "In Progress"
-                          : activeStep === "payment" ||
-                            activeStep === "completion"
-                            ? "Completed"
-                            : "Pending"}
+                            }`}
+                        >
+                          Completed
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Step 3: Payment */}
-                    <div
-                      className='flex flex-col items-center w-24 cursor-pointer'
-                      onClick={() => {
-                        setActiveStep("payment");
-                        setProgressWidth("50%");
-                      }}
-                    >
+                      {/* Step 2: Proposals */}
                       <div
-                        className={`w-10 h-10 rounded-full ${activeStep === "payment"
-                          ? "bg-white border-2 border-primary-500 text-primary-500"
-                          : activeStep === "completion"
-                            ? "bg-primary-500 text-white"
+                        className='flex flex-col items-center w-24 cursor-pointer'
+                        onClick={() => {
+                          setActiveStep("proposals");
+                          setProgressWidth("25%");
+                          setShowProposal(true);
+                        }}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-full ${activeStep === "proposals"
+                            ? "bg-white border-2 border-primary-500 text-primary-500"
+                            : activeStep === "payment" ||
+                              activeStep === "completion"
+                              ? "bg-primary-500 text-white"
+                              : "bg-white border border-gray-200 text-gray-400"
+                            } flex items-center justify-center mb-2 shadow-sm transition-colors`}
+                        >
+                          <MessageSquare size={18} />
+                        </div>
+                        <div
+                          className={`text-xs font-medium ${activeStep === "proposals"
+                            ? "text-gray-900"
+                            : "text-gray-700"
+                            } text-center`}
+                        >
+                          Proposals
+                        </div>
+                        <div
+                          className={`text-xs ${activeStep === "proposals"
+                            ? "text-primary-300 font-medium"
+                            : activeStep === "payment" ||
+                              activeStep === "completion"
+                              ? "text-primary-300 font-medium"
+                              : "text-gray-400"
+                            }`}
+                        >
+                          {activeStep === "proposals"
+                            ? "In Progress"
+                            : activeStep === "payment" ||
+                              activeStep === "completion"
+                              ? "Completed"
+                              : "Pending"}
+                        </div>
+                      </div>
+
+                      {/* Step 3: Payment */}
+                      <div
+                        className='flex flex-col items-center w-24 cursor-pointer'
+                        onClick={() => {
+                          setActiveStep("payment");
+                          setProgressWidth("50%");
+                        }}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-full ${activeStep === "payment"
+                            ? "bg-white border-2 border-primary-500 text-primary-500"
+                            : activeStep === "completion"
+                              ? "bg-primary-500 text-white"
+                              : "bg-white border border-gray-200 text-gray-400"
+                            } flex items-center justify-center mb-2 shadow-sm transition-colors`}
+                        >
+                          <CreditCard size={18} />
+                        </div>
+                        <div
+                          className={`text-xs font-medium ${activeStep === "payment"
+                            ? "text-gray-900"
+                            : "text-gray-700"
+                            } text-center`}
+                        >
+                          Payment
+                        </div>
+                        <div
+                          className={`text-xs ${activeStep === "payment"
+                            ? "text-primary-300 font-medium"
+                            : activeStep === "completion"
+                              ? "text-primary-300 font-medium"
+                              : "text-gray-400"
+                            }`}
+                        >
+                          {activeStep === "payment"
+                            ? "In Progress"
+                            : activeStep === "completion"
+                              ? "Completed"
+                              : "Pending"}
+                        </div>
+                      </div>
+
+                      {/* Step 4: Completion & Feedback */}
+                      <div
+                        className='flex flex-col items-center w-24 cursor-pointer'
+                        onClick={() => {
+                          setActiveStep("completion");
+                          setProgressWidth("75%");
+                        }}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-full ${activeStep === "completion"
+                            ? "bg-white border-2 border-primary-500 text-primary-500"
                             : "bg-white border border-gray-200 text-gray-400"
-                          } flex items-center justify-center mb-2 shadow-sm transition-colors`}
-                      >
-                        <CreditCard size={18} />
-                      </div>
-                      <div
-                        className={`text-xs font-medium ${activeStep === "payment"
-                          ? "text-gray-900"
-                          : "text-gray-700"
-                          } text-center`}
-                      >
-                        Payment
-                      </div>
-                      <div
-                        className={`text-xs ${activeStep === "payment"
-                          ? "text-primary-300 font-medium"
-                          : activeStep === "completion"
+                            } flex items-center justify-center mb-2 shadow-sm transition-colors`}
+                        >
+                          <Award size={18} />
+                        </div>
+                        <div
+                          className={`text-xs font-medium ${activeStep === "completion"
+                            ? "text-gray-900"
+                            : "text-gray-700"
+                            } text-center`}
+                        >
+                          Completion & Feedback
+                        </div>
+                        <div
+                          className={`text-xs ${activeStep === "completion"
                             ? "text-primary-300 font-medium"
                             : "text-gray-400"
-                          }`}
-                      >
-                        {activeStep === "payment"
-                          ? "In Progress"
-                          : activeStep === "completion"
-                            ? "Completed"
-                            : "Pending"}
+                            }`}
+                        >
+                          {activeStep === "completion" ? "In Progress" : "Pending"}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Step 4: Completion & Feedback */}
-                    <div
-                      className='flex flex-col items-center w-24 cursor-pointer'
-                      onClick={() => {
-                        setActiveStep("completion");
-                        setProgressWidth("75%");
-                      }}
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-full ${activeStep === "completion"
-                          ? "bg-white border-2 border-primary-500 text-primary-500"
-                          : "bg-white border border-gray-200 text-gray-400"
-                          } flex items-center justify-center mb-2 shadow-sm transition-colors`}
-                      >
-                        <Award size={18} />
-                      </div>
-                      <div
-                        className={`text-xs font-medium ${activeStep === "completion"
-                          ? "text-gray-900"
-                          : "text-gray-700"
-                          } text-center`}
-                      >
-                        Completion & Feedback
-                      </div>
-                      <div
-                        className={`text-xs ${activeStep === "completion"
-                          ? "text-primary-300 font-medium"
-                          : "text-gray-400"
-                          }`}
-                      >
-                        {activeStep === "completion" ? "In Progress" : "Pending"}
-                      </div>
-                    </div>
-                  </div>
                   </div>
                 </div>
               </div>
@@ -498,46 +473,44 @@ const AssignmentDetails = () => {
                   <span className='text-gray-600'>Views:</span>
                   <span className='flex items-center space-x-1'>
                     <div className='w-2 h-2 bg-primary-300 rounded-full'></div>
-                    <span className='font-medium'>127</span>
+                    <span className='font-medium'>{assignment.viewCount || 0}</span>
                   </span>
                 </div>
 
                 <div className='flex justify-between items-center'>
                   <span className='text-gray-600'>Proposals Submitted:</span>
-                  <span className='font-medium'>8</span>
+                  <span className='font-medium'>{assignment.proposalCount || 0}</span>
                 </div>
 
                 <div className='flex justify-between items-center'>
                   <span className='text-gray-600'>In Discussion:</span>
-                  <span className='font-medium'>3</span>
+                  <span className='font-medium'>{assignment.discussionCount || 0}</span>
                 </div>
 
                 <div className='flex justify-between items-center'>
                   <span className='text-gray-600'>Hired:</span>
-                  <span className='font-medium'>0</span>
+                  {assignment.assignedTutor ? (
+                    <span className='bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium'>
+                      Hired
+                    </span>
+                  ) : (
+                    <span className='bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium'>
+                      Not Yet
+                    </span>
+                  )}
                 </div>
               </div>
-
-
-
-              {/* Proposal Component at the bottom of the page */}
-              {showProposal && isTutor && (
-                <div className='mt-8 w-full'>
-                  <div className='bg-white rounded-lg p-4 sm:p-6 shadow-sm'>
-                    <ProposalsComponent
-                      proposal={proposal}
-                      setProposal={setProposal}
-                      budget={budget}
-                      setBudget={setBudget}
-                      submitProposal={submitProposal}
-                      onCancel={() => {
-                        setShowProposal(false);
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
+          )}
+
+          {/* Proposal Modal */}
+          {/* Proposal Modal */}
+          {showProposal && isTutor && assignment && (
+            <SendProposalModal
+              isOpen={showProposal}
+              onClose={() => setShowProposal(false)}
+              assignment={assignment}
+            />
           )}
 
           {/* Proposals Section - Only show in details view */}

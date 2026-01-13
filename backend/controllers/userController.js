@@ -303,6 +303,75 @@ class UserController {
             return res.status(500).json({status:"failed", message:"Unable to reset password, Please Try again later!"})
         }
     }
+    // Update User Profile
+    static updateUserProfile = async (req, res) => {
+        try {
+            const userId = req.user._id;
+            const { 
+                name, 
+                bio, 
+                hourlyRate, 
+                experienceYears, 
+                expertiseSubjects, 
+                skills,
+                qualification,
+                professionalTitle
+            } = req.body;
+
+            const user = await UserModel.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({ status: "failed", message: "User not found" });
+            }
+
+            // Update basic info
+            if (name) user.name = name;
+            if (bio) user.about = bio; // Updating root 'about'
+
+            // Update Tutor Profile specific fields if user is a tutor
+            if (user.roles.includes('tutor')) {
+                if (bio) user.tutorProfile.bio = bio;
+                if (hourlyRate) user.tutorProfile.hourlyRate = Number(hourlyRate);
+                if (experienceYears) user.tutorProfile.experienceYears = Number(experienceYears);
+                
+                if (expertiseSubjects) {
+                    // Handle comma-separated string or array
+                    user.tutorProfile.expertiseSubjects = Array.isArray(expertiseSubjects) 
+                        ? expertiseSubjects 
+                        : expertiseSubjects.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                if (skills) {
+                    user.tutorProfile.skills = Array.isArray(skills) 
+                        ? skills 
+                        : skills.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                if (qualification) user.tutorProfile.qualification = qualification;
+                if (professionalTitle) user.tutorProfile.professionalTitle = professionalTitle;
+            }
+
+            await user.save();
+
+            res.status(200).json({
+                status: "success",
+                message: "Profile updated successfully",
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    roles: user.roles,
+                    tutorProfile: user.tutorProfile,
+                    about: user.about
+                }
+            });
+
+        } catch (error) {
+            console.error('Update profile error:', error);
+            res.status(500).json({ status: "failed", message: "Unable to update profile" });
+        }
+    }
+
     //Logout
     static userLogout = async ( req, res) => {
         try {

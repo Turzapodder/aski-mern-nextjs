@@ -9,19 +9,31 @@ import {
   Sun,
   Monitor,
   Save,
+  GraduationCap
 } from "lucide-react";
-import { useGetUserQuery } from "@/lib/services/auth";
+import { useGetUserQuery, useUpdateUserMutation } from "@/lib/services/auth";
 
 const SettingsPage = () => {
-  const { data: userData } = useGetUserQuery();
+  const { data: userData, refetch } = useGetUserQuery();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const user = userData?.user;
+
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const [settings, setSettings] = useState({
     // Profile Settings
-    name: user?.name || "",
-    email: user?.email || "",
+    name: "",
+    email: "",
     bio: "",
     timezone: "UTC-5",
+
+    // Tutor Profile Settings
+    professionalTitle: "",
+    qualification: "",
+    hourlyRate: 0,
+    experienceYears: 0,
+    expertiseSubjects: "",
+    skills: "",
 
     // Notification Settings
     emailNotifications: true,
@@ -45,14 +57,51 @@ const SettingsPage = () => {
     bufferTimeBetweenSessions: 15,
   });
 
+  React.useEffect(() => {
+    if (user) {
+      setSettings(prev => ({
+        ...prev,
+        name: user.name || "",
+        email: user.email || "",
+        bio: user.roles?.includes('tutor') ? (user.tutorProfile?.bio || user.about || "") : (user.about || ""),
+        professionalTitle: user.tutorProfile?.professionalTitle || "",
+        qualification: user.tutorProfile?.qualification || "",
+        hourlyRate: user.tutorProfile?.hourlyRate || 0,
+        experienceYears: user.tutorProfile?.experienceYears || 0,
+        expertiseSubjects: user.tutorProfile?.expertiseSubjects?.join(", ") || "",
+        skills: user.tutorProfile?.skills?.join(", ") || "",
+      }));
+    }
+  }, [user]);
+
   const handleSettingChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    // Here you would typically save to backend
-    console.log("Saving settings:", settings);
-    // Show success message
+  const handleSave = async () => {
+    setMessage(null);
+    try {
+      const res = await updateUser({
+        name: settings.name,
+        bio: settings.bio,
+        professionalTitle: settings.professionalTitle,
+        qualification: settings.qualification,
+        hourlyRate: settings.hourlyRate,
+        experienceYears: settings.experienceYears,
+        expertiseSubjects: settings.expertiseSubjects,
+        skills: settings.skills
+      }).unwrap();
+
+      if (res.status === "success") {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        refetch();
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Failed to update profile' });
+      }
+    } catch (error: any) {
+      console.error(error);
+      setMessage({ type: 'error', text: error?.data?.message || 'Something went wrong!' });
+    }
   };
 
   const SettingSection = ({
@@ -99,12 +148,19 @@ const SettingsPage = () => {
         </div>
         <button
           onClick={handleSave}
-          className='bg-primary-300 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2'
+          disabled={isUpdating}
+          className='bg-primary-300 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 disabled:opacity-50'
         >
-          <Save size={16} />
-          <span>Save Changes</span>
+          {isUpdating ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Save size={16} />}
+          <span>{isUpdating ? 'Saving...' : 'Save Changes'}</span>
         </button>
       </div>
+
+      {message && (
+        <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message.text}
+        </div>
+      )}
 
       {/* Profile Settings */}
       <SettingSection title='Profile Settings'>
@@ -163,6 +219,84 @@ const SettingsPage = () => {
           </div>
         </div>
       </SettingSection>
+
+      {/* Tutor Profile Settings - Only for Tutors */}
+      {user?.roles?.includes('tutor') && (
+        <SettingSection title='Professional Profile'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Professional Title
+              </label>
+              <input
+                type='text'
+                value={settings.professionalTitle}
+                onChange={(e) => handleSettingChange("professionalTitle", e.target.value)}
+                placeholder="e.g. Senior Mathematics Tutor"
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Qualification
+              </label>
+              <input
+                type='text'
+                value={settings.qualification}
+                onChange={(e) => handleSettingChange("qualification", e.target.value)}
+                placeholder="e.g. PhD in Economics"
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Hourly Rate ($)
+              </label>
+              <input
+                type='number'
+                value={settings.hourlyRate}
+                onChange={(e) => handleSettingChange("hourlyRate", e.target.value)}
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Years of Experience
+              </label>
+              <input
+                type='number'
+                value={settings.experienceYears}
+                onChange={(e) => handleSettingChange("experienceYears", e.target.value)}
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+            <div className='md:col-span-2'>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Expertise Subjects (comma separated)
+              </label>
+              <input
+                type='text'
+                value={settings.expertiseSubjects}
+                onChange={(e) => handleSettingChange("expertiseSubjects", e.target.value)}
+                placeholder="Math, Physics, Chemistry"
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+            <div className='md:col-span-2'>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Skills (comma separated)
+              </label>
+              <input
+                type='text'
+                value={settings.skills}
+                onChange={(e) => handleSettingChange("skills", e.target.value)}
+                placeholder="Communication, Problem Solving, React"
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+            </div>
+          </div>
+        </SettingSection>
+      )}
 
       {/* Notification Settings */}
       <SettingSection title='Notifications'>
