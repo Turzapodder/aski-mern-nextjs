@@ -10,8 +10,8 @@ module.exports = {
 		extend: {
 			fontFamily: {
 				sans: [
-					'var(--font-space-grotesk)',
-					'var(--font-poppins)'
+					'"Cascadia Mono"',
+					'monospace'
 				],
 				funnel: [
 					'var(--font-funnel-display)'

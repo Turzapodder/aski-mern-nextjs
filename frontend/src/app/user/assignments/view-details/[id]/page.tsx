@@ -138,7 +138,7 @@ const AssignmentDetails = () => {
   console.log(assignment);
 
   return (
-    <div className='w-full max-w-6xl mx-auto px-4 py-6 sm:px-6'>
+    <div className='w-full mx-auto px-4 py-6 sm:px-6'>
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8'>
         {/* Left Column - Main Content */}
         <div className='lg:col-span-2 space-y-6'>
