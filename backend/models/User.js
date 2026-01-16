@@ -157,6 +157,10 @@ const userSchema = new mongoose.Schema(
     },
 
     // Admin Control
+    adminRole: {
+      type: String,
+      enum: ["super_admin", "admin", "moderator"],
+    },
     adminPrivileges: {
       canManageUsers: { type: Boolean, default: false },
       canManagePayments: { type: Boolean, default: false },

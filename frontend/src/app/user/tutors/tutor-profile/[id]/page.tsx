@@ -339,9 +339,8 @@ const TutorProfilePage = () => {
 
                 </div>
 
-                <div className="lg:col-span-1">
-                    <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 lg:sticky lg:top-6">
                         <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video group cursor-pointer">
                             <Image
                                 src={tutorData.videoThumbnail}
@@ -453,20 +452,16 @@ const TutorProfilePage = () => {
 
                         </div>
                     </div>
-                    </div>
 
                 </div>
 
             </div>
         </div>
     )
-﻿'use client'
-import React from 'react'
-import TutorProfileContent from '@/components/TutorProfileContent'
 
-const TutorProfilePage = () => {
-    return <TutorProfileContent />
 }
 
 export default TutorProfilePage
+
+
 

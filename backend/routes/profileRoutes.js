@@ -5,6 +5,8 @@ import path from "path";
 import fs from "fs";
 import ProfileController from "../controllers/profileController.js";
 import UserModel from "../models/User.js";
+import AdminLogModel from "../models/AdminLog.js";
+import TutorsController from "../controllers/tutorsController.js";
 import AccessTokenAutoRefresh from "../middlewares/setAuthHeader.js";
 import checkUserAuth from "../middlewares/auth-middleware.js";
 import verifyAdmin from "../middlewares/admin-middleware.js";
@@ -24,7 +26,7 @@ const protectedRoutes = [AccessTokenAutoRefresh, checkUserAuth];
  * GET /api/profile/tutor/:tutorId
  * Get public tutor profile (viewable by anyone)
  */
-router.get("/tutor/public/:tutorId", ProfileController.getTutorPublicProfile);
+router.get("/tutor/public/:tutorId", TutorsController.getPublicTutorProfile);
 
 /**
  * GET /api/profile/tutors/verified
@@ -158,6 +160,24 @@ router.put(
         return res.status(404).json({
           status: "failed",
           message: "User not found",
+        });
+      }
+
+      const actionMap = {
+        Verified: "APPROVE_TUTOR",
+        Rejected: "REJECT_TUTOR",
+      };
+      const actionType = actionMap[verificationStatus];
+
+      if (actionType) {
+        await AdminLogModel.create({
+          adminId: req.user._id,
+          actionType,
+          targetId: updated._id,
+          targetType: "User",
+          metadata: {
+            reason: reason || "",
+          },
         });
       }
 

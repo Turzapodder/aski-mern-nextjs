@@ -6,6 +6,7 @@ import TutorApplicationModel from "../models/TutorApplication.js";
 import MessageModel from "../models/Message.js";
 import AdminLogModel from "../models/AdminLog.js";
 import TransactionModel from "../models/Transaction.js";
+import PlatformSettingsModel from "../models/PlatformSettings.js";
 
 const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
 const dashboardCache = {
@@ -457,6 +458,230 @@ class AdminController {
     }
   };
 
+  static getAdmins = async (req, res) => {
+    try {
+      const admins = await UserModel.find({ roles: "admin" })
+        .select("name email adminRole adminPrivileges lastLogin status")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return res.status(200).json({
+        status: "success",
+        data: admins,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to fetch admins",
+      });
+    }
+  };
+
+  static addAdmin = async (req, res) => {
+    try {
+      const { userId, email, role } = req.body || {};
+
+      const query = {};
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        query._id = userId;
+      } else if (email) {
+        query.email = email.toLowerCase();
+      } else {
+        return res.status(400).json({
+          status: "failed",
+          message: "Provide a valid userId or email",
+        });
+      }
+
+      const roleValue = role || "admin";
+      if (!["super_admin", "admin", "moderator"].includes(roleValue)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid admin role",
+        });
+      }
+
+      const privilegeMap = {
+        super_admin: {
+          canManageUsers: true,
+          canManagePayments: true,
+          canViewAnalytics: true,
+        },
+        admin: {
+          canManageUsers: true,
+          canManagePayments: true,
+          canViewAnalytics: true,
+        },
+        moderator: {
+          canManageUsers: true,
+          canManagePayments: false,
+          canViewAnalytics: false,
+        },
+      };
+
+      const updated = await UserModel.findOneAndUpdate(
+        query,
+        {
+          $addToSet: { roles: "admin" },
+          adminRole: roleValue,
+          adminPrivileges: privilegeMap[roleValue],
+        },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "PROMOTE_ADMIN",
+        targetId: updated._id,
+        targetType: "User",
+        metadata: {
+          role: roleValue,
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Admin role granted",
+        data: updated,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to add admin",
+      });
+    }
+  };
+
+  static updateAdminRole = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body || {};
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid user ID",
+        });
+      }
+
+      if (!["super_admin", "admin", "moderator"].includes(role)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid admin role",
+        });
+      }
+
+      const privilegeMap = {
+        super_admin: {
+          canManageUsers: true,
+          canManagePayments: true,
+          canViewAnalytics: true,
+        },
+        admin: {
+          canManageUsers: true,
+          canManagePayments: true,
+          canViewAnalytics: true,
+        },
+        moderator: {
+          canManageUsers: true,
+          canManagePayments: false,
+          canViewAnalytics: false,
+        },
+      };
+
+      const updated = await UserModel.findByIdAndUpdate(
+        id,
+        {
+          $addToSet: { roles: "admin" },
+          adminRole: role,
+          adminPrivileges: privilegeMap[role],
+        },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "UPDATE_ADMIN_ROLE",
+        targetId: updated._id,
+        targetType: "User",
+        metadata: {
+          role,
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Admin role updated",
+        data: updated,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to update admin role",
+      });
+    }
+  };
+
+  static revokeAdmin = async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid user ID",
+        });
+      }
+
+      const updated = await UserModel.findByIdAndUpdate(
+        id,
+        {
+          $pull: { roles: "admin" },
+          $unset: { adminRole: "", adminPrivileges: "" },
+        },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "REVOKE_ADMIN",
+        targetId: updated._id,
+        targetType: "User",
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Admin access revoked",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to revoke admin",
+      });
+    }
+  };
+
   static getPendingTutors = async (req, res) => {
     try {
       const applications = await TutorApplicationModel.find({
@@ -486,7 +711,7 @@ class AdminController {
         onboardingStatus: { $in: ["approved", "completed"] },
         status: "active",
       })
-        .select("name email profileImage tutorProfile publicStats status")
+        .select("name email profileImage tutorProfile publicStats status wallet")
         .sort({ "publicStats.averageRating": -1 })
         .lean();
 
@@ -792,9 +1017,19 @@ class AdminController {
         });
       }
 
+      const messages = assignment.chatId
+        ? await MessageModel.find({ chat: assignment.chatId })
+            .populate("sender", "name email profileImage")
+            .sort({ createdAt: 1 })
+            .lean()
+        : [];
+
       return res.status(200).json({
         status: "success",
-        data: assignment,
+        data: {
+          assignment,
+          chatHistory: messages,
+        },
       });
     } catch (error) {
       return res.status(500).json({
@@ -997,6 +1232,63 @@ class AdminController {
     }
   };
 
+  static getFinanceSummary = async (req, res) => {
+    try {
+      const [platformRevenueAgg, escrowAgg, payoutsAgg, pendingWithdrawalsAgg] =
+        await Promise.all([
+          TransactionModel.aggregate([
+            { $match: { type: "platform_fee", status: "completed" } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+          UserModel.aggregate([
+            { $group: { _id: null, total: { $sum: "$wallet.escrowBalance" } } },
+          ]),
+          TransactionModel.aggregate([
+            { $match: { type: "withdrawal", status: "completed" } },
+            {
+              $group: {
+                _id: null,
+                totalAmount: { $sum: "$amount" },
+                totalCount: { $sum: 1 },
+              },
+            },
+          ]),
+          UserModel.aggregate([
+            { $unwind: "$wallet.withdrawalHistory" },
+            { $match: { "wallet.withdrawalHistory.status": "PENDING" } },
+            {
+              $group: {
+                _id: null,
+                totalAmount: { $sum: "$wallet.withdrawalHistory.amount" },
+                totalCount: { $sum: 1 },
+              },
+            },
+          ]),
+        ]);
+
+      return res.status(200).json({
+        status: "success",
+        data: {
+          platformRevenue: platformRevenueAgg?.[0]?.total || 0,
+          escrowBalance: escrowAgg?.[0]?.total || 0,
+          payouts: {
+            totalAmount: payoutsAgg?.[0]?.totalAmount || 0,
+            totalCount: payoutsAgg?.[0]?.totalCount || 0,
+          },
+          pendingWithdrawals: {
+            totalAmount: pendingWithdrawalsAgg?.[0]?.totalAmount || 0,
+            totalCount: pendingWithdrawalsAgg?.[0]?.totalCount || 0,
+          },
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to fetch finance summary",
+      });
+    }
+  };
+
   static getWithdrawalRequests = async (req, res) => {
     try {
       const page = parseNumber(req.query.page, 1);
@@ -1104,17 +1396,34 @@ class AdminController {
         });
       }
 
-      await TransactionModel.create({
-        userId: user._id,
-        type: "withdrawal",
-        amount: entry.amount || 0,
-        status: "completed",
+      const existingTransaction = await TransactionModel.findOne({
         gatewayId: entry.transactionId,
-        relatedTo: { model: "User", id: user._id },
-        metadata: {
-          processedBy: req.user._id,
-        },
-      });
+        type: "withdrawal",
+      }).lean();
+
+      if (existingTransaction) {
+        await TransactionModel.updateOne(
+          { _id: existingTransaction._id },
+          {
+            $set: {
+              status: "completed",
+              "metadata.processedBy": req.user._id,
+            },
+          }
+        );
+      } else {
+        await TransactionModel.create({
+          userId: user._id,
+          type: "withdrawal",
+          amount: entry.amount || 0,
+          status: "completed",
+          gatewayId: entry.transactionId,
+          relatedTo: { model: "User", id: user._id },
+          metadata: {
+            processedBy: req.user._id,
+          },
+        });
+      }
 
       await AdminLogModel.create({
         adminId: req.user._id,
@@ -1295,7 +1604,14 @@ class AdminController {
           throw new Error("Insufficient escrow balance");
         }
 
-        const platformFeeRate = parseNumber(process.env.PLATFORM_FEE_RATE, 0);
+        const settings = await PlatformSettingsModel.findOne()
+          .session(session)
+          .lean();
+        const platformFeeRate = parseNumber(
+          settings?.platformFeeRate,
+          parseNumber(process.env.PLATFORM_FEE_RATE, 0)
+        );
+        const minTransactionFee = parseNumber(settings?.minTransactionFee, 0);
         let platformFee = 0;
         let studentAmount = 0;
         let tutorAmount = 0;
@@ -1306,6 +1622,9 @@ class AdminController {
         } else if (resolution === "release") {
           tutorAmount = escrowAmount;
           platformFee = Math.max(0, tutorAmount * platformFeeRate);
+          if (platformFee > 0 && minTransactionFee > 0) {
+            platformFee = Math.max(platformFee, minTransactionFee);
+          }
           tutorNet = Math.max(0, tutorAmount - platformFee);
         } else if (resolution === "split") {
           const percent = parseNumber(studentPercent, 50);
@@ -1315,6 +1634,9 @@ class AdminController {
           studentAmount = Number((escrowAmount * (percent / 100)).toFixed(2));
           tutorAmount = Number((escrowAmount - studentAmount).toFixed(2));
           platformFee = Math.max(0, tutorAmount * platformFeeRate);
+          if (platformFee > 0 && minTransactionFee > 0) {
+            platformFee = Math.max(platformFee, minTransactionFee);
+          }
           tutorNet = Math.max(0, tutorAmount - platformFee);
         }
 

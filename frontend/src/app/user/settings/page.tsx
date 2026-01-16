@@ -1,31 +1,19 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { Bell, Shield, Moon, Sun, Monitor, Save } from "lucide-react";
-import { useGetUserQuery } from "@/lib/services/auth";
+import { useGetUserQuery, useUpdateUserMutation } from "@/lib/services/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsPage = () => {
-  const { data: userData, isLoading } = useGetUserQuery();
-import React, { useState } from "react";
-import {
-  Bell,
-  Shield,
-  User,
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
-  Save,
-  GraduationCap
-} from "lucide-react";
-import { useGetUserQuery, useUpdateUserMutation } from "@/lib/services/auth";
-
-const SettingsPage = () => {
-  const { data: userData, refetch } = useGetUserQuery();
+  const { data: userData, isLoading, refetch } = useGetUserQuery();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const user = userData?.user;
 
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const [settings, setSettings] = useState({
     // Profile Settings
@@ -70,22 +58,16 @@ const SettingsPage = () => {
       ...prev,
       name: user.name || "",
       email: user.email || "",
+      bio: user.roles?.includes("tutor")
+        ? user.tutorProfile?.bio || user.about || ""
+        : user.about || "",
+      professionalTitle: user.tutorProfile?.professionalTitle || "",
+      qualification: user.tutorProfile?.qualification || "",
+      hourlyRate: user.tutorProfile?.hourlyRate || 0,
+      experienceYears: user.tutorProfile?.experienceYears || 0,
+      expertiseSubjects: user.tutorProfile?.expertiseSubjects?.join(", ") || "",
+      skills: user.tutorProfile?.skills?.join(", ") || "",
     }));
-  React.useEffect(() => {
-    if (user) {
-      setSettings(prev => ({
-        ...prev,
-        name: user.name || "",
-        email: user.email || "",
-        bio: user.roles?.includes('tutor') ? (user.tutorProfile?.bio || user.about || "") : (user.about || ""),
-        professionalTitle: user.tutorProfile?.professionalTitle || "",
-        qualification: user.tutorProfile?.qualification || "",
-        hourlyRate: user.tutorProfile?.hourlyRate || 0,
-        experienceYears: user.tutorProfile?.experienceYears || 0,
-        expertiseSubjects: user.tutorProfile?.expertiseSubjects?.join(", ") || "",
-        skills: user.tutorProfile?.skills?.join(", ") || "",
-      }));
-    }
   }, [user]);
 
   const handleSettingChange = (key: string, value: any) => {
@@ -103,18 +85,24 @@ const SettingsPage = () => {
         hourlyRate: settings.hourlyRate,
         experienceYears: settings.experienceYears,
         expertiseSubjects: settings.expertiseSubjects,
-        skills: settings.skills
+        skills: settings.skills,
       }).unwrap();
 
       if (res.status === "success") {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setMessage({ type: "success", text: "Profile updated successfully!" });
         refetch();
       } else {
-        setMessage({ type: 'error', text: res.message || 'Failed to update profile' });
+        setMessage({
+          type: "error",
+          text: res.message || "Failed to update profile",
+        });
       }
     } catch (error: any) {
       console.error(error);
-      setMessage({ type: 'error', text: error?.data?.message || 'Something went wrong!' });
+      setMessage({
+        type: "error",
+        text: error?.data?.message || "Something went wrong!",
+      });
     }
   };
 
@@ -125,8 +113,8 @@ const SettingsPage = () => {
     title: string;
     children: React.ReactNode;
   }) => (
-    <div className='bg-white rounded-lg shadow p-6 mb-6'>
-      <h3 className='text-lg font-semibold text-gray-900 mb-4'>{title}</h3>
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -140,12 +128,14 @@ const SettingsPage = () => {
   }) => (
     <button
       onClick={() => onChange(!enabled)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? "bg-primary-300" : "bg-gray-300"
-        }`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+        enabled ? "bg-primary-300" : "bg-gray-300"
+      }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"
-          }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          enabled ? "translate-x-6" : "translate-x-1"
+        }`}
       />
     </button>
   );
@@ -175,275 +165,272 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className='w-full mx-auto'>
-      {/* Header */}
-      <div className='flex items-center justify-between mb-6'>
+    <div className="w-full mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className='text-2xl font-bold text-gray-900'>Settings</h1>
-          <p className='text-gray-600'>
+          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600">
             Manage your account preferences and settings
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={isUpdating}
-          className='bg-primary-300 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 disabled:opacity-50'
+          className="bg-primary-300 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 disabled:opacity-50"
         >
-          {isUpdating ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Save size={16} />}
-          <span>{isUpdating ? 'Saving...' : 'Save Changes'}</span>
+          {isUpdating ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+          ) : (
+            <Save size={16} />
+          )}
+          <span>{isUpdating ? "Saving..." : "Save Changes"}</span>
         </button>
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+        <div
+          className={`mb-6 p-4 rounded-lg ${
+            message.type === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
           {message.text}
         </div>
       )}
 
-      {/* Profile Settings */}
-      <SettingSection title='Profile Settings'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      <SettingSection title="Profile Settings">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Full Name
             </label>
             <input
-              type='text'
+              type="text"
               value={settings.name}
               onChange={(e) => handleSettingChange("name", e.target.value)}
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
-              type='email'
+              type="email"
               value={settings.email}
               onChange={(e) => handleSettingChange("email", e.target.value)}
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
-          <div className='md:col-span-2'>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Bio
             </label>
             <textarea
               value={settings.bio}
               onChange={(e) => handleSettingChange("bio", e.target.value)}
               rows={3}
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
-              placeholder='Tell others about yourself...'
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Tell others about yourself..."
             />
           </div>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Timezone
             </label>
             <select
               value={settings.timezone}
-              onChange={(e) =>
-                handleSettingChange("timezone", e.target.value)
-              }
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              onChange={(e) => handleSettingChange("timezone", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value='UTC-8'>Pacific Time (UTC-8)</option>
-              <option value='UTC-7'>Mountain Time (UTC-7)</option>
-              <option value='UTC-6'>Central Time (UTC-6)</option>
-              <option value='UTC-5'>Eastern Time (UTC-5)</option>
-              <option value='UTC+0'>UTC</option>
+              <option value="UTC-8">Pacific Time (UTC-8)</option>
+              <option value="UTC-7">Mountain Time (UTC-7)</option>
+              <option value="UTC-6">Central Time (UTC-6)</option>
+              <option value="UTC-5">Eastern Time (UTC-5)</option>
+              <option value="UTC+0">UTC</option>
             </select>
           </div>
         </div>
       </SettingSection>
 
-      {/* Tutor Profile Settings - Only for Tutors */}
-      {user?.roles?.includes('tutor') && (
-        <SettingSection title='Professional Profile'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      {user?.roles?.includes("tutor") && (
+        <SettingSection title="Professional Profile">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Professional Title
               </label>
               <input
-                type='text'
+                type="text"
                 value={settings.professionalTitle}
-                onChange={(e) => handleSettingChange("professionalTitle", e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("professionalTitle", e.target.value)
+                }
                 placeholder="e.g. Senior Mathematics Tutor"
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Qualification
               </label>
               <input
-                type='text'
+                type="text"
                 value={settings.qualification}
-                onChange={(e) => handleSettingChange("qualification", e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("qualification", e.target.value)
+                }
                 placeholder="e.g. PhD in Economics"
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Hourly Rate ($)
               </label>
               <input
-                type='number'
+                type="number"
                 value={settings.hourlyRate}
-                onChange={(e) => handleSettingChange("hourlyRate", e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                onChange={(e) =>
+                  handleSettingChange("hourlyRate", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Years of Experience
               </label>
               <input
-                type='number'
+                type="number"
                 value={settings.experienceYears}
-                onChange={(e) => handleSettingChange("experienceYears", e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                onChange={(e) =>
+                  handleSettingChange("experienceYears", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div className='md:col-span-2'>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Expertise Subjects (comma separated)
               </label>
               <input
-                type='text'
+                type="text"
                 value={settings.expertiseSubjects}
-                onChange={(e) => handleSettingChange("expertiseSubjects", e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("expertiseSubjects", e.target.value)
+                }
                 placeholder="Math, Physics, Chemistry"
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div className='md:col-span-2'>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Skills (comma separated)
               </label>
               <input
-                type='text'
+                type="text"
                 value={settings.skills}
-                onChange={(e) => handleSettingChange("skills", e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("skills", e.target.value)
+                }
                 placeholder="Communication, Problem Solving, React"
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
         </SettingSection>
       )}
 
-      {/* Notification Settings */}
-      <SettingSection title='Notifications'>
-        <div className='space-y-4'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Bell className='w-5 h-5 text-gray-400' />
+      <SettingSection title="Notifications">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Bell className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
-                  Email Notifications
-                </p>
-                <p className='text-sm text-gray-500'>
+                <p className="font-medium text-gray-900">Email Notifications</p>
+                <p className="text-sm text-gray-500">
                   Receive notifications via email
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.emailNotifications}
-              onChange={(value) =>
-                handleSettingChange("emailNotifications", value)
-              }
+              onChange={(value) => handleSettingChange("emailNotifications", value)}
             />
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Bell className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Bell className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
-                  Push Notifications
-                </p>
-                <p className='text-sm text-gray-500'>
+                <p className="font-medium text-gray-900">Push Notifications</p>
+                <p className="text-sm text-gray-500">
                   Receive push notifications in browser
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.pushNotifications}
-              onChange={(value) =>
-                handleSettingChange("pushNotifications", value)
-              }
+              onChange={(value) => handleSettingChange("pushNotifications", value)}
             />
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Bell className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Bell className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
-                  Message Notifications
-                </p>
-                <p className='text-sm text-gray-500'>
+                <p className="font-medium text-gray-900">Message Notifications</p>
+                <p className="text-sm text-gray-500">
                   Get notified of new messages
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.messageNotifications}
-              onChange={(value) =>
-                handleSettingChange("messageNotifications", value)
-              }
+              onChange={(value) => handleSettingChange("messageNotifications", value)}
             />
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Bell className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Bell className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
-                  Session Reminders
-                </p>
-                <p className='text-sm text-gray-500'>
+                <p className="font-medium text-gray-900">Session Reminders</p>
+                <p className="text-sm text-gray-500">
                   Reminders for upcoming sessions
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.sessionReminders}
-              onChange={(value) =>
-                handleSettingChange("sessionReminders", value)
-              }
+              onChange={(value) => handleSettingChange("sessionReminders", value)}
             />
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Bell className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Bell className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>Weekly Reports</p>
-                <p className='text-sm text-gray-500'>
+                <p className="font-medium text-gray-900">Weekly Reports</p>
+                <p className="text-sm text-gray-500">
                   Weekly summary of your activity
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.weeklyReports}
-              onChange={(value) =>
-                handleSettingChange("weeklyReports", value)
-              }
+              onChange={(value) => handleSettingChange("weeklyReports", value)}
             />
           </div>
         </div>
       </SettingSection>
 
-      {/* Privacy Settings */}
-      <SettingSection title='Privacy & Security'>
-        <div className='space-y-4'>
+      <SettingSection title="Privacy & Security">
+        <div className="space-y-4">
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Profile Visibility
             </label>
             <select
@@ -451,70 +438,59 @@ const SettingsPage = () => {
               onChange={(e) =>
                 handleSettingChange("profileVisibility", e.target.value)
               }
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value='public'>
-                Public - Anyone can see your profile
-              </option>
-              <option value='students'>
+              <option value="public">Public - Anyone can see your profile</option>
+              <option value="students">
                 Students Only - Only students can see your profile
               </option>
-              <option value='private'>
-                Private - Only you can see your profile
-              </option>
+              <option value="private">Private - Only you can see your profile</option>
             </select>
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Shield className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Shield className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
-                  Show Online Status
-                </p>
-                <p className='text-sm text-gray-500'>
-                  Let others see when you&apos;re online
+                <p className="font-medium text-gray-900">Show Online Status</p>
+                <p className="text-sm text-gray-500">
+                  Let others see when you are online
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.showOnlineStatus}
-              onChange={(value) =>
-                handleSettingChange("showOnlineStatus", value)
-              }
+              onChange={(value) => handleSettingChange("showOnlineStatus", value)}
             />
           </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Shield className='w-5 h-5 text-gray-400' />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Shield className="w-5 h-5 text-gray-400" />
               <div>
-                <p className='font-medium text-gray-900'>
+                <p className="font-medium text-gray-900">
                   Allow Direct Messages
                 </p>
-                <p className='text-sm text-gray-500'>
+                <p className="text-sm text-gray-500">
                   Allow students to message you directly
                 </p>
               </div>
             </div>
             <ToggleSwitch
               enabled={settings.allowDirectMessages}
-              onChange={(value) =>
-                handleSettingChange("allowDirectMessages", value)
-              }
+              onChange={(value) => handleSettingChange("allowDirectMessages", value)}
             />
           </div>
         </div>
       </SettingSection>
 
-      {/* Appearance Settings */}
-      <SettingSection title='Appearance'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      <SettingSection title="Appearance">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Theme
             </label>
-            <div className='grid grid-cols-3 gap-3'>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { value: "light", label: "Light", icon: Sun },
                 { value: "dark", label: "Dark", icon: Moon },
@@ -523,47 +499,43 @@ const SettingsPage = () => {
                 <button
                   key={value}
                   onClick={() => handleSettingChange("theme", value)}
-                  className={`p-3 border rounded-lg flex flex-col items-center space-y-2 ${settings.theme === value
-                    ? "border-primary-300 bg-primary-100 text-primary-700"
-                    : "border-gray-300 hover:border-gray-400"
-                    }`}
+                  className={`p-3 border rounded-lg flex flex-col items-center space-y-2 ${
+                    settings.theme === value
+                      ? "border-primary-300 bg-primary-100 text-primary-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
                 >
                   <Icon size={20} />
-                  <span className='text-sm font-medium'>{label}</span>
+                  <span className="text-sm font-medium">{label}</span>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Language
             </label>
             <select
               value={settings.language}
-              onChange={(e) =>
-                handleSettingChange("language", e.target.value)
-              }
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+              onChange={(e) => handleSettingChange("language", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value='en'>English</option>
-              <option value='es'>Espanol</option>
-              <option value='fr'>Francais</option>
-              <option value='de'>Deutsch</option>
+              <option value="en">English</option>
+              <option value="es">Espanol</option>
+              <option value="fr">Francais</option>
+              <option value="de">Deutsch</option>
             </select>
           </div>
         </div>
       </SettingSection>
 
-      {/* Tutoring Settings */}
-      <SettingSection title='Tutoring Preferences'>
-        <div className='space-y-4'>
-          <div className='flex items-center justify-between'>
+      <SettingSection title="Tutoring Preferences">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <p className='font-medium text-gray-900'>
-                Auto-accept Sessions
-              </p>
-              <p className='text-sm text-gray-500'>
+              <p className="font-medium text-gray-900">Auto-accept Sessions</p>
+              <p className="text-sm text-gray-500">
                 Automatically accept session requests
               </p>
             </div>
@@ -575,28 +547,28 @@ const SettingsPage = () => {
             />
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Max Sessions Per Day
               </label>
               <input
-                type='number'
+                type="number"
                 value={settings.maxSessionsPerDay}
                 onChange={(e) =>
                   handleSettingChange(
                     "maxSessionsPerDay",
-                    parseInt(e.target.value)
+                    parseInt(e.target.value, 10)
                   )
                 }
-                min='1'
-                max='20'
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                min="1"
+                max="20"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Buffer Time (minutes)
               </label>
               <select
@@ -604,10 +576,10 @@ const SettingsPage = () => {
                 onChange={(e) =>
                   handleSettingChange(
                     "bufferTimeBetweenSessions",
-                    parseInt(e.target.value)
+                    parseInt(e.target.value, 10)
                   )
                 }
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value={0}>No buffer</option>
                 <option value={5}>5 minutes</option>
@@ -620,9 +592,7 @@ const SettingsPage = () => {
         </div>
       </SettingSection>
     </div>
-
   );
 };
 
 export default SettingsPage;
-

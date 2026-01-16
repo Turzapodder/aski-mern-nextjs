@@ -336,7 +336,7 @@ export default function LandingBackupPage() {
                             <div key={i} className="p-6 bg-yellow-50/50 rounded-2xl border border-yellow-100">
                                 <div className="flex text-yellow-400 mb-4 text-sm">★★★★★</div>
                                 <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-                                    "{t.text}"
+                                    &quot;{t.text}&quot;
                                 </p>
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold">{t.name[0]}</div>
