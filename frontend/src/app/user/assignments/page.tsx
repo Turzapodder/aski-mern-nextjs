@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Clock,
@@ -8,13 +8,13 @@ import {
     AlertCircle,
     BookOpen,
     Eye,
-    Filter,
     Search,
     Send
 } from "lucide-react";
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
 import SendProposalModal from "@/components/SendProposalModal";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 
@@ -48,8 +48,6 @@ const AllAssignmentsPage = () => {
     const assignments = assignmentsData?.data || [];
 
     // Use assignments directly since API already handles filtering
-    const filteredAssignments = assignments;
-
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
@@ -94,10 +92,24 @@ const AllAssignmentsPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-300 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading assignments...</p>
+            <div className="min-h-screen bg-gray-50 p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <Skeleton key={index} className="h-10 w-full" />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                            <Skeleton key={index} className="h-40 w-full rounded-lg" />
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -124,8 +136,6 @@ const AllAssignmentsPage = () => {
             </div>
         );
     }
-
-    console.log(assignmentsData);
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">

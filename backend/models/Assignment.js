@@ -67,6 +67,8 @@ const assignmentSchema = new mongoose.Schema({
       'assigned',        // Tutor assigned, work in progress
       'submitted',       // Tutor submitted the work
       'completed',       // Student approved the work
+      'disputed',        // Dispute opened by student or tutor
+      'resolved',        // Dispute resolved
       'cancelled',       // Assignment cancelled
       'overdue'          // Past deadline without completion
     ],
@@ -139,7 +141,7 @@ const assignmentSchema = new mongoose.Schema({
   // Communication
   chatId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Chat'
+    ref: 'chat'
   }
 }, {
   timestamps: true // Adds createdAt and updatedAt automatically
@@ -155,7 +157,10 @@ assignmentSchema.index({ subject: 1 });
 
 // Virtual for checking if assignment is overdue
 assignmentSchema.virtual('isOverdue').get(function() {
-  return this.deadline < new Date() && !['completed', 'cancelled'].includes(this.status);
+  return (
+    this.deadline < new Date() &&
+    !['completed', 'cancelled', 'disputed', 'resolved'].includes(this.status)
+  );
 });
 
 // Pre-save middleware to update status if overdue

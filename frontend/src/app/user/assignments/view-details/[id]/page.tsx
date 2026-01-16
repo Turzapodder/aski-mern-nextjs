@@ -21,9 +21,9 @@ import TutorProposalsComponent from "@/components/TutorProposalsComponent";
 import ProposalsList from "@/components/ProposalsList";
 import PaymentComponent from "@/components/PaymentComponent";
 import CompletionFeedbackComponent from "@/components/CompletionFeedbackComponent";
-import TopNavbar from "@/components/TopNavbar";
 import { useGetAssignmentByIdQuery } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const AssignmentDetails = () => {
   const params = useParams();
@@ -92,10 +92,18 @@ const AssignmentDetails = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-300 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading assignment details...</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-56 w-full rounded-lg" />
+            <Skeleton className="h-48 w-full rounded-lg" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-56 w-full rounded-lg" />
+            <Skeleton className="h-40 w-full rounded-lg" />
+          </div>
         </div>
       </div>
     );
@@ -157,8 +165,6 @@ const AssignmentDetails = () => {
       return `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
     }
   };
-
-  console.log(assignment);
 
   return (
     <div className='w-full max-w-6xl mx-auto px-4 py-6 sm:px-6'>

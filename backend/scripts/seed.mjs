@@ -10,6 +10,7 @@ const DB_NAME = process.env.DB_NAME || "aski-db";
 const SALT_ROUNDS = Number(process.env.SALT) || 10;
 
 const SEED_EMAILS = [
+  "admin@aski.com",
   "student1@example.com",
   "tutor_pending@example.com",
   "tutor_approved@example.com",
@@ -56,6 +57,19 @@ const run = async () => {
   }
 
   const passwordHash = await bcrypt.hash("Password123!", SALT_ROUNDS);
+
+  const admin = await ensureUser({
+    email: "admin@aski.com",
+    payload: {
+      name: "Seed Admin",
+      email: "admin@aski.com",
+      password: passwordHash,
+      roles: ["user", "admin"],
+      status: "active",
+      onboardingStatus: "completed",
+      is_verified: true,
+    },
+  });
 
   const student = await ensureUser({
     email: "student1@example.com",
@@ -231,6 +245,7 @@ const run = async () => {
 
   console.log("Seed complete");
   console.log({
+    adminId: String(admin._id),
     studentId: String(student._id),
     tutorPendingId: String(tutorPending._id),
     tutorApprovedId: String(tutorApproved._id),

@@ -130,7 +130,7 @@ const VerifyEmail = () => {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Didn't receive the email?{' '}
+            Didn&apos;t receive the email?{' '}
             <button className="text-black font-semibold hover:underline">
               Click to resend
             </button>

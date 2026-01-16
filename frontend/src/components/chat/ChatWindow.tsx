@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import Image from "next/image";
 import { MoreVertical, Phone, Search, Paperclip, Mic, Send, Smile } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { format } from 'date-fns';
@@ -85,7 +86,13 @@ const ChatWindow = () => {
                                 <div className="w-10 h-10 flex-shrink-0">
                                     {showAvatar ? (
                                         msg.sender.avatar ? (
-                                            <img src={msg.sender.avatar} alt={msg.sender.name} className="w-10 h-10 rounded-full object-cover" />
+                                            <Image
+                                                src={msg.sender.avatar}
+                                                alt={msg.sender.name}
+                                                width={40}
+                                                height={40}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
                                         ) : (
                                             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
                                                 {msg.sender.name[0]}

@@ -1,7 +1,8 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Search, Filter, Bookmark, ChevronDown, CheckCircle, Flame, Star, BookOpen, User, GraduationCap, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Tutor {
   id: string
@@ -58,7 +59,7 @@ const TutorComponent = () => {
     setIsTeacherAccountActive(!isTeacherAccountActive)
   }
 
-  const fetchTutors = async () => {
+  const fetchTutors = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -90,11 +91,11 @@ const TutorComponent = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     fetchTutors()
-  }, [filters])
+  }, [fetchTutors])
 
   const teacherSections = useMemo(() => {
     const sections = new Map<string, Teacher[]>()
@@ -252,7 +253,7 @@ const TutorComponent = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Teachers</h1>
           <p className="text-gray-500 text-[15px]">
-            Search for specific subjects and find the teachers you're ready to take a course with.
+            Search for specific subjects and find the teachers you&apos;re ready to take a course with.
           </p>
         </div>
 
@@ -386,7 +387,11 @@ const TutorComponent = () => {
       )}
 
       {loading && (
-        <div className="text-sm text-gray-500 mb-8">Loading tutors...</div>
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-72 w-full rounded-2xl" />
+          ))}
+        </div>
       )}
       {error && (
         <div className="text-sm text-red-600 mb-8">{error}</div>

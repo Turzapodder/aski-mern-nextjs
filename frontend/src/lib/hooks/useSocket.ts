@@ -27,6 +27,11 @@ interface SocketEvents {
 export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const eventsRef = useRef(events);
+
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
   useEffect(() => {
     // Get JWT token from cookies - use accessToken first, then refreshToken as fallback
@@ -81,42 +86,42 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     // Chat event handlers
     socket.on('new_message', (data) => {
       console.log('Message received via socket:', data);
-      events.onMessageReceived?.(data);
+      eventsRef.current.onMessageReceived?.(data);
     });
 
     socket.on('user_typing', (data) => {
       console.log('User started typing:', data);
-      events.onTypingStart?.(data);
+      eventsRef.current.onTypingStart?.(data);
     });
 
     socket.on('user_stopped_typing', (data) => {
       console.log('User stopped typing:', data);
-      events.onTypingStop?.(data);
+      eventsRef.current.onTypingStop?.(data);
     });
 
     socket.on('joined_chat', (data) => {
       console.log('User joined chat:', data);
-      events.onUserJoined?.(data);
+      eventsRef.current.onUserJoined?.(data);
     });
 
     socket.on('left_chat', (data) => {
       console.log('User left chat:', data);
-      events.onUserLeft?.(data);
+      eventsRef.current.onUserLeft?.(data);
     });
 
     socket.on('messages_read', (data) => {
       console.log('Messages marked as read:', data);
-      events.onMessageRead?.(data);
+      eventsRef.current.onMessageRead?.(data);
     });
 
     socket.on('user_online', (data) => {
       console.log('User came online:', data);
-      events.onUserOnline?.(data);
+      eventsRef.current.onUserOnline?.(data);
     });
 
     socket.on('user_offline', (data) => {
       console.log('User went offline:', data);
-      events.onUserOffline?.(data);
+      eventsRef.current.onUserOffline?.(data);
     });
 
     socket.on('error', (data) => {

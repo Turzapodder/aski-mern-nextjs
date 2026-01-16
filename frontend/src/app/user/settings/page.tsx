@@ -1,19 +1,11 @@
 "use client";
-import React, { useState } from "react";
-import {
-  Bell,
-  Shield,
-  User,
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
-  Save,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Bell, Shield, Moon, Sun, Monitor, Save } from "lucide-react";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsPage = () => {
-  const { data: userData } = useGetUserQuery();
+  const { data: userData, isLoading } = useGetUserQuery();
   const user = userData?.user;
 
   const [settings, setSettings] = useState({
@@ -44,6 +36,15 @@ const SettingsPage = () => {
     maxSessionsPerDay: 8,
     bufferTimeBetweenSessions: 15,
   });
+
+  useEffect(() => {
+    if (!user) return;
+    setSettings((prev) => ({
+      ...prev,
+      name: user.name || "",
+      email: user.email || "",
+    }));
+  }, [user]);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -86,6 +87,30 @@ const SettingsPage = () => {
       />
     </button>
   );
+
+  if (isLoading) {
+    return (
+      <div className="w-full mx-auto space-y-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-10 w-36 rounded-lg" />
+        </div>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="bg-white rounded-lg shadow p-6">
+            <Skeleton className="h-5 w-48" />
+            <div className="mt-4 space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className='w-full mx-auto'>
@@ -301,7 +326,7 @@ const SettingsPage = () => {
                   Show Online Status
                 </p>
                 <p className='text-sm text-gray-500'>
-                  Let others see when you're online
+                  Let others see when you&apos;re online
                 </p>
               </div>
             </div>
@@ -375,8 +400,8 @@ const SettingsPage = () => {
               className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
             >
               <option value='en'>English</option>
-              <option value='es'>Español</option>
-              <option value='fr'>Français</option>
+              <option value='es'>Espanol</option>
+              <option value='fr'>Francais</option>
               <option value='de'>Deutsch</option>
             </select>
           </div>
@@ -453,3 +478,4 @@ const SettingsPage = () => {
 };
 
 export default SettingsPage;
+

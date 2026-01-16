@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from "next/image"
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import { CopyMinus, Menu, X } from 'lucide-react'
@@ -88,9 +89,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <img
+              <Image
                 src="/assets/main-logo.svg"
                 alt="logo"
+                width={120}
+                height={30}
                 className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${!isCollapsed && "mr-3"
                   }`}
               />
@@ -136,9 +139,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
                           className={`flex items-center ${isCollapsed ? "justify-center w-full" : ""
                             }`}
                         >
-                          <img
+                          <Image
                             src={item.icon}
                             alt={item.name}
+                            width={30}
+                            height={30}
                             className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain ${!isCollapsed && "mr-3"
                               }`}
                           />
@@ -164,9 +169,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
           className="w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-white hover:text-gray-900 group"
           title={isCollapsed ? "Logout" : undefined}
         >
-          <img
+          <Image
             src="/assets/icons/logout.png"
-            alt="/assets/icons/logout.png"
+            alt="Logout"
+            width={30}
+            height={30}
             className="w-[30px] h-[30px] flex-shrink-0 mr-3"
           />
           {!isCollapsed && <span>Logout</span>}

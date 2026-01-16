@@ -4,8 +4,10 @@ import { uploadProfile } from "../config/s3Config.js";
 import path from "path";
 import fs from "fs";
 import ProfileController from "../controllers/profileController.js";
+import UserModel from "../models/User.js";
 import AccessTokenAutoRefresh from "../middlewares/setAuthHeader.js";
 import checkUserAuth from "../middlewares/auth-middleware.js";
+import verifyAdmin from "../middlewares/admin-middleware.js";
 
 const router = express.Router();
 
@@ -129,7 +131,7 @@ router.get(
  */
 router.put(
   "/admin/:userId/verify",
-  [AccessTokenAutoRefresh, checkUserAuth],
+  [AccessTokenAutoRefresh, checkUserAuth, verifyAdmin],
   async (req, res) => {
     try {
       const { userId } = req.params;

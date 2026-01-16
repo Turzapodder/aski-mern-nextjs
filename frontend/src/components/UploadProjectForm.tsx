@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X, Upload, FileImage, Play, Plus, Loader } from 'lucide-react'
+import Image from "next/image"
+import { X, Upload, FileImage, Play, Plus } from 'lucide-react'
 import { useGenerateSessionIdQuery, useSaveStudentFormMutation } from '@/lib/services/student'
 import { useCreateAssignmentMutation } from '@/lib/services/assignments'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface UploadProjectFormProps {
   onSubmit?: (formData: FormData) => void // Kept for backward compatibility or override
@@ -540,11 +542,14 @@ const UploadProjectForm = ({
                       <div key={index} className="relative bg-gray-50 rounded-lg p-3 flex items-center justify-between group">
                         <div className="flex items-center space-x-3 overflow-hidden">
                           {isImage(file) ? (
-                            <div className="w-10 h-10 relative flex-shrink-0">
-                              <img
+                            <div className="relative w-10 h-10 flex-shrink-0">
+                              <Image
                                 src={previewUrls[index]}
                                 alt="Preview"
-                                className="w-full h-full object-cover rounded"
+                                fill
+                                sizes="40px"
+                                className="object-cover rounded"
+                                unoptimized
                               />
                             </div>
                           ) : isVideo(file) ? (
@@ -683,7 +688,7 @@ const UploadProjectForm = ({
             >
               {isCreating ? (
                 <>
-                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  <Skeleton className="h-4 w-4 mr-2 rounded-full" />
                   Posting...
                 </>
               ) : (
