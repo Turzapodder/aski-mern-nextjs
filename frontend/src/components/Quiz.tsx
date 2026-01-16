@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Clock, Check, X, AlertCircle } from 'lucide-react';
 
 interface QuizProps {
@@ -31,24 +31,13 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
     timeSpent: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (timeLeft > 0 && !quizCompleted) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0) {
-      handleSubmit();
-    }
-  }, [timeLeft, quizCompleted]);
-
   const handleAnswer = (optionIndex: number) => {
     const newAnswers = [...answers];
     newAnswers[currentQuestion] = optionIndex;
     setAnswers(newAnswers);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     setQuizCompleted(true);
     
     // Calculate score
@@ -99,7 +88,18 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
     
     // Call the onComplete callback with the summary object directly
     onComplete(summary);
-  };
+  }, [answers, onComplete, questions, timeLeft]);
+
+  useEffect(() => {
+    if (timeLeft > 0 && !quizCompleted) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0) {
+      handleSubmit();
+    }
+  }, [timeLeft, quizCompleted, handleSubmit]);
 
   const handleNavigation = (index: number) => {
     setCurrentQuestion(index);

@@ -5,6 +5,7 @@ import TopNavbar from "@/components/TopNavbar"
 import { useGetUserQuery } from "@/lib/services/auth"
 import { useRouter, usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -31,7 +32,39 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="flex">
+          <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-white">
+            <div className="px-4 py-6 space-y-3">
+              <Skeleton className="h-8 w-32" />
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} className="h-10 w-full rounded-xl" />
+              ))}
+            </div>
+          </aside>
+          <div className="flex-1">
+            <div className="border-b bg-white px-4 py-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-24" />
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-32 rounded-lg" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <Skeleton className="h-6 w-48" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <Skeleton key={index} className="h-32 w-full rounded-2xl" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

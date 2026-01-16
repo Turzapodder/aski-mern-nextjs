@@ -9,14 +9,14 @@ import {
   CheckCircle,
   X,
   MessageSquare,
-  Calendar,
-  Award
+  Calendar
 } from "lucide-react";
 import {
   useGetProposalsByAssignmentQuery,
   useAcceptProposalMutation,
   useRejectProposalMutation
 } from "@/lib/services/proposals";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProposalsListProps {
   assignmentId: string;
@@ -85,12 +85,12 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Proposals</h3>
-        <div className="animate-pulse space-y-4">
+        <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="border rounded-lg p-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div key={i} className="border rounded-lg p-4 space-y-2">
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
           ))}
         </div>

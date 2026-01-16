@@ -1,8 +1,10 @@
-﻿'use client'
+'use client'
+
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Award, Zap, ChevronDown, User, GraduationCap } from 'lucide-react'
 import { useParams } from 'next/navigation'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface PublicTutor {
     _id: string
@@ -150,7 +152,17 @@ const TutorProfilePage = () => {
     if (loading) {
         return (
             <div className="mx-auto px-4 py-8 bg-[#FAFAFA] min-h-screen font-sans">
-                <div className="text-sm text-gray-500">Loading tutor profile...</div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-6">
+                        <Skeleton className="h-56 w-full rounded-3xl" />
+                        <Skeleton className="h-24 w-full rounded-3xl" />
+                        <Skeleton className="h-72 w-full rounded-3xl" />
+                    </div>
+                    <div className="space-y-6">
+                        <Skeleton className="h-80 w-full rounded-3xl" />
+                        <Skeleton className="h-72 w-full rounded-3xl" />
+                    </div>
+                </div>
             </div>
         )
     }
@@ -274,7 +286,7 @@ const TutorProfilePage = () => {
                     <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">About me</h2>
                         <p className="text-gray-600 leading-relaxed text-[15px]">
-                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I'm not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
+                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I&apos;m not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
                         </p>
                     </div>
 
@@ -327,9 +339,9 @@ const TutorProfilePage = () => {
 
                 </div>
 
-                <div className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-4">
+                <div className="lg:col-span-1">
+                    <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                         <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video group cursor-pointer">
                             <Image
                                 src={tutorData.videoThumbnail}
@@ -441,6 +453,7 @@ const TutorProfilePage = () => {
 
                         </div>
                     </div>
+                    </div>
 
                 </div>
 
@@ -450,3 +463,4 @@ const TutorProfilePage = () => {
 }
 
 export default TutorProfilePage
+

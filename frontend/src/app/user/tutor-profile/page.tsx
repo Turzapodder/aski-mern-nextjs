@@ -25,7 +25,7 @@ export default function TutorProfilePage() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-gray-500 text-sm">#2</span>
-              <h1 className="text-2xl font-bold">Nguyen Shane 🇬🇧</h1>
+              <h1 className="text-2xl font-bold">Nguyen Shane</h1>
             </div>
             <p className="text-gray-700 mb-4">
               Passionate Software Engineer Crafting Innovative Solutions
@@ -73,10 +73,10 @@ export default function TutorProfilePage() {
                 <h2 className="text-xl font-bold mb-4">About Me</h2>
                 <div className="text-gray-700">
                   <p>
-                    Greetings, fellow software enthusiasts! I'm thrilled to see your interest in exploring
-                    my profile. I'm Nguyen Shane, a 24-year-old software engineer from the United
-                    Kingdom. My educational path led me to earn a Bachelor's Degree in Computer
-                    Science, specializing in Software Engineering. With this qualification, I'm equipped
+                    Greetings, fellow software enthusiasts! I&apos;m thrilled to see your interest in exploring
+                    my profile. I&apos;m Nguyen Shane, a 24-year-old software engineer from the United
+                    Kingdom. My educational path led me to earn a Bachelor&apos;s Degree in Computer
+                    Science, specializing in Software Engineering. With this qualification, I&apos;m equipped
                     to dive deep into the world of coding and development, ready to tackle exciting
                     projects and contribute to cutting-edge technological advancements...
                   </p>
@@ -158,3 +158,4 @@ export default function TutorProfilePage() {
     </div>
   );
 }
+

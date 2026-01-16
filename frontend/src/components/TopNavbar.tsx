@@ -78,7 +78,7 @@ const TopNavbar = ({
             {greeting}, {user?.name}!
           </h1>
           <p className='text-gray-600 text-sm mt-1'>
-            Let's make today productive!
+            Let&apos;s make today productive!
           </p>
         </div>
 

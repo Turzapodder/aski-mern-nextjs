@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from "next/image";
 import { Search, Pin, MoreHorizontal } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { format } from 'date-fns';
@@ -77,7 +78,13 @@ const ChatSidebar = () => {
                                 {/* Avatar */}
                                 <div className="relative flex-shrink-0">
                                     {avatar ? (
-                                        <img src={avatar} alt={chatName} className="w-12 h-12 rounded-full object-cover" />
+                                        <Image
+                                            src={avatar}
+                                            alt={chatName}
+                                            width={48}
+                                            height={48}
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
                                     ) : (
                                         <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium ${isActive ? 'bg-white/10 text-white' : 'bg-primary-100 text-primary-600'
                                             }`}>

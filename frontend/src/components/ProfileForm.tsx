@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { User, Lock, Loader, Upload } from 'lucide-react';
+import React from 'react';
+import { User, Lock } from 'lucide-react';
 import Image from 'next/image';
 import { ProfileUpdatePayload, UserProfile } from '@/lib/services/profile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProfileFormProps {
   profile: UserProfile | null;
@@ -30,7 +31,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         <h2 className="text-2xl font-bold text-gray-900">Personal information</h2>
         {success && (
           <div className="flex items-center text-green-600 text-sm font-medium animate-pulse">
-            <Loader className="w-4 h-4 mr-2 animate-spin" />
+            <Skeleton className="h-4 w-4 mr-2 rounded-full" />
             Saving changes
           </div>
         )}
@@ -55,7 +56,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           </div>
           <label className="absolute bottom-0 right-0 bg-gray-900 text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-800 transition-colors shadow-sm">
             {isUploading ? (
-              <Loader className="w-3 h-3 animate-spin" />
+              <Skeleton className="h-3 w-3 rounded-full" />
             ) : (
               <Lock className="w-3 h-3" />
             )}
@@ -168,11 +169,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </div>
             <p className="text-sm text-gray-500">
-              After making a deletion request, you will have <span className="font-bold text-gray-900">"6 months"</span> to maintain this account.
+              After making a deletion request, you will have <span className="font-bold text-gray-900">&quot;6 months&quot;</span> to maintain this account.
             </p>
           </div>
           <p className="text-sm text-gray-500 mb-6">
-            To permanently erase your whole ProAcc account, click the button below. This implies that you won't have access to your enterprises, accounting and personal financial data.
+            To permanently erase your whole ProAcc account, click the button below. This implies that you won&apos;t have access to your enterprises, accounting and personal financial data.
           </p>
           <p className="text-sm text-gray-500 mb-6">
             There is no reversing this action.
