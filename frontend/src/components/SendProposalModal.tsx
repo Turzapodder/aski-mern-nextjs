@@ -17,7 +17,6 @@ interface ProposalFormData {
   description: string;
   proposedPrice: number;
   estimatedDeliveryTime: number;
-  coverLetter: string;
   relevantExperience: string;
 }
 
@@ -33,7 +32,6 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
     description: '',
     proposedPrice: assignment.estimatedCost || 0,
     estimatedDeliveryTime: 24,
-    coverLetter: '',
     relevantExperience: ''
   });
 
@@ -54,7 +52,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
     if (files.length + attachments.length > 5) {
       return;
     }
-    
+
     const validFiles = files.filter(file => {
       if (file.size > 25 * 1024 * 1024) { // 25MB limit
         return false;
@@ -88,9 +86,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
       newErrors.estimatedDeliveryTime = 'Delivery time must be greater than 0';
     }
 
-    if (!formData.coverLetter.trim()) {
-      newErrors.coverLetter = 'Cover letter is required';
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -98,7 +94,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -110,7 +106,6 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
       submitData.append('description', formData.description);
       submitData.append('proposedPrice', formData.proposedPrice.toString());
       submitData.append('estimatedDeliveryTime', formData.estimatedDeliveryTime.toString());
-      submitData.append('coverLetter', formData.coverLetter);
       submitData.append('relevantExperience', formData.relevantExperience);
 
       // Add attachments
@@ -120,14 +115,13 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
 
       await createProposal(submitData).unwrap();
       onClose();
-      
+
       // Reset form
       setFormData({
         title: '',
         description: '',
         proposedPrice: assignment.estimatedCost || 0,
         estimatedDeliveryTime: 24,
-        coverLetter: '',
         relevantExperience: ''
       });
       setAttachments([]);
@@ -193,9 +187,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter a compelling title for your proposal"
             />
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -210,9 +203,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Describe your approach to completing this assignment"
             />
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
@@ -230,9 +222,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 step="0.01"
                 value={formData.proposedPrice}
                 onChange={(e) => handleInputChange('proposedPrice', parseFloat(e.target.value) || 0)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="0.00"
               />
               {errors.proposedPrice && <p className="text-red-500 text-sm mt-1">{errors.proposedPrice}</p>}
@@ -247,44 +238,12 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 min="1"
                 value={formData.estimatedDeliveryTime}
                 onChange={(e) => handleInputChange('estimatedDeliveryTime', parseInt(e.target.value) || 0)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="24"
               />
               {errors.estimatedDeliveryTime && <p className="text-red-500 text-sm mt-1">{errors.estimatedDeliveryTime}</p>}
             </div>
-          </div>
-
-          {/* Cover Letter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cover Letter *
-            </label>
-            <textarea
-              value={formData.coverLetter}
-              onChange={(e) => handleInputChange('coverLetter', e.target.value)}
-              rows={5}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.coverLetter ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Write a personalized cover letter explaining why you're the best fit for this assignment"
-            />
-            {errors.coverLetter && <p className="text-red-500 text-sm mt-1">{errors.coverLetter}</p>}
-          </div>
-
-          {/* Relevant Experience */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Relevant Experience
-            </label>
-            <textarea
-              value={formData.relevantExperience}
-              onChange={(e) => handleInputChange('relevantExperience', e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Describe your relevant experience and qualifications"
-            />
           </div>
 
           {/* File Upload */}

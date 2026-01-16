@@ -1,10 +1,9 @@
 'use client'
-
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Award, Zap, ChevronDown, User, GraduationCap } from 'lucide-react'
-import { useParams } from 'next/navigation'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Award, Zap, ChevronDown, User, GraduationCap, Edit, Copy } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { useGetUserQuery } from '@/lib/services/auth'
 
 interface PublicTutor {
     _id: string
@@ -28,14 +27,19 @@ interface PublicTutor {
     }
 }
 
-const TutorProfilePage = () => {
+const TutorProfileContent = () => {
     const params = useParams<{ id: string }>()
+    const router = useRouter()
+    const { data: userData } = useGetUserQuery()
     const [activeTab, setActiveTab] = useState('about')
     const [selectedDate, setSelectedDate] = useState('Tue, 2 April, 2024')
     const [selectedTime, setSelectedTime] = useState<string | null>('13:30')
     const [tutor, setTutor] = useState<PublicTutor | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [copied, setCopied] = useState(false)
+
+    const isOwner = userData?.user?._id === params?.id
 
     useEffect(() => {
         const fetchTutor = async () => {
@@ -149,20 +153,18 @@ const TutorProfilePage = () => {
         }
     ]
 
+    const handleShareProfile = () => {
+        const publicUrl = `${window.location.origin}/public/tutor-profile/${params.id}`;
+        navigator.clipboard.writeText(publicUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
     if (loading) {
         return (
             <div className="mx-auto px-4 py-8 bg-[#FAFAFA] min-h-screen font-sans">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        <Skeleton className="h-56 w-full rounded-3xl" />
-                        <Skeleton className="h-24 w-full rounded-3xl" />
-                        <Skeleton className="h-72 w-full rounded-3xl" />
-                    </div>
-                    <div className="space-y-6">
-                        <Skeleton className="h-80 w-full rounded-3xl" />
-                        <Skeleton className="h-72 w-full rounded-3xl" />
-                    </div>
-                </div>
+                <div className="text-sm text-gray-500">Loading tutor profile...</div>
             </div>
         )
     }
@@ -223,12 +225,33 @@ const TutorProfilePage = () => {
                                         </div>
                                         <p className="text-gray-500 font-medium">{tutorData.subject}</p>
                                     </div>
-                                    <button className="text-gray-400 hover:text-purple-600 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                                            <span className="w-4 h-6 border-2 border-purple-300 border-t-0 border-r-0 rotate-[-45deg] translate-y-[-2px]"></span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#A855F7" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
-                                        </div>
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {isOwner ? (
+                                            <>
+                                                <button
+                                                    onClick={() => router.push('/user/settings')}
+                                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                                >
+                                                    <Edit size={16} />
+                                                    <span>Edit Profile</span>
+                                                </button>
+                                                <button
+                                                    onClick={handleShareProfile}
+                                                    className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 relative group"
+                                                >
+                                                    <Copy size={16} />
+                                                    <span>{copied ? 'Copied!' : 'Share Profile'}</span>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button className="text-gray-400 hover:text-purple-600 transition-colors">
+                                                <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                                                    <span className="w-4 h-6 border-2 border-purple-300 border-t-0 border-r-0 rotate-[-45deg] translate-y-[-2px]"></span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#A855F7" stroke="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                                </div>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -268,12 +291,12 @@ const TutorProfilePage = () => {
 
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="flex items-center border-b border-gray-100 overflow-x-auto">
-                            {['About me', 'Schedule', 'Courses (24)', 'Resume', 'Reviews (236)'].map((tab) => (
+                            {['About me', 'Schedule', 'Academic Profile', 'Reviews'].map((tab) => (
                                 <button
                                     key={tab}
                                     className={`px-6 py-4 text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === tab.toLowerCase().split(' ')[0]
-                                            ? 'text-gray-900 border-b-2 border-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'text-gray-900 border-b-2 border-gray-900'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                     onClick={() => setActiveTab(tab.toLowerCase().split(' ')[0])}
                                 >
@@ -286,7 +309,8 @@ const TutorProfilePage = () => {
                     <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                         <h2 className="text-xl font-bold text-gray-900 mb-4">About me</h2>
                         <p className="text-gray-600 leading-relaxed text-[15px]">
-                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I&apos;m not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
+                            {/* Static content for now as per design */}
+                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I'm not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
                         </p>
                     </div>
 
@@ -326,8 +350,8 @@ const TutorProfilePage = () => {
                                         key={time}
                                         onClick={() => setSelectedTime(time)}
                                         className={`py-3 rounded-[14px] text-sm font-semibold transition-all ${selectedTime === time
-                                                ? 'bg-[#C084FC] text-white shadow-lg shadow-purple-200 scale-105'
-                                                : 'bg-white border border-gray-100 text-gray-700 hover:border-purple-200 hover:bg-purple-50'
+                                            ? 'bg-[#C084FC] text-white shadow-lg shadow-purple-200 scale-105'
+                                            : 'bg-white border border-gray-100 text-gray-700 hover:border-purple-200 hover:bg-purple-50'
                                             }`}
                                     >
                                         {time}
@@ -339,9 +363,9 @@ const TutorProfilePage = () => {
 
                 </div>
 
-                <div className="lg:col-span-1">
-                    <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <div className="lg:col-span-1 space-y-6">
+
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 ">
                         <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video group cursor-pointer">
                             <Image
                                 src={tutorData.videoThumbnail}
@@ -453,20 +477,12 @@ const TutorProfilePage = () => {
 
                         </div>
                     </div>
-                    </div>
 
                 </div>
 
             </div>
         </div>
     )
-﻿'use client'
-import React from 'react'
-import TutorProfileContent from '@/components/TutorProfileContent'
-
-const TutorProfilePage = () => {
-    return <TutorProfileContent />
 }
 
-export default TutorProfilePage
-
+export default TutorProfileContent

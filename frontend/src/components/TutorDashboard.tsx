@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   MoreVertical,
   ArrowUpRight,
@@ -226,9 +227,9 @@ const TutorDashboard = ({ user }: { user: any }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button className="text-gray-400 hover:text-black transition-colors">
+                        <Link href={`/user/assignments/view-details/${assignment._id}`} className="text-gray-400 hover:text-black transition-colors inline-block">
                           <ArrowUpRight size={20} />
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   ))}
