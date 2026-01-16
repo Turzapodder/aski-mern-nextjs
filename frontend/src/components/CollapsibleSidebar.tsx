@@ -188,9 +188,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
             <Link href="/user/profile" className="flex items-center space-x-3 overflow-hidden flex-1 min-w-0 mr-2 group">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 flex-shrink-0">
                 {userData?.user?.profilePicture ? (
-                  <img
+                  <Image
                     src={userData.user.profilePicture}
                     alt={userData.user.name}
+                    width={40}
+                    height={40}
                     className="w-full h-full object-cover"
                   />
                 ) : (

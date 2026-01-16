@@ -65,6 +65,12 @@ const run = async () => {
       email: "admin@aski.com",
       password: passwordHash,
       roles: ["user", "admin"],
+      adminRole: "super_admin",
+      adminPrivileges: {
+        canManageUsers: true,
+        canManagePayments: true,
+        canViewAnalytics: true,
+      },
       status: "active",
       onboardingStatus: "completed",
       is_verified: true,

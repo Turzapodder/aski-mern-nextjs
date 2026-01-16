@@ -2,6 +2,23 @@ import UserModel from "../models/User.js";
 import TutorApplicationModel from "../models/TutorApplication.js";
 import mongoose from "mongoose";
 
+const buildPublicTutor = (tutor) => ({
+  _id: tutor._id,
+  name: tutor.name,
+  profileImage: tutor.profileImage || "",
+  about: tutor.about || "",
+  city: tutor.city || "",
+  country: tutor.country || "",
+  languages: tutor.languages || [],
+  tutorProfile: tutor.tutorProfile || {},
+  publicStats: tutor.publicStats || {},
+  joinedDate:
+    tutor.publicStats?.joinedDate ||
+    tutor.registrationDate ||
+    tutor.createdAt ||
+    null,
+});
+
 class ProfileController {
   static getProfile = async (req, res) => {
     try {
@@ -409,11 +426,21 @@ class ProfileController {
           country: 1,
           languages: 1,
           tutorProfile: 1,
+          publicStats: 1,
           registrationDate: 1,
+          createdAt: 1,
+          roles: 1,
+          onboardingStatus: 1,
+          status: 1,
         })
         .lean();
 
-      if (!tutor || !tutor.roles.includes("tutor")) {
+      const approvedOnboarding = ["approved", "completed"].includes(
+        tutor?.onboardingStatus
+      );
+      const activeStatus = ["active", "approved"].includes(tutor?.status);
+
+      if (!tutor || !tutor.roles.includes("tutor") || !approvedOnboarding || !activeStatus) {
         return res.status(404).json({
           status: "failed",
           message: "Tutor not found",
@@ -422,7 +449,7 @@ class ProfileController {
 
       res.status(200).json({
         status: "success",
-        tutor,
+        tutor: buildPublicTutor(tutor),
       });
     } catch (error) {
       console.error("getTutorPublicProfile error:", error);

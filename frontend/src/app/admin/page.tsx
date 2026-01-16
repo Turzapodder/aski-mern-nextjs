@@ -56,6 +56,14 @@ const actionLabels: Record<string, string> = {
   RESOLVE_DISPUTE_REFUND: "Resolved dispute (refund)",
   RESOLVE_DISPUTE_RELEASE: "Resolved dispute (release)",
   RESOLVE_DISPUTE_SPLIT: "Resolved dispute (split)",
+  UPDATE_SETTINGS: "Updated settings",
+  CREATE_QUIZ_QUESTION: "Created quiz question",
+  UPDATE_QUIZ_QUESTION: "Updated quiz question",
+  DELETE_QUIZ_QUESTION: "Deleted quiz question",
+  DUPLICATE_QUIZ_QUESTION: "Duplicated quiz question",
+  PROMOTE_ADMIN: "Granted admin access",
+  UPDATE_ADMIN_ROLE: "Updated admin role",
+  REVOKE_ADMIN: "Revoked admin access",
 }
 
 const formatCurrency = (value: number) =>

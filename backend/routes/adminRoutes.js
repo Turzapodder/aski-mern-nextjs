@@ -3,6 +3,8 @@ import AccessTokenAutoRefresh from "../middlewares/setAuthHeader.js";
 import checkUserAuth from "../middlewares/auth-middleware.js";
 import verifyAdmin from "../middlewares/admin-middleware.js";
 import AdminController from "../controllers/adminController.js";
+import AdminSettingsController from "../controllers/adminSettingsController.js";
+import AdminQuizController from "../controllers/adminQuizController.js";
 
 const router = express.Router();
 
@@ -26,6 +28,10 @@ router.get("/users", AdminController.getUsers);
 router.get("/users/:id", AdminController.getUserDetails);
 router.post("/users/:id/ban", AdminController.banUser);
 router.post("/users/:id/unban", AdminController.unbanUser);
+router.get("/admins", AdminController.getAdmins);
+router.post("/admins", AdminController.addAdmin);
+router.patch("/admins/:id", AdminController.updateAdminRole);
+router.delete("/admins/:id", AdminController.revokeAdmin);
 
 // Tutor Management
 router.get("/tutors/pending", AdminController.getPendingTutors);
@@ -41,6 +47,7 @@ router.post("/assignments/:id/delete", AdminController.deleteAssignment);
 router.post("/assignments/:id/force-cancel", AdminController.forceCancelAssignment);
 
 // Finance
+router.get("/finance/summary", AdminController.getFinanceSummary);
 router.get("/transactions", AdminController.getTransactions);
 router.get("/withdrawals", AdminController.getWithdrawalRequests);
 router.post("/withdrawals/:id/process", AdminController.processWithdrawal);
@@ -49,5 +56,16 @@ router.post("/withdrawals/:id/process", AdminController.processWithdrawal);
 router.get("/disputes", AdminController.getDisputes);
 router.get("/disputes/:id", AdminController.getDisputeDetails);
 router.post("/disputes/:id/resolve", AdminController.resolveDispute);
+
+// Settings
+router.get("/settings", AdminSettingsController.getSettings);
+router.put("/settings", AdminSettingsController.updateSettings);
+
+// Quiz management
+router.get("/quiz/questions", AdminQuizController.getQuestions);
+router.post("/quiz/questions", AdminQuizController.createQuestion);
+router.put("/quiz/questions/:id", AdminQuizController.updateQuestion);
+router.delete("/quiz/questions/:id", AdminQuizController.deleteQuestion);
+router.post("/quiz/questions/:id/duplicate", AdminQuizController.duplicateQuestion);
 
 export default router;
