@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
-import { MoreHorizontal, Search, ShieldCheck, UserMinus, UserPlus } from "lucide-react"
+import { Eye, MoreHorizontal, Search, ShieldCheck, UserMinus, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { adminApi, AdminUserSummary } from "@/lib/adminApi"
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import BanUserModal from "@/components/admin/BanUserModal"
+import AdminPagination from "@/components/admin/AdminPagination"
 
 const roleLabel = (roles: string[]) => {
   if (roles.includes("admin")) return "Admin"
@@ -163,93 +164,165 @@ export default function AdminUsersPage() {
           )}
 
           {!isLoading && !error && users.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Name</th>
-                    <th className="py-3 pr-4">Email</th>
-                    <th className="py-3 pr-4">Role</th>
-                    <th className="py-3 pr-4">Join Date</th>
-                    <th className="py-3 pr-4">Total</th>
-                    <th className="py-3 pr-4">Status</th>
-                    <th className="py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {users.map((user) => {
-                    const isBanned = user.status === "banned"
-                    return (
-                      <tr key={user.id} className="hover:bg-gray-50/60">
-                        <td className="py-3 pr-4 font-medium text-gray-900">{user.name}</td>
-                        <td className="py-3 pr-4 text-gray-600">{user.email}</td>
-                        <td className="py-3 pr-4">
-                          <Badge variant="secondary" className="gap-1">
-                            <ShieldCheck className="h-3.5 w-3.5" />
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Name</th>
+                      <th className="py-3 pr-4">Email</th>
+                      <th className="py-3 pr-4">Role</th>
+                      <th className="py-3 pr-4">Join Date</th>
+                      <th className="py-3 pr-4">Total</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {users.map((user) => {
+                      const isBanned = user.status === "banned"
+                      return (
+                        <tr key={user.id} className="hover:bg-gray-50/60">
+                          <td className="py-3 pr-4 font-medium text-gray-900">
+                            <button
+                              onClick={() => router.push(`/admin/users/${user.id}`)}
+                              className="hover:text-primary-600 hover:underline text-left transition-colors cursor-pointer"
+                            >
+                              {user.name}
+                            </button>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-600">{user.email}</td>
+                          <td className="py-3 pr-4">
+                            <Badge variant="secondary" className="gap-1">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              {roleLabel(user.roles)}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-600">
+                            {new Date(user.joinDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 pr-4 text-gray-700">
+                            {Number.isFinite(user.totalSpent) ? user.totalSpent.toLocaleString() : "0"}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(user.status)}`}>
+                              {user.status}
+                            </span>
+                          </td>
+                          <td className="py-3 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => router.push(`/admin/users/${user.id}`)}
+                                  className="cursor-pointer"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openModal(user, isBanned ? "unban" : "ban")}
+                                  className={isBanned ? "text-emerald-600" : "text-rose-600"}
+                                >
+                                  {isBanned ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
+                                  {isBanned ? "Unban user" : "Ban user"}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {users.map((user) => {
+                  const isBanned = user.status === "banned"
+                  return (
+                    <div key={user.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-200">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 font-bold text-sm">
+                            {user.name?.[0].toUpperCase()}
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <button
+                              onClick={() => router.push(`/admin/users/${user.id}`)}
+                              className="font-semibold text-gray-900 hover:text-primary-600 hover:underline transition-colors text-left truncate block w-full"
+                            >
+                              {user.name}
+                            </button>
+                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => router.push(`/admin/users/${user.id}`)}
+                              className="cursor-pointer"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openModal(user, isBanned ? "unban" : "ban")}
+                              className={isBanned ? "text-emerald-600 text-xs" : "text-rose-600 text-xs"}
+                            >
+                              {isBanned ? <UserPlus className="h-3.5 w-3.5" /> : <UserMinus className="h-3.5 w-3.5" />}
+                              {isBanned ? "Unban user" : "Ban user"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Role</p>
+                          <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
                             {roleLabel(user.roles)}
                           </Badge>
-                        </td>
-                        <td className="py-3 pr-4 text-gray-600">
-                          {new Date(user.joinDate).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 pr-4 text-gray-700">
-                          {Number.isFinite(user.totalSpent) ? user.totalSpent.toLocaleString() : "0"}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(user.status)}`}>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Status</p>
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${statusTone(user.status)}`}>
                             {user.status}
                           </span>
-                        </td>
-                        <td className="py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/admin/users/${user.id}`)}>
-                                View details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openModal(user, isBanned ? "unban" : "ban")}
-                                className={isBanned ? "text-emerald-600" : "text-rose-600"}
-                              >
-                                {isBanned ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
-                                {isBanned ? "Unban user" : "Ban user"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Total Spent</p>
+                          <p className="text-xs font-semibold text-gray-900">৳{user.totalSpent || 0}</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Joined</p>
+                          <p className="text-[11px] text-gray-600">{new Date(user.joinDate).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
           {!isLoading && pagination && pagination.pages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-              <span>
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={pagination.page <= 1}
-                >
-                  Previous
-                </button>
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.min(pagination.pages, prev + 1))}
-                  disabled={pagination.page >= pagination.pages}
-                >
-                  Next
-                </button>
-              </div>
+            <div className="mt-6">
+              <AdminPagination
+                currentPage={page}
+                totalPages={pagination.pages}
+                onPageChange={(p) => setPage(p)}
+              />
             </div>
           )}
         </CardContent>

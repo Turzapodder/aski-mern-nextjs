@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
-import { MoreHorizontal, Trash2, XCircle } from "lucide-react"
+import { Eye, MoreHorizontal, Trash2, XCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { adminApi } from "@/lib/adminApi"
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import AdminPagination from "@/components/admin/AdminPagination"
 
 type AssignmentRow = Record<string, any>
 
@@ -160,86 +161,148 @@ export default function AdminAssignmentsPage() {
           )}
 
           {!isLoading && !error && assignments.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Title</th>
-                    <th className="py-3 pr-4">Student</th>
-                    <th className="py-3 pr-4">Subject</th>
-                    <th className="py-3 pr-4">Budget</th>
-                    <th className="py-3 pr-4">Status</th>
-                    <th className="py-3 pr-4">Posted</th>
-                    <th className="py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {assignments.map((assignment: AssignmentRow) => (
-                    <tr key={assignment._id} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4 font-medium text-gray-900">{assignment.title}</td>
-                      <td className="py-3 pr-4 text-gray-600">{assignment.student?.name || "N/A"}</td>
-                      <td className="py-3 pr-4 text-gray-600">{assignment.subject}</td>
-                      <td className="py-3 pr-4 text-gray-700">
-                        {assignment.estimatedCost || assignment.paymentAmount || 0}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Title</th>
+                      <th className="py-3 pr-4">Student</th>
+                      <th className="py-3 pr-4">Subject</th>
+                      <th className="py-3 pr-4">Budget</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4 flex items-center justify-between">
+                        Posted
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {assignments.map((assignment: AssignmentRow) => (
+                      <tr key={assignment._id} className="hover:bg-gray-50/60">
+                        <td className="py-3 pr-4 font-medium text-gray-900">
+                          <button
+                            onClick={() => router.push(`/admin/assignments/${assignment._id}`)}
+                            className="hover:text-primary-600 hover:underline text-left transition-colors cursor-pointer"
+                          >
+                            {assignment.title}
+                          </button>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-600">{assignment.student?.name || "N/A"}</td>
+                        <td className="py-3 pr-4 text-gray-600">{assignment.subject}</td>
+                        <td className="py-3 pr-4 text-gray-700">
+                          {assignment.estimatedCost || assignment.paymentAmount || 0}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
+                            {assignment.status}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-600">
+                          {new Date(assignment.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/admin/assignments/${assignment._id}`)}
+                                className="cursor-pointer"
+                              >
+                                <Eye className="h-4 w-4" />
+                                View details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openDialog(assignment, "force-cancel")} className="text-amber-600">
+                                <XCircle className="h-4 w-4" />
+                                Force cancel
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openDialog(assignment, "delete")} className="text-rose-600">
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {assignments.map((assignment: AssignmentRow) => (
+                  <div key={assignment._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-200">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <button
+                          onClick={() => router.push(`/admin/assignments/${assignment._id}`)}
+                          className="font-semibold text-gray-900 hover:text-primary-600 hover:underline transition-colors text-left truncate block w-full"
+                        >
+                          {assignment.title}
+                        </button>
+                        <p className="text-xs text-gray-500 truncate">
+                          {assignment.subject} • {assignment.student?.name || "N/A"}
+                        </p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/admin/assignments/${assignment._id}`)} className="cursor-pointer">
+                            <Eye className="h-4 w-4" />
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openDialog(assignment, "force-cancel")} className="text-amber-600">
+                            <XCircle className="h-4 w-4" />
+                            Force cancel
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openDialog(assignment, "delete")} className="text-rose-600">
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Budget</p>
+                        <p className="font-semibold text-gray-900">৳{assignment.estimatedCost || 0}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Status</p>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(assignment.status)} shadow-sm`}>
                           {assignment.status}
                         </span>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-600">
-                        {new Date(assignment.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/admin/assignments/${assignment._id}`)}>
-                              View details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openDialog(assignment, "force-cancel")} className="text-amber-600">
-                              <XCircle className="h-4 w-4" />
-                              Force cancel
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openDialog(assignment, "delete")} className="text-rose-600">
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-gray-50 pt-3 flex items-center justify-between text-[11px] text-gray-500">
+                      <span>Posted on {new Date(assignment.createdAt).toLocaleDateString()}</span>
+                      {/* Optional small arrow for visual affordance */}
+                      <div className="text-primary-400 font-medium">Review task &rarr;</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {!isLoading && pagination && pagination.pages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-              <span>
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={pagination.page <= 1}
-                >
-                  Previous
-                </button>
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.min(pagination.pages, prev + 1))}
-                  disabled={pagination.page >= pagination.pages}
-                >
-                  Next
-                </button>
-              </div>
+            <div className="mt-6">
+              <AdminPagination
+                currentPage={page}
+                totalPages={pagination.pages}
+                onPageChange={(p) => setPage(p)}
+              />
             </div>
           )}
         </CardContent>

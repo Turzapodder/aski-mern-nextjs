@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import AdminSectionNav from "@/components/admin/AdminSectionNav"
+import AdminPagination from "@/components/admin/AdminPagination"
 
 const statusTone = (status?: string) => {
   switch (status) {
@@ -293,61 +294,83 @@ export default function AdminFinancePage() {
           )}
 
           {!transactionsLoading && !transactionsError && filtered.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Date</th>
-                    <th className="py-3 pr-4">User</th>
-                    <th className="py-3 pr-4">Type</th>
-                    <th className="py-3 pr-4">Amount</th>
-                    <th className="py-3 pr-4">Status</th>
-                    <th className="py-3 pr-4">Gateway</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((transaction) => (
-                    <tr key={transaction._id} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4 text-gray-600">
-                        {new Date(transaction.createdAt).toLocaleString()}
-                      </td>
-                      <td className="py-3 pr-4 text-gray-700">{transaction.userId?.name || "N/A"}</td>
-                      <td className="py-3 pr-4 text-gray-700">{transaction.type}</td>
-                      <td className="py-3 pr-4 text-gray-700">{transaction.amount}</td>
-                      <td className="py-3 pr-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(transaction.status)}`}>
-                          {transaction.status}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-500">{transaction.gatewayId || "-"}</td>
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Date</th>
+                      <th className="py-3 pr-4">User</th>
+                      <th className="py-3 pr-4">Type</th>
+                      <th className="py-3 pr-4">Amount</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Gateway</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {!transactionsLoading && pagination && pagination.pages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-              <span>
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={pagination.page <= 1}
-                >
-                  Previous
-                </button>
-                <button
-                  className="rounded-lg border border-gray-200 px-3 py-1 text-sm disabled:opacity-50"
-                  onClick={() => setPage((prev) => Math.min(pagination.pages, prev + 1))}
-                  disabled={pagination.page >= pagination.pages}
-                >
-                  Next
-                </button>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filtered.map((transaction) => (
+                      <tr key={transaction._id} className="hover:bg-gray-50/60">
+                        <td className="py-3 pr-4 text-gray-600">
+                          {new Date(transaction.createdAt).toLocaleString()}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-700">
+                          ৳{Number.isFinite(transaction.amount) ? transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : transaction.amount}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(transaction.status)}`}>
+                            {transaction.status}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-500">{transaction.gatewayId || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {filtered.map((transaction) => (
+                  <div key={transaction._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">{transaction.userId?.name || "N/A"}</p>
+                        <p className="text-[10px] text-gray-500">
+                          {new Date(transaction.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusTone(transaction.status)}`}>
+                        {transaction.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Type</p>
+                        <p className="text-xs font-medium text-gray-700 capitalize">{transaction.type.replace(/_/g, " ")}</p>
+                      </div>
+                      <div className="space-y-1 text-right min-w-0">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">
+                          ৳{typeof transaction.amount === 'number' ? transaction.amount.toFixed(2) : transaction.amount}
+                        </p>
+                      </div>
+                      <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Gateway</p>
+                        <p className="text-xs text-gray-500 truncate">{transaction.gatewayId || "Internal System"}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {pagination && pagination.pages > 1 && (
+                <AdminPagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.pages}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           )}
         </CardContent>
