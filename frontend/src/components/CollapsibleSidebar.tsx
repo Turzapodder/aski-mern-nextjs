@@ -53,13 +53,13 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     router.push(href)
   }
 
-  // Check if user is a tutor
-  const isTutor = userData?.user?.roles?.includes('tutor')
+  // Check if user is a tutor/admin
+  const roles = userData?.user?.roles || []
+  const isTutor = roles.includes('tutor')
+  const isAdmin = roles.includes('admin')
 
-  const sidebarSections: SidebarSection[] = [
-    {
-      title: 'MAIN MENU',
-      items: isTutor ? [
+  const mainMenuItems = isTutor
+    ? [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' || (activeItem === 'tutors' && window.location.pathname.includes(userData?.user?._id || '')) },
         { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
@@ -67,19 +67,35 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
         { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
-      ] : [
+      ]
+    : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
         { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
-      ],
+      ]
+
+  const sidebarSections: SidebarSection[] = [
+    {
+      title: 'MAIN MENU',
+      items: mainMenuItems,
     },
-    // {
-    //   title: 'STARTED',
-    //   items: [
-    //     { name: 'Finalize Homepage Wireframe', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=1' },
   ]
+
+  if (isAdmin) {
+    sidebarSections.push({
+      title: 'ADMIN',
+      items: [
+        {
+          name: 'Admin Panel',
+          icon: '/assets/icons/dashboard.png',
+          href: '/admin',
+          active: activeItem === 'admin' || window.location.pathname.startsWith('/admin'),
+        },
+      ],
+    })
+  }
 
   return (
     <aside
