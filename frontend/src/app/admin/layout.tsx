@@ -31,7 +31,6 @@ const navItems = [
   { label: "Finance", href: "/admin/finance", icon: DollarSign },
   { label: "Disputes", href: "/admin/reports", icon: AlertTriangle },
   { label: "Settings", href: "/admin/settings", icon: Settings },
-  { label: "Test Guide", href: "/admin/test-guide", icon: BookOpen },
 ]
 
 const getInitials = (name?: string) => {
