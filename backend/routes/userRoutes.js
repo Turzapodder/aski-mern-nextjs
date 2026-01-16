@@ -18,6 +18,7 @@ router.post('/generate-quiz', generateQuiz);
 
 //Protected Routes
 router.get('/profile', AccessTokenAutoRefresh, passport.authenticate('jwt', { session: false }), UserController.userProfile)
+router.put('/profile', AccessTokenAutoRefresh, passport.authenticate('jwt', { session: false }), UserController.updateUserProfile)
 router.post('/change-password', AccessTokenAutoRefresh, passport.authenticate('jwt', { session: false }), UserController.changePassword)
 router.post('/logout', AccessTokenAutoRefresh, passport.authenticate('jwt', { session: false }), UserController.userLogout)
 

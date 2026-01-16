@@ -154,6 +154,14 @@ export const authApi = createApi({
         }
       })
     }),
+    updateUser: builder.mutation<any, Partial<any>>({
+      query: (data) => ({
+        url: 'profile',
+        method: 'PUT',
+        body: data,
+        credentials: 'include'
+      })
+    }),
   }),
 })
 
@@ -166,5 +174,6 @@ export const {
   useResetPasswordLinkMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
-  useGenerateQuizMutation
+  useGenerateQuizMutation,
+  useUpdateUserMutation
 } = authApi

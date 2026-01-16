@@ -1,5 +1,6 @@
 import AssignmentModel from '../models/Assignment.js';
 import UserModel from '../models/User.js';
+import ProposalModel from '../models/Proposal.js';
 import mongoose from 'mongoose';
 
 class AssignmentController {
@@ -113,9 +114,17 @@ class AssignmentController {
       assignment.lastViewedAt = new Date();
       await assignment.save();
 
+      // Get additional stats
+      const proposalCount = await ProposalModel.countDocuments({ assignment: id });
+      const discussionCount = await ProposalModel.countDocuments({ assignment: id, status: 'pending' });
+
       res.status(200).json({
         status: 'success',
-        data: assignment
+        data: {
+          ...assignment.toObject(),
+          proposalCount,
+          discussionCount
+        }
       });
 
     } catch (error) {
