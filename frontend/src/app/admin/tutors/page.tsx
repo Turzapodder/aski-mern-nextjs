@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
-import { MoreHorizontal, UserMinus, UserX } from "lucide-react"
+import { Eye, MoreHorizontal, UserMinus, UserX } from "lucide-react"
 import { toast } from "sonner"
 
 import { adminApi } from "@/lib/adminApi"
@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea"
 import BanUserModal from "@/components/admin/BanUserModal"
 import AdminSectionNav from "@/components/admin/AdminSectionNav"
+import AdminPagination from "@/components/admin/AdminPagination"
 
 type TutorRow = Record<string, any>
 
@@ -39,11 +40,13 @@ export default function AdminTutorsPage() {
   const tutors = useMemo(() => data?.data ?? [], [data])
   const [search, setSearch] = useState("")
   const [minRating, setMinRating] = useState("")
+  const [page, setPage] = useState(1)
   const [banModalOpen, setBanModalOpen] = useState(false)
   const [selectedTutor, setSelectedTutor] = useState<TutorRow | null>(null)
   const [demoteOpen, setDemoteOpen] = useState(false)
   const [demoteReason, setDemoteReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const itemsPerPage = 10
 
   const filtered = useMemo(() => {
     const ratingValue = Number(minRating)
@@ -57,6 +60,13 @@ export default function AdminTutorsPage() {
       return matchesSearch && matchesRating
     })
   }, [minRating, search, tutors])
+
+  const paginatedTutors = useMemo(() => {
+    const start = (page - 1) * itemsPerPage
+    return filtered.slice(start, start + itemsPerPage)
+  }, [filtered, page])
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
 
   const openBan = (tutor: TutorRow) => {
     setSelectedTutor(tutor)
@@ -154,61 +164,160 @@ export default function AdminTutorsPage() {
           )}
 
           {!isLoading && !error && filtered.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Name</th>
-                    <th className="py-3 pr-4">Verification</th>
-                    <th className="py-3 pr-4">Rating</th>
-                    <th className="py-3 pr-4">Earnings</th>
-                    <th className="py-3 pr-4">Status</th>
-                    <th className="py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((tutor: TutorRow) => (
-                    <tr key={tutor._id} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4">
-                        <div className="font-medium text-gray-900">{tutor.name}</div>
-                        <div className="text-xs text-gray-500">{tutor.email}</div>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge variant="secondary">{tutor.tutorProfile?.verificationStatus || "Pending"}</Badge>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-700">{tutor.publicStats?.averageRating || 0}</td>
-                      <td className="py-3 pr-4 text-gray-700">{tutor.wallet?.totalEarnings || 0}</td>
-                      <td className="py-3 pr-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(tutor.status)}`}>
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Name</th>
+                      <th className="py-3 pr-4">Verification</th>
+                      <th className="py-3 pr-4">Rating</th>
+                      <th className="py-3 pr-4">Earnings</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedTutors.map((tutor: TutorRow) => (
+                      <tr key={tutor._id} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="py-4 pr-4">
+                          <button
+                            onClick={() => router.push(`/admin/users/${tutor._id}`)}
+                            className="hover:text-primary-600 hover:underline text-left transition-colors cursor-pointer"
+                          >
+                            <div className="font-semibold text-gray-900">{tutor.name}</div>
+                            <div className="text-xs text-gray-500 font-normal">{tutor.email}</div>
+                          </button>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <Badge variant="secondary" className="font-medium bg-gray-100 text-gray-700">
+                            {tutor.tutorProfile?.verificationStatus || "Pending"}
+                          </Badge>
+                        </td>
+                        <td className="py-4 pr-4 text-gray-700">
+                          <div className="flex items-center gap-1 font-medium">
+                            <span className="text-amber-500 text-xs">★</span>
+                            {tutor.publicStats?.averageRating || 0}
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4 font-semibold text-gray-900">৳{tutor.wallet?.totalEarnings || 0}</td>
+                        <td className="py-4 pr-4">
+                          <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase ${statusTone(tutor.status)}`}>
+                            {tutor.status}
+                          </span>
+                        </td>
+                        <td className="py-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white shadow-sm text-gray-500 hover:bg-gray-50 transition-all active:scale-95">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/admin/users/${tutor._id}`)}
+                                className="cursor-pointer gap-2"
+                              >
+                                <Eye className="h-4 w-4 text-gray-400" />
+                                View details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openDemote(tutor)} className="text-amber-600 cursor-pointer gap-2">
+                                <UserMinus className="h-4 w-4" />
+                                Demote tutor
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openBan(tutor)} className="text-rose-600 cursor-pointer gap-2">
+                                <UserX className="h-4 w-4" />
+                                Ban tutor
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {paginatedTutors.map((tutor: TutorRow) => (
+                  <div key={tutor._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-primary-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 font-bold text-base shadow-inner">
+                          {tutor.name?.[0].toUpperCase()}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <button
+                            onClick={() => router.push(`/admin/users/${tutor._id}`)}
+                            className="font-bold text-gray-900 hover:text-primary-600 hover:underline transition-colors text-left text-sm truncate block w-full"
+                          >
+                            {tutor.name}
+                          </button>
+                          <p className="text-xs text-gray-500 truncate">{tutor.email}</p>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all shadow-sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/admin/users/${tutor._id}`)}
+                            className="cursor-pointer"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openDemote(tutor)} className="text-amber-600 text-xs">
+                            <UserMinus className="h-3.5 w-3.5" />
+                            Demote tutor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openBan(tutor)} className="text-rose-600 text-xs">
+                            <UserX className="h-3.5 w-3.5" />
+                            Ban tutor
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-gray-50 pt-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Total Earnings</p>
+                        <p className="text-sm font-bold text-gray-900">৳{tutor.wallet?.totalEarnings || 0}</p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Rating</p>
+                        <div className="flex items-center justify-end gap-1 text-sm font-bold text-amber-600">
+                          <span>★</span>
+                          {tutor.publicStats?.averageRating || 0}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Verification</p>
+                        <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-semibold">
+                          {tutor.tutorProfile?.verificationStatus || "Pending"}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Status</p>
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${statusTone(tutor.status)}`}>
                           {tutor.status}
                         </span>
-                      </td>
-                      <td className="py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/admin/users/${tutor._id}`)}>
-                              View profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openDemote(tutor)} className="text-amber-600">
-                              <UserMinus className="h-4 w-4" />
-                              Demote tutor
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openBan(tutor)} className="text-rose-600">
-                              <UserX className="h-4 w-4" />
-                              Ban tutor
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <AdminPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
           )}
         </CardContent>

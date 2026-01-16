@@ -9,8 +9,10 @@ import { adminApi } from "@/lib/adminApi"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import AdminSectionNav from "@/components/admin/AdminSectionNav"
+import AdminPagination from "@/components/admin/AdminPagination"
 
 type WithdrawalRow = Record<string, any>
 
@@ -92,46 +94,87 @@ export default function AdminWithdrawalsPage() {
           )}
 
           {!isLoading && !error && withdrawals.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Request date</th>
-                    <th className="py-3 pr-4">Tutor</th>
-                    <th className="py-3 pr-4">Amount</th>
-                    <th className="py-3 pr-4">Available balance</th>
-                    <th className="py-3 pr-4">Bank</th>
-                    <th className="py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {withdrawals.map((row: WithdrawalRow) => (
-                    <tr key={row.withdrawal?.transactionId} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4 text-gray-600">
-                        {row.withdrawal?.requestedAt
-                          ? new Date(row.withdrawal.requestedAt).toLocaleDateString()
-                          : "N/A"}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <div className="font-medium text-gray-900">{row.name}</div>
-                        <div className="text-xs text-gray-500">{row.email}</div>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-700">{row.withdrawal?.amount || 0}</td>
-                      <td className="py-3 pr-4 text-gray-700">{row.availableBalance || 0}</td>
-                      <td className="py-3 pr-4 text-gray-600">
-                        {row.bankDetails?.bankName || "N/A"} - {row.bankDetails?.accountNumber?.slice(-4) || "----"}
-                      </td>
-                      <td className="py-3 text-right">
-                        <Button variant="secondary" onClick={() => openConfirm(row)}>
-                          Process
-                        </Button>
-                      </td>
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Request date</th>
+                      <th className="py-3 pr-4">Tutor</th>
+                      <th className="py-3 pr-4">Amount</th>
+                      <th className="py-3 pr-4">Available balance</th>
+                      <th className="py-3 pr-4">Bank</th>
+                      <th className="py-3 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {withdrawals.map((row: WithdrawalRow) => (
+                      <tr key={row.withdrawal?.transactionId} className="hover:bg-gray-50/60">
+                        <td className="py-3 pr-4 text-gray-600">
+                          {row.withdrawal?.requestedAt
+                            ? new Date(row.withdrawal.requestedAt).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="font-medium text-gray-900">{row.name}</div>
+                          <div className="text-xs text-gray-500">{row.email}</div>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-700">{row.withdrawal?.amount || 0}</td>
+                        <td className="py-3 pr-4 text-gray-700">{row.availableBalance || 0}</td>
+                        <td className="py-3 pr-4 text-gray-600">
+                          {row.bankDetails?.bankName || "N/A"} - {row.bankDetails?.accountNumber?.slice(-4) || "----"}
+                        </td>
+                        <td className="py-3 text-right">
+                          <Button variant="secondary" onClick={() => openConfirm(row)}>
+                            Process
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {withdrawals.map((row: WithdrawalRow) => (
+                  <div key={row.withdrawal?.transactionId} className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm transition-all hover:border-amber-200">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <p className="font-bold text-gray-900 text-sm truncate">{row.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{row.email}</p>
+                      </div>
+                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 text-[10px] font-bold uppercase tracking-wider">
+                        Pending
+                      </Badge>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Request Date</p>
+                        <p className="text-xs font-medium text-gray-700">
+                          {row.withdrawal?.requestedAt ? new Date(row.withdrawal.requestedAt).toLocaleDateString() : "N/A"}
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
+                        <p className="text-sm font-bold text-emerald-600">৳{row.withdrawal?.amount || 0}</p>
+                      </div>
+                      <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Bank Details</p>
+                        <p className="text-xs text-gray-600">
+                          {row.bankDetails?.bankName || "N/A"} (****{row.bankDetails?.accountNumber?.slice(-4) || "----"})
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button variant="secondary" className="mt-4 w-full rounded-xl" onClick={() => openConfirm(row)}>
+                      Process Payout
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>)}
         </CardContent>
       </Card>
 
@@ -143,31 +186,63 @@ export default function AdminWithdrawalsPage() {
           {processed.length === 0 ? (
             <p className="text-sm text-gray-500">No processed withdrawals yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="py-3 pr-4">Processed date</th>
-                    <th className="py-3 pr-4">Tutor</th>
-                    <th className="py-3 pr-4">Amount</th>
-                    <th className="py-3 pr-4">Gateway ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {processed.map((entry) => (
-                    <tr key={entry._id} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4 text-gray-600">
-                        {new Date(entry.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 pr-4 text-gray-700">{entry.userId?.name || "N/A"}</td>
-                      <td className="py-3 pr-4 text-gray-700">{entry.amount}</td>
-                      <td className="py-3 pr-4 text-gray-500">{entry.gatewayId || "-"}</td>
+            <div className="space-y-4">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="py-3 pr-4">Processed date</th>
+                      <th className="py-3 pr-4">Tutor</th>
+                      <th className="py-3 pr-4">Amount</th>
+                      <th className="py-3 pr-4">Gateway ID</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {processed.map((entry: any) => (
+                      <tr key={entry._id} className="hover:bg-gray-50/60">
+                        <td className="py-3 pr-4 text-gray-600">
+                          {new Date(entry.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-700">{entry.userId?.name || "N/A"}</td>
+                        <td className="py-3 pr-4 text-gray-700">{entry.amount}</td>
+                        <td className="py-3 pr-4 text-gray-500">{entry.gatewayId || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View for Processed */}
+              <div className="md:hidden space-y-4">
+                {processed.map((entry: any) => (
+                  <div key={entry._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-emerald-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-bold text-gray-900 text-sm">{entry.userId?.name || "N/A"}</p>
+                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-none text-[9px] font-bold uppercase tracking-wider">
+                        Paid
+                      </Badge>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Paid On</p>
+                        <p className="text-xs font-medium text-gray-700">
+                          {new Date(entry.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
+                        <p className="text-sm font-bold text-gray-900">৳{entry.amount}</p>
+                      </div>
+                      <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Transaction ID</p>
+                        <p className="text-[10px] text-gray-500 font-mono truncate">{entry.gatewayId || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>)}
         </CardContent>
       </Card>
 
