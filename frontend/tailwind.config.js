@@ -10,11 +10,12 @@ module.exports = {
 		extend: {
 			fontFamily: {
 				sans: [
-					'"Cascadia Mono"',
-					'monospace'
+					'var(--font-poppins)',
+					'sans-serif'
 				],
-				funnel: [
-					'var(--font-funnel-display)'
+				display: [
+					'var(--font-space-grotesk)',
+					'sans-serif'
 				],
 				orbitron: [
 					'var(--font-orbitron)'

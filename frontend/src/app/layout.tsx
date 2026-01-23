@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import StoreProvider from "./StoreProvider";
 import "./globals.css";
 import { Poppins, Orbitron, Dancing_Script, Space_Grotesk } from 'next/font/google'
+import { Toaster } from "@/components/ui/sonner"
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -19,12 +20,6 @@ const dancingScript = Dancing_Script({
   subsets: ['latin'],
   variable: '--font-dancing-script',
 })
-
-// const funnelDisplay = Funnel_Display({
-//   subsets: ['latin'],
-//   weight: ['300', '400', '500', '600', '700', '800'],
-//   variable: '--font-funnel-display',
-// })
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -44,15 +39,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${poppins.variable} ${orbitron.variable} ${dancingScript.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cascadia+Mono:wght@200..700&family=Funnel+Display:wght@300..800&family=Orbitron:wght@400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet" />
-      </head>
       <body
-        className="bg-background-500 font-sans" >
+        className="bg-background font-sans" >
         <StoreProvider>
           {children}
+          <Toaster />
         </StoreProvider>
       </body>
     </html>

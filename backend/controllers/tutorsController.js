@@ -149,6 +149,23 @@ const isTutorApproved = (tutor) => {
   return approvedOnboarding && activeStatus;
 };
 
+const buildPublicTutor = (tutor) => ({
+  _id: tutor._id,
+  name: tutor.name,
+  profileImage: tutor.profileImage || "",
+  about: tutor.about || "",
+  city: tutor.city || "",
+  country: tutor.country || "",
+  languages: tutor.languages || [],
+  tutorProfile: tutor.tutorProfile || {},
+  publicStats: tutor.publicStats || {},
+  joinedDate:
+    tutor.publicStats?.joinedDate ||
+    tutor.registrationDate ||
+    tutor.createdAt ||
+    null,
+});
+
 class TutorsController {
   static getPublicTutorProfile = async (req, res) => {
     try {
@@ -191,17 +208,19 @@ class TutorsController {
       const tutor = await UserModel.findOne(baseQuery)
         .select(
           [
-            "-password",
-            "-email",
-            "-phone",
-            "-wallet",
-            "-accessToken",
-            "-refreshToken",
-            "-tokens",
-            "-resetPasswordToken",
-            "-resetPasswordExpires",
-            "-verificationToken",
-            "-verificationTokenExpires",
+            "name",
+            "profileImage",
+            "about",
+            "city",
+            "country",
+            "languages",
+            "tutorProfile",
+            "publicStats",
+            "registrationDate",
+            "createdAt",
+            "onboardingStatus",
+            "status",
+            "accountStatus",
           ].join(" ")
         )
         .lean();
@@ -216,7 +235,7 @@ class TutorsController {
 
       return res.status(200).json({
         success: true,
-        data: { tutor },
+        data: { tutor: buildPublicTutor(tutor) },
       });
     } catch (error) {
       return res.status(500).json({

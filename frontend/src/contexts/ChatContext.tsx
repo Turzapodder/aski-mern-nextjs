@@ -201,7 +201,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         leaveChat(selectedChat._id);
       };
     }
-  }, [selectedChat?._id, isConnected]);
+  }, [selectedChat, isConnected, joinChat, leaveChat]);
 
   // Mark messages as read when chat is selected
   useEffect(() => {
@@ -215,7 +215,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         socketMarkAsRead(selectedChat._id);
       }
     }
-  }, [selectedChat, messages, currentUserId]);
+  }, [selectedChat, messages, currentUserId, socketMarkAsRead]);
 
   // Action handlers
   const selectChat = useCallback((chat: Chat) => {

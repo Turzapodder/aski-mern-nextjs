@@ -45,7 +45,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
             />
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            This is the amount you're willing to pay for completing this assignment
+            This is the amount you&apos;re willing to pay for completing this assignment
           </p>
         </div>
 

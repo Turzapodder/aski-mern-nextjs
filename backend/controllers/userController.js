@@ -8,12 +8,34 @@ import refreshAccessToken from "../utils/refreshAccessTooken.js";
 import userRefreshTokenModel from "../models/UserRefreshToken.js";
 import transporter from "../config/emailConfig.js";
 import jwt from "jsonwebtoken";
+import PlatformSettingsModel from "../models/PlatformSettings.js";
+
+const loadPlatformSettings = async () => {
+    try {
+        return await PlatformSettingsModel.findOne().lean();
+    } catch (error) {
+        return null;
+    }
+};
 
 class UserController {
 
     //User Registration
     static userRegistration = async (req, res) => {
         try {
+            const settings = await loadPlatformSettings();
+            if (settings?.maintenance?.enabled) {
+                return res.status(503).json({
+                    status: "failed",
+                    message: settings?.maintenance?.message || "Maintenance mode is active. Please try again later.",
+                });
+            }
+            if (settings?.registration?.disabled) {
+                return res.status(403).json({
+                    status: "failed",
+                    message: settings?.registration?.reason || "Registrations are temporarily disabled.",
+                });
+            }
 
             const { name, email, password, password_confirmation } = req.body;
 
@@ -131,6 +153,14 @@ class UserController {
             // Check if User exists
             if (!user) {
                 return res.status(404).json({ status: "failed", message: "User not Registered" });
+            }
+
+            const settings = await loadPlatformSettings();
+            if (settings?.maintenance?.enabled && !user.roles.includes("admin")) {
+                return res.status(503).json({
+                    status: "failed",
+                    message: settings?.maintenance?.message || "Maintenance mode is active. Please try again later.",
+                });
             }
 
             // check if user exisits

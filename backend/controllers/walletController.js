@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import UserModel from "../models/User.js";
+import TransactionModel from "../models/Transaction.js";
 import logger from "../utils/logger.js";
 
 const REQUIRED_BANK_FIELDS = [
@@ -115,25 +116,58 @@ class WalletController {
         transactionId,
       };
 
-      const updated = await UserModel.findOneAndUpdate(
-        {
-          _id: user._id,
-          "wallet.availableBalance": { $gte: parsedAmount },
-        },
-        {
-          $inc: { "wallet.availableBalance": -parsedAmount },
-          $push: { "wallet.withdrawalHistory": withdrawalEntry },
-          $set: { "wallet.bankDetails": sanitizedBankDetails },
-        },
-        { new: true }
-      ).lean();
+      const session = await UserModel.startSession();
+      let updated;
 
-      if (!updated) {
+      try {
+        await session.withTransaction(async () => {
+          updated = await UserModel.findOneAndUpdate(
+            {
+              _id: user._id,
+              "wallet.availableBalance": { $gte: parsedAmount },
+            },
+            {
+              $inc: { "wallet.availableBalance": -parsedAmount },
+              $push: { "wallet.withdrawalHistory": withdrawalEntry },
+              $set: { "wallet.bankDetails": sanitizedBankDetails },
+            },
+            { new: true, session }
+          ).lean();
+
+          if (!updated) {
+            throw new Error("WITHDRAWAL_FAILED");
+          }
+
+          await TransactionModel.create(
+            [
+              {
+                userId: user._id,
+                type: "withdrawal",
+                amount: parsedAmount,
+                status: "pending",
+                gatewayId: transactionId,
+                relatedTo: { model: "User", id: user._id },
+                metadata: {
+                  bankName: sanitizedBankDetails.bankName,
+                  accountLast4: sanitizedBankDetails.accountNumber.slice(-4),
+                },
+              },
+            ],
+            { session }
+          );
+        });
+      } catch (error) {
+        const message =
+          error.message === "WITHDRAWAL_FAILED"
+            ? "Unable to process withdrawal"
+            : "Unable to submit withdrawal";
         return res.status(400).json({
           success: false,
-          error: "Unable to process withdrawal",
+          error: message,
           code: "WITHDRAWAL_FAILED",
         });
+      } finally {
+        session.endSession();
       }
 
       logger.info("Withdrawal request submitted", {

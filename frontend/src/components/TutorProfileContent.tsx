@@ -310,7 +310,7 @@ const TutorProfileContent = () => {
                         <h2 className="text-xl font-bold text-gray-900 mb-4">About me</h2>
                         <p className="text-gray-600 leading-relaxed text-[15px]">
                             {/* Static content for now as per design */}
-                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I'm not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
+                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I&apos;m not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
                         </p>
                     </div>
 

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import {
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import MultiSelect from "@/components/MultiSelect";
 import Quiz from "@/components/Quiz";
+import { Skeleton } from "@/components/ui/skeleton";
 import { subjectTopics } from "@/lib/constants";
 import { useGetUserQuery, useGenerateQuizMutation } from "@/lib/services/auth";
 import {
@@ -379,13 +381,14 @@ export default function TutorOnboarding() {
                 <div className='flex flex-col items-center'>
                   {formik.values.profilePicture ? (
                     <div className='flex flex-col items-center space-y-3'>
-                      <div className='w-32 h-32 rounded-full overflow-hidden bg-yellow-400'>
-                        <img
-                          src={URL.createObjectURL(
-                            formik.values.profilePicture
-                          )}
+                      <div className='relative w-32 h-32 rounded-full overflow-hidden bg-yellow-400'>
+                        <Image
+                          src={URL.createObjectURL(formik.values.profilePicture)}
                           alt='Profile'
-                          className='w-full h-full object-cover'
+                          fill
+                          sizes="128px"
+                          className='object-cover'
+                          unoptimized
                         />
                       </div>
                       <button
@@ -681,9 +684,9 @@ export default function TutorOnboarding() {
         );
       case 2:
         return quizLoading ? (
-          <div className='flex flex-col items-center justify-center py-20'>
-            <div className='animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-300'></div>
-            <p className='mt-4 text-gray-600'>Generating quiz questions...</p>
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <Skeleton className="h-4 w-52" />
           </div>
         ) : (
           <div className='space-y-4'>
@@ -824,13 +827,13 @@ export default function TutorOnboarding() {
                 <div className='text-center'>
                   {existingApplication.applicationStatus === "pending" && (
                     <p className='text-gray-600 mb-4'>
-                      Your application is being reviewed. We'll contact you
+                      Your application is being reviewed. We&apos;ll contact you
                       within 24-48 hours with an update.
                     </p>
                   )}
                   {existingApplication.applicationStatus === "under_review" && (
                     <p className='text-gray-600 mb-4'>
-                      Your application is currently under detailed review. We'll
+                      Your application is currently under detailed review. We&apos;ll
                       notify you once the review is complete.
                     </p>
                   )}
@@ -880,11 +883,11 @@ export default function TutorOnboarding() {
             </div>
 
             <h2 className='text-3xl font-bold mb-4'>
-              Thank you for the request, we'll get in contact within 1 hour.
+              Thank you for the request, we&apos;ll get in contact within 1 hour.
             </h2>
 
             <p className='text-gray-600 mb-8 max-w-2xl'>
-              Our team will verify your application and credentials. You'll
+              Our team will verify your application and credentials. You&apos;ll
               receive an email confirmation shortly with next steps for your
               tutor onboarding process.
             </p>

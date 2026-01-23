@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { MessageSquare, DollarSign, Check } from 'lucide-react';
-import Link from 'next/link';
+import { Check } from 'lucide-react';
 
 interface TutorProposal {
   id: string;
@@ -94,9 +93,11 @@ const TutorProposalsComponent: React.FC<TutorProposalsComponentProps> = ({
                 className="w-16 h-16 rounded-full overflow-hidden mr-4 cursor-pointer" 
                 onClick={() => onProfileClick(proposal.id)}
               >
-                <img 
-                  src={proposal.profileImage} 
-                  alt={proposal.name} 
+                <Image
+                  src={proposal.profileImage}
+                  alt={proposal.name}
+                  width={64}
+                  height={64}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -182,9 +183,11 @@ const TutorProposalsComponent: React.FC<TutorProposalsComponentProps> = ({
             <div className="space-y-4">
               <div className="flex items-center space-x-3 pb-4 border-b border-gray-200">
                 <div className="w-12 h-12 rounded-full overflow-hidden">
-                  <img 
-                    src={selectedTutor.profileImage} 
-                    alt={selectedTutor.name} 
+                  <Image
+                    src={selectedTutor.profileImage}
+                    alt={selectedTutor.name}
+                    width={48}
+                    height={48}
                     className="w-full h-full object-cover"
                   />
                 </div>

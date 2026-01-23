@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from "next/image";
 import { X, ChevronDown, ChevronUp, Image as ImageIcon, Video, FileText, Music, Link as LinkIcon, Mic } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 
@@ -92,7 +93,13 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             <div className="px-6 pb-6 flex flex-col items-center border-b border-gray-100">
                 <div className="relative mb-4">
                     {avatar ? (
-                        <img src={avatar} alt={chatName} className="w-24 h-24 rounded-2xl object-cover shadow-sm" />
+                        <Image
+                            src={avatar}
+                            alt={chatName}
+                            width={96}
+                            height={96}
+                            className="w-24 h-24 rounded-2xl object-cover shadow-sm"
+                        />
                     ) : (
                         <div className="w-24 h-24 rounded-2xl bg-primary-100 text-primary-600 flex items-center justify-center text-3xl font-medium shadow-sm">
                             {getInitials(chatName)}

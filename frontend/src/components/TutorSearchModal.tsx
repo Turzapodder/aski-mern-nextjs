@@ -1,8 +1,9 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Search, X, Circle, Users } from 'lucide-react'
+import { Search, X, Circle } from 'lucide-react'
 import { useSearchTutorsQuery } from '@/lib/services/chat'
 import { useChatContext } from '@/contexts/ChatContext'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Tutor {
   _id: string
@@ -86,8 +87,17 @@ const TutorSearchModal: React.FC<TutorSearchModalProps> = ({ isOpen, onClose }) 
         {/* Tutors List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">Searching tutors...</div>
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-8">

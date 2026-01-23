@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from "next/image"
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import Link from 'next/link'
@@ -52,13 +53,13 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     router.push(href)
   }
 
-  // Check if user is a tutor
-  const isTutor = userData?.user?.roles?.includes('tutor')
+  // Check if user is a tutor/admin
+  const roles = userData?.user?.roles || []
+  const isTutor = roles.includes('tutor')
+  const isAdmin = roles.includes('admin')
 
-  const sidebarSections: SidebarSection[] = [
-    {
-      title: 'MAIN MENU',
-      items: isTutor ? [
+  const mainMenuItems = isTutor
+    ? [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' || (activeItem === 'tutors' && window.location.pathname.includes(userData?.user?._id || '')) },
         { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
@@ -66,19 +67,35 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
         { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
-      ] : [
+      ]
+    : [
         { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
         { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
         { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
         { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
         { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
-      ],
+      ]
+
+  const sidebarSections: SidebarSection[] = [
+    {
+      title: 'MAIN MENU',
+      items: mainMenuItems,
     },
-    // {
-    //   title: 'STARTED',
-    //   items: [
-    //     { name: 'Finalize Homepage Wireframe', icon: '/assets/icons/folder-icon.png', href: '/assignment/details?id=1' },
   ]
+
+  if (isAdmin) {
+    sidebarSections.push({
+      title: 'ADMIN',
+      items: [
+        {
+          name: 'Admin Panel',
+          icon: '/assets/icons/dashboard.png',
+          href: '/admin',
+          active: activeItem === 'admin' || window.location.pathname.startsWith('/admin'),
+        },
+      ],
+    })
+  }
 
   return (
     <aside
@@ -90,9 +107,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <img
+              <Image
                 src="/assets/main-logo.svg"
                 alt="logo"
+                width={120}
+                height={30}
                 className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${!isCollapsed && "mr-3"
                   }`}
               />
@@ -138,9 +157,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
                           className={`flex items-center ${isCollapsed ? "justify-center w-full" : ""
                             }`}
                         >
-                          <img
+                          <Image
                             src={item.icon}
                             alt={item.name}
+                            width={30}
+                            height={30}
                             className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain ${!isCollapsed && "mr-3"
                               }`}
                           />
@@ -159,6 +180,23 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
         }
       </nav >
 
+      {/* Logout */}
+      < div className="p-4 " >
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-white hover:text-gray-900 group"
+          title={isCollapsed ? "Logout" : undefined}
+        >
+          <Image
+            src="/assets/icons/logout.png"
+            alt="Logout"
+            width={30}
+            height={30}
+            className="w-[30px] h-[30px] flex-shrink-0 mr-3"
+          />
+          {!isCollapsed && <span>Logout</span>}
+        </button>
+      </div >
       {/* User Profile & Logout */}
       <div className="p-4 border-t border-gray-200">
         {!isCollapsed ? (
@@ -166,9 +204,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
             <Link href="/user/profile" className="flex items-center space-x-3 overflow-hidden flex-1 min-w-0 mr-2 group">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 flex-shrink-0">
                 {userData?.user?.profilePicture ? (
-                  <img
+                  <Image
                     src={userData.user.profilePicture}
                     alt={userData.user.name}
+                    width={40}
+                    height={40}
                     className="w-full h-full object-cover"
                   />
                 ) : (
