@@ -49,7 +49,7 @@ const ResetPasswordLink = () => {
 
         <h2 className="text-2xl font-semibold text-center mb-2">Forgot password?</h2>
         <p className="text-sm text-center mb-8 text-gray-500">
-          No worries, we'll send you reset instructions.
+          No worries, we&apos;ll send you reset instructions.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">

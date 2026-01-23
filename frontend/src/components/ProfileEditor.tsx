@@ -8,14 +8,10 @@ import {
   UserProfile,
   ProfileUpdatePayload,
 } from "@/lib/services/profile";
-import {
-  AlertCircle,
-  Loader,
-  X,
-  CheckCircle,
-} from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 import ProfileSidebar from "./ProfileSidebar";
 import ProfileForm from "./ProfileForm";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileEditorProps {
   userId: string;
@@ -140,10 +136,26 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
 
   if (isLoadingProfile) {
     return (
-      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
-        <div className='text-center'>
-          <Loader className='w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4' />
-          <p className='text-gray-600 font-medium'>Loading your profile...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex">
+          <div className="hidden md:block w-72 border-r bg-white p-6 space-y-4">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-24" />
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-10 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 p-8 space-y-6">
+            <Skeleton className="h-6 w-40" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     );

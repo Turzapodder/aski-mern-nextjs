@@ -92,14 +92,17 @@ class AssignmentController {
 
       // Check if user has permission to view this assignment
       const isStudent = assignment.student._id.toString() === userId.toString();
-      const isAssignedTutor = assignment.assignedTutor && assignment.assignedTutor._id.toString() === userId.toString();
+      const isTutor =
+        assignment.assignedTutor &&
+        assignment.assignedTutor._id.toString() === userId.toString();
       const isAdmin = req.user.roles.includes('admin');
-      
-      // Allow any tutor to view pending assignments that haven't been assigned yet
-      const isTutorRole = req.user.roles.includes('tutor');
-      const isPending = assignment.status === 'pending' && !assignment.assignedTutor;
+      const canViewOpenAssignment =
+        req.user.roles.includes('tutor') &&
+        assignment.isActive &&
+        assignment.status === 'pending' &&
+        !assignment.assignedTutor;
 
-      if (!isStudent && !isAssignedTutor && !isAdmin && !(isTutorRole && isPending)) {
+      if (!isStudent && !isTutor && !isAdmin && !canViewOpenAssignment) {
         return res.status(403).json({
           status: 'failed',
           message: 'Access denied'

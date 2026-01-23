@@ -105,7 +105,7 @@ const LandingPage = () => {
 
               <p className='text-md text-gray-600 leading-relaxed text-center'>
                 Discover thousands of fun and interactive learning activities to
-                support your child's growth and learning process.
+                support your child&apos;s growth and learning process.
               </p>
             </div>
 
@@ -333,14 +333,14 @@ const LandingPage = () => {
               {/* Left Content */}
               <div className='p-12 flex flex-col justify-center'>
                 <h2 className='text-4xl font-bold text-gray-900 mb-6'>
-                  Get in —<br />
-                  touch with us
+                  Get in touch<br />
+                  with us
                 </h2>
 
                 <p className='text-gray-600 mb-8 leading-relaxed'>
-                  We're here to help! Whether you have a question about our
+                  We&apos;re here to help! Whether you have a question about our
                   tutoring services, need assistance with your account, or want
-                  to join our team of expert tutors, we're ready to assist you.
+                  to join our team of expert tutors, we&apos;re ready to assist you.
                 </p>
 
                 <div className='space-y-6 mb-8'>

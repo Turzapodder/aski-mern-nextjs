@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense, useState, useEffect } from "react";
 import { useFormik } from 'formik';
 import { registerSchema } from '@/validation/schemas'
@@ -34,23 +35,6 @@ const Register = () => {
     skip: !pendingSessionId
   })
   
-  // Get role from search params
-  useEffect(() => {
-    const role = searchParams.get("role");
-    if (role === "tutor") {
-      setUserRole("tutor");
-      // Update formik values with the role
-      values.role = "tutor";
-    }
-    
-    // Check for pending form session ID
-    const storedSessionId = localStorage.getItem('pendingFormSessionId')
-    if (storedSessionId) {
-      setPendingSessionId(storedSessionId)
-      setShowFormNotification(true)
-    }
-  }, [searchParams]);
-  
   // Handle form conversion after successful registration
   const handleFormConversion = async () => {
     if (pendingSessionId) {
@@ -64,7 +48,7 @@ const Register = () => {
     }
   }
 
-  const { values, errors, touched, handleChange, handleSubmit, handleBlur } = useFormik({
+  const { values, errors, touched, handleChange, handleSubmit, handleBlur, setFieldValue } = useFormik({
     initialValues,
     validationSchema: registerSchema,
     onSubmit: async (values, action) => {
@@ -117,6 +101,22 @@ const Register = () => {
       }
     }
   })
+
+  // Get role from search params
+  useEffect(() => {
+    const role = searchParams.get("role");
+    if (role === "tutor") {
+      setUserRole("tutor");
+      setFieldValue("role", "tutor");
+    }
+    
+    // Check for pending form session ID
+    const storedSessionId = localStorage.getItem('pendingFormSessionId')
+    if (storedSessionId) {
+      setPendingSessionId(storedSessionId)
+      setShowFormNotification(true)
+    }
+  }, [searchParams, setFieldValue]);
   
   const handleGoogleLogin = async () => {
     // Pass the role parameter to the Google auth endpoint
@@ -135,10 +135,13 @@ const Register = () => {
             <div className="w-full h-full">
               {/* Background Image Container */}
               <div className="relative w-full h-[100%] rounded-3xl overflow-hidden mb-6">
-                <img
+                <Image
                   src="/assets/signup.png"
                   alt="Dashboard Preview"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover"
+                  priority
                 />
 
                 {/* Chris Meadow Card - Absolute Position */}
@@ -159,11 +162,13 @@ const Register = () => {
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-20 ">
           <div className="flex  gap-3 items-center mt-5 mb-10 ">
-            <img
-                src="/assets/main-logo.svg"
-                alt="logo"
-                className={`min-w-[30px] min-h-[30px] w-[120px] object-contain`}
-              />
+            <Image
+              src="/assets/main-logo.svg"
+              alt="logo"
+              width={120}
+              height={30}
+              className="min-w-[30px] min-h-[30px] w-[120px] object-contain"
+            />
           </div>
           
           {/* Show form notification if user has pending form data */}
@@ -173,7 +178,7 @@ const Register = () => {
                 📝 Your assignment request is saved!
               </h3>
               <p className="text-blue-700 text-sm">
-                Complete registration to continue with: "{formData.formData.description?.substring(0, 50)}..."
+                Complete registration to continue with: &quot;{formData.formData.description?.substring(0, 50)}...&quot;
               </p>
             </div>
           )}

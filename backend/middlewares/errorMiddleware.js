@@ -12,7 +12,7 @@ export const notFoundHandler = (req, res, next) => {
   });
 
   res.status(404).json({
-    status: "error",
+    status: "failed",
     statusCode: 404,
     message: "Route not found",
     path: req.originalUrl,
@@ -106,7 +106,7 @@ export const errorHandler = (err, req, res, next) => {
   const message = error.message || "Internal Server Error";
 
   const errorResponse = {
-    status: "error",
+    status: "failed",
     statusCode,
     message,
     ...(process.env.NODE_ENV === "development" && {

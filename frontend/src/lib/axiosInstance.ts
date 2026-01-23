@@ -12,7 +12,6 @@ declare module "axios" {
   }
 }
 
-
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
   withCredentials: true,
@@ -28,14 +27,14 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log("🔄 Token expired, refreshing...");
+        console.log("Token expired, refreshing...");
 
         await axiosInstance.get("/student/session/generate");
 
-        console.log("✅ Token refreshed, retrying request");
+        console.log("Token refreshed, retrying request");
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        console.error("❌ Token refresh failed, redirecting to login");
+        console.error("Token refresh failed, redirecting to login");
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }

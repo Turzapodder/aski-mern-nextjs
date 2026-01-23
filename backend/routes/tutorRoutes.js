@@ -4,6 +4,7 @@ import TutorController, { uploadDocuments } from '../controllers/tutorController
 import { saveQuizResult, getQuizHistory } from '../controllers/quizController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
+import verifyAdmin from '../middlewares/admin-middleware.js';
 
 const router = express.Router();
 
@@ -31,8 +32,12 @@ router.get('/application/status', TutorController.getApplicationStatus);
 router.post('/quiz/save-result', saveQuizResult);
 router.get('/quiz/history', getQuizHistory);
 
-// Admin routes (add role checking middleware later)
-router.get('/applications', TutorController.getAllApplications);
-router.put('/applications/:applicationId/review', TutorController.reviewApplication);
+// Admin routes
+router.get('/applications', verifyAdmin, TutorController.getAllApplications);
+router.put(
+  '/applications/:applicationId/review',
+  verifyAdmin,
+  TutorController.reviewApplication
+);
 
 export default router;

@@ -25,6 +25,7 @@ import proposalRoutes from "./routes/proposalRoutes.js";
 import tutorsRoutes from "./routes/tutorsRoutes.js";
 import sessionsRoutes from "./routes/sessionsRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import socketManager from "./config/socket.js";
 import "./config/passport-jwt-strategy.js";
 import setTokensCookies from "./utils/setTokensCookies.js";
@@ -420,6 +421,7 @@ const startServer = async () => {
     app.use("/api/tutors", tutorsRoutes);
     app.use("/api/sessions", sessionsRoutes);
     app.use("/api/wallet", walletRoutes);
+    app.use("/api/v1/admin", adminRoutes);
 
     // Google OAuth routes with enhanced error handling and logging
     app.get("/auth/google", (req, res, next) => {

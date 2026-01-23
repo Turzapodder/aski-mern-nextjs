@@ -106,7 +106,7 @@ export const tutorApi = createApi({
 
         // Log the form data for debugging
         console.log("Submitting application with FormData:");
-        for (let [key, value] of formData.entries()) {
+        for (const [key, value] of formData.entries()) {
           console.log(
             key,
             ":",

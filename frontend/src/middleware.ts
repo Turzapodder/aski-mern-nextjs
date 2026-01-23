@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const publicPaths = ['/','/account/login', '/account/register', '/account/reset-password-link', '/account/verify-email'];
 
 // Array of paths that require authentication
-const protectedPaths = ['/user', '/assignment'];
+const protectedPaths = ['/user', '/assignment', '/admin'];
 
 export async function middleware(request: NextRequest) {
   try {

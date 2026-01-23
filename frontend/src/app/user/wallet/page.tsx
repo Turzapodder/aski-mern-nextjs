@@ -12,6 +12,7 @@ import {
 import { useGetUserQuery } from "@/lib/services/auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
@@ -73,17 +74,17 @@ export default function WalletPage() {
     bankDetails: {}
   }
 
-  const withdrawalHistory: WithdrawalEntry[] = Array.isArray(
-    wallet.withdrawalHistory
-  )
-    ? wallet.withdrawalHistory
-    : []
-
   const sortedHistory = useMemo(() => {
+    const withdrawalHistory: WithdrawalEntry[] = Array.isArray(
+      wallet.withdrawalHistory
+    )
+      ? wallet.withdrawalHistory
+      : []
+
     return [...withdrawalHistory].sort(
       (a, b) => getTimeValue(b.requestedAt) - getTimeValue(a.requestedAt)
     )
-  }, [withdrawalHistory])
+  }, [wallet.withdrawalHistory])
 
   const pageSize = 10
   const totalPages = Math.max(1, Math.ceil(sortedHistory.length / pageSize))
@@ -123,7 +124,29 @@ export default function WalletPage() {
   )
 
   if (isLoading) {
-    return <div className="text-sm text-gray-500">Loading wallet...</div>
+    return (
+      <div className="min-h-screen bg-[#f4f5fb] p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+            <div className="space-y-6">
+              <Skeleton className="h-40 w-full rounded-3xl" />
+              <Skeleton className="h-64 w-full rounded-3xl" />
+              <Skeleton className="h-72 w-full rounded-3xl" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-48 w-full rounded-3xl" />
+              <Skeleton className="h-56 w-full rounded-3xl" />
+              <Skeleton className="h-64 w-full rounded-3xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!isTutor) {
