@@ -9,6 +9,7 @@ export interface Assignment {
   topics: string[];
   deadline: string;
   estimatedCost: number;
+  budget?: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'draft' | 'pending' | 'assigned' | 'submitted' | 'completed' | 'cancelled' | 'overdue';
   createdAt: string;
@@ -19,6 +20,11 @@ export interface Assignment {
     email: string;
   };
   assignedTutor?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  requestedTutor?: {
     _id: string;
     name: string;
     email: string;

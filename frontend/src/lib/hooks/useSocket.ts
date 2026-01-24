@@ -22,6 +22,10 @@ interface SocketEvents {
   onMessageRead?: (data: { chatId: string; messageId: string; userId: string }) => void;
   onUserOnline?: (data: { userId: string; status: string }) => void;
   onUserOffline?: (data: { userId: string }) => void;
+  onNotification?: (data: any) => void;
+  onChatUpdated?: (data: any) => void;
+  onConnect?: () => void;
+  onDisconnect?: (reason: string) => void;
 }
 
 export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
@@ -61,11 +65,13 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     socket.on('connect', () => {
       console.log('Connected to chat server with ID:', socket.id);
       setIsConnected(true);
+      eventsRef.current.onConnect?.();
     });
 
     socket.on('disconnect', (reason) => {
       console.log('Disconnected from chat server. Reason:', reason);
       setIsConnected(false);
+      eventsRef.current.onDisconnect?.(reason);
     });
 
     socket.on('connect_error', (error) => {
@@ -122,6 +128,16 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     socket.on('user_offline', (data) => {
       console.log('User went offline:', data);
       eventsRef.current.onUserOffline?.(data);
+    });
+
+    socket.on('notification', (data) => {
+      console.log('Notification received:', data);
+      eventsRef.current.onNotification?.(data);
+    });
+
+    socket.on('chat_updated', (data) => {
+      console.log('Chat updated:', data);
+      eventsRef.current.onChatUpdated?.(data);
     });
 
     socket.on('error', (data) => {

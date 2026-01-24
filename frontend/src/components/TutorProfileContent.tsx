@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Award, Zap, ChevronDown, User, GraduationCap, Edit, Copy } from 'lucide-react'
+import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, Award, Zap, User, GraduationCap, MapPin, Edit, Copy } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useGetUserQuery } from '@/lib/services/auth'
 
@@ -10,6 +10,9 @@ interface PublicTutor {
     name: string
     profileImage?: string
     about?: string
+    city?: string
+    country?: string
+    languages?: string[]
     tutorProfile?: {
         bio?: string
         expertiseSubjects?: string[]
@@ -17,6 +20,13 @@ interface PublicTutor {
         hourlyRate?: number
         experienceYears?: number
         verificationStatus?: string
+        professionalTitle?: string
+        qualification?: string
+        currentInstitution?: string
+        teachingMode?: string
+        achievements?: string
+        availableDays?: string[]
+        availableTimeSlots?: Array<{ day?: string; slots?: string[] }>
     }
     publicStats?: {
         averageRating?: number
@@ -25,21 +35,20 @@ interface PublicTutor {
         completedProjects?: number
         responseTime?: number
     }
+    joinedDate?: string
 }
 
 const TutorProfileContent = () => {
     const params = useParams<{ id: string }>()
     const router = useRouter()
     const { data: userData } = useGetUserQuery()
-    const [activeTab, setActiveTab] = useState('about')
-    const [selectedDate, setSelectedDate] = useState('Tue, 2 April, 2024')
-    const [selectedTime, setSelectedTime] = useState<string | null>('13:30')
     const [tutor, setTutor] = useState<PublicTutor | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
 
     const isOwner = userData?.user?._id === params?.id
+    const canRequestProposal = !userData?.user || !userData.user.roles?.includes('tutor')
 
     useEffect(() => {
         const fetchTutor = async () => {
@@ -90,10 +99,11 @@ const TutorProfileContent = () => {
         const completedProjects = tutor.publicStats?.completedProjects ?? 0
         const responseTime = tutor.publicStats?.responseTime ?? 0
         const experienceYears = tutor.tutorProfile?.experienceYears
+        const location = [tutor.city, tutor.country].filter(Boolean).join(', ')
 
         return {
             name: tutor.name,
-            subject: subjects[0] ? `${subjects[0]} tutor` : 'Tutor',
+            subject: subjects[0] ? `${subjects[0]} tutor` : (tutor.tutorProfile?.professionalTitle || 'Tutor'),
             rating,
             reviewsCount: totalReviews,
             isTopTutor: rating >= 4.8,
@@ -106,52 +116,53 @@ const TutorProfileContent = () => {
                 students: totalReviews,
                 lessons: completedProjects
             },
-            price: tutor.tutorProfile?.hourlyRate || 0,
+            price: tutor.tutorProfile?.hourlyRate,
             response_time: responseTime ? `${responseTime}-hour` : 'Flexible',
             booked_stats: completedProjects
                 ? `${completedProjects} lessons completed`
                 : 'New tutor',
-            videoThumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=400&fit=crop',
-            profileImage: tutor.profileImage || '/assets/tutor-profile.svg'
+            profileImage: tutor.profileImage || '/assets/tutor-profile.svg',
+            location,
+            languages: tutor.languages || []
         }
     }, [tutor])
 
-    const scheduleSlots = [
-        "8:30", "9:00", "9:30", "10:00", "10:30", "11:00", "11:30",
-        "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00",
-        "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
-        "19:00", "19:30", "20:00", "20:30"
-    ]
+    const availability = useMemo(() => {
+        const days = tutor?.tutorProfile?.availableDays || []
+        const timeSlots = tutor?.tutorProfile?.availableTimeSlots || []
+        const slotsByDay = new Map<string, string[]>()
 
-    const reviews = [
-        {
-            id: 1,
-            user: "Cynthia W.",
-            role: "Student",
-            avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-            rating: 5,
-            comment: "Absolutely brilliant course, trust me! Jenny's deep knowledge of economics, coupled with her engaging teaching style, made every lesson a pleasure!",
-            verified: true
-        },
-        {
-            id: 2,
-            user: "Brian B.",
-            role: "Student",
-            avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-            rating: 5,
-            comment: "Invaluable experience, tons of useful knowledge.",
-            verified: true
-        },
-        {
-            id: 3,
-            user: "Juliet M.",
-            role: "Student",
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-            rating: 5,
-            comment: "I can't recommend this course enough! Jenny's passion for economics is contagious, and her ability to simplify complex concepts - just wow and wow!",
-            verified: true
-        }
-    ]
+        timeSlots.forEach((entry) => {
+            const day = typeof entry?.day === 'string' ? entry.day : ''
+            const slots = Array.isArray(entry?.slots) ? entry.slots.filter(Boolean) : []
+            if (day) {
+                slotsByDay.set(day, slots)
+            }
+        })
+
+        days.forEach((day) => {
+            if (!slotsByDay.has(day)) {
+                slotsByDay.set(day, [])
+            }
+        })
+
+        return Array.from(slotsByDay.entries()).map(([day, slots]) => ({
+            day,
+            slots
+        }))
+    }, [tutor])
+
+    const detailItems = useMemo(() => {
+        if (!tutor) return []
+        const items = [
+            { label: 'Professional title', value: tutor.tutorProfile?.professionalTitle },
+            { label: 'Qualification', value: tutor.tutorProfile?.qualification },
+            { label: 'Institution', value: tutor.tutorProfile?.currentInstitution },
+            { label: 'Teaching mode', value: tutor.tutorProfile?.teachingMode },
+            { label: 'Achievements', value: tutor.tutorProfile?.achievements }
+        ]
+        return items.filter((item) => item.value)
+    }, [tutor])
 
     const handleShareProfile = () => {
         const publicUrl = `${window.location.origin}/public/tutor-profile/${params.id}`;
@@ -224,6 +235,29 @@ const TutorProfileContent = () => {
                                             </div>
                                         </div>
                                         <p className="text-gray-500 font-medium">{tutorData.subject}</p>
+                                        {(tutorData.location || tutorData.languages.length > 0) && (
+                                            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                                {tutorData.location && (
+                                                    <span className="flex items-center gap-1">
+                                                        <MapPin className="w-3.5 h-3.5" />
+                                                        {tutorData.location}
+                                                    </span>
+                                                )}
+                                                {tutorData.languages.length > 0 && (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="font-medium text-gray-400">Languages:</span>
+                                                        {tutorData.languages.slice(0, 4).map((lang) => (
+                                                            <span
+                                                                key={lang}
+                                                                className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700"
+                                                            >
+                                                                {lang}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {isOwner ? (
@@ -260,14 +294,18 @@ const TutorProfileContent = () => {
                             {tutorData.bio}
                         </p>
 
-                        <div className="flex flex-wrap gap-2 mb-8">
-                            {tutorData.tags.map((tag, i) => (
-                                <span key={i} className={`text-xs font-semibold px-3 py-1.5 rounded-full text-white ${["Economics", "Financial Theory", "Management", "Politics", "Finance", "International Economy", "Business English", "Time Management", "Global Economy", "Oxford", "Microeconomics", "IELTS"].includes(tag) ? 'bg-[#18181b]' : 'bg-[#18181b]'
-                                    }`}>
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
+                        {tutorData.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-8">
+                                {tutorData.tags.map((tag, i) => (
+                                    <span
+                                        key={`${tag}-${i}`}
+                                        className="text-xs font-semibold px-3 py-1.5 rounded-full text-white bg-[#18181b]"
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2 text-gray-600">
@@ -289,195 +327,167 @@ const TutorProfileContent = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="flex items-center border-b border-gray-100 overflow-x-auto">
-                            {['About me', 'Schedule', 'Academic Profile', 'Reviews'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    className={`px-6 py-4 text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === tab.toLowerCase().split(' ')[0]
-                                        ? 'text-gray-900 border-b-2 border-gray-900'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    onClick={() => setActiveTab(tab.toLowerCase().split(' ')[0])}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">About me</h2>
-                        <p className="text-gray-600 leading-relaxed text-[15px]">
-                            {/* Static content for now as per design */}
-                            Having graduated from Oxford University with a degree in Economics, I was fortunate to receive a rigorous education steeped in academic excellence and research-driven inquiry. I&apos;m not only equipped with a deep understanding of economic theory but also instilled in me a commitment to critical thinking and analytical rigor.
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">Schedule</h2>
-                        </div>
-
-                        <div className="flex flex-col md:flex-row gap-4 mb-6">
-                            <div className="flex-grow flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                                <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px]">i</div>
-                                Pick time for first lesson. The timings are displayed in your local timezone.
-                            </div>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-3 rounded-xl min-w-max cursor-pointer">
-                                <Clock className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm font-semibold text-gray-700">PST UTC-08:00</span>
-                                <ChevronDown className="w-4 h-4 text-gray-400" />
-                            </div>
-                        </div>
-
-                        <div className="border border-gray-200 rounded-2xl overflow-hidden mb-6">
-                            <div className="bg-[#18181b] text-white p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <button className="p-1 hover:bg-white/10 rounded-full"><ChevronLeft className="w-5 h-5" /></button>
-                                    <span className="font-semibold">{selectedDate}</span>
-                                    <button className="p-1 hover:bg-white/10 rounded-full"><ChevronRight className="w-5 h-5" /></button>
-                                </div>
-                                <div className="flex bg-gray-800 rounded-lg p-1">
-                                    <button className="px-4 py-1.5 bg-[#C084FC] text-white rounded-md text-sm font-semibold">Day</button>
-                                    <button className="px-4 py-1.5 text-gray-400 hover:text-white rounded-md text-sm font-semibold transition-colors">Week</button>
-                                </div>
-                            </div>
-
-                            <div className="p-6 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-3">
-                                {scheduleSlots.map((time) => (
-                                    <button
-                                        key={time}
-                                        onClick={() => setSelectedTime(time)}
-                                        className={`py-3 rounded-[14px] text-sm font-semibold transition-all ${selectedTime === time
-                                            ? 'bg-[#C084FC] text-white shadow-lg shadow-purple-200 scale-105'
-                                            : 'bg-white border border-gray-100 text-gray-700 hover:border-purple-200 hover:bg-purple-50'
-                                            }`}
-                                    >
-                                        {time}
-                                    </button>
+                    {detailItems.length > 0 && (
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">Profile details</h2>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                {detailItems.map((item) => (
+                                    <div key={item.label} className="rounded-2xl border border-gray-100 p-4">
+                                        <div className="text-xs uppercase tracking-wide text-gray-400">
+                                            {item.label}
+                                        </div>
+                                        <div className="mt-1 text-sm font-semibold text-gray-900">
+                                            {item.value}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    )}
+
+                    {availability.length > 0 && (
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold text-gray-900">Availability</h2>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <CalendarIcon className="w-4 h-4" />
+                                    Local time
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                {availability.map((slot) => (
+                                    <div key={slot.day} className="rounded-2xl border border-gray-100 p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-sm font-semibold text-gray-900">{slot.day}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {slot.slots.length ? `${slot.slots.length} slots` : 'No slots listed'}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {slot.slots.length > 0 ? (
+                                                slot.slots.map((time) => (
+                                                    <span
+                                                        key={`${slot.day}-${time}`}
+                                                        className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700"
+                                                    >
+                                                        {time}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-gray-400">Contact to confirm times.</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {tutorData.reviewsCount > 0 && (
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold text-gray-900">Reviews</h2>
+                                <span className="text-sm text-gray-500">{tutorData.reviewsCount} reviews</span>
+                            </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                                <div className="text-3xl font-bold text-gray-900">
+                                    {tutorData.rating ? tutorData.rating.toFixed(1) : 'New'}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: 5 }).map((_, index) => (
+                                        <Star
+                                            key={`rating-${index}`}
+                                            className={`w-4 h-4 ${index < Math.round(tutorData.rating)
+                                                    ? 'fill-amber-400 text-amber-400'
+                                                    : 'text-gray-300'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                    Based on {tutorData.reviewsCount} reviews
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                 </div>
 
                 <div className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 ">
-                        <div className="relative rounded-2xl overflow-hidden mb-6 aspect-video group cursor-pointer">
-                            <Image
-                                src={tutorData.videoThumbnail}
-                                alt="Intro Video"
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
-                                <div className="w-14 h-14 bg-white/90 backdrop-blur rounded-full flex items-center justify-center pl-1 shadow-lg group-hover:scale-110 transition-transform">
-                                    <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-purple-600 border-b-[8px] border-b-transparent"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between items-end mb-6">
-                            <span className="text-gray-500 font-medium">Price per lesson</span>
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-end mb-4">
+                            <span className="text-gray-500 font-medium">Hourly rate</span>
                             <div className="text-right">
-                                <span className="text-3xl font-bold text-gray-900">${tutorData.price}</span>
-                                <span className="text-sm text-gray-500">/hr</span>
+                                {typeof tutorData.price === 'number' && tutorData.price > 0 ? (
+                                    <>
+                                        <span className="text-3xl font-bold text-gray-900">${tutorData.price}</span>
+                                        <span className="text-sm text-gray-500">/hr</span>
+                                    </>
+                                ) : (
+                                    <span className="text-lg font-semibold text-gray-700">Contact for pricing</span>
+                                )}
                             </div>
                         </div>
 
-                        <button className="w-full bg-[#C084FC] hover:bg-[#A855F7] text-white font-bold py-3.5 rounded-xl mb-3 flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-100">
-                            <Zap className="w-5 h-5 fill-white" />
-                            Book trial lesson
-                        </button>
-
-                        <button className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 rounded-xl border border-gray-200 mb-6 flex items-center justify-center gap-2 transition-colors">
-                            <MessageSquare className="w-5 h-5" />
-                            Send message
-                        </button>
+                        <div className="grid gap-3">
+                            <button
+                                onClick={() => params?.id && router.push(`/user/assignments/request-proposal/${params.id}`)}
+                                disabled={!canRequestProposal}
+                                className="w-full bg-[#C084FC] hover:bg-[#A855F7] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <Zap className="w-5 h-5 fill-white" />
+                                Request proposal
+                            </button>
+                            <button
+                                className="w-full bg-white text-gray-500 font-bold py-3.5 rounded-xl border border-gray-200 flex items-center justify-center gap-2 transition-colors opacity-70 cursor-not-allowed"
+                                disabled
+                            >
+                                <MessageSquare className="w-5 h-5" />
+                                Send message
+                            </button>
+                            <p className="text-xs text-gray-500 text-center">
+                                {canRequestProposal
+                                    ? "Submit an assignment request to receive a proposal."
+                                    : "Tutors cannot request proposals from other tutors."}
+                            </p>
+                        </div>
 
                         <div className="space-y-3 pt-6 border-t border-gray-100">
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
-                                <CalendarIcon className="w-5 h-5 text-gray-400" />
-                                {tutorData.booked_stats}
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
-                                <Clock className="w-5 h-5 text-gray-400" />
-                                {tutorData.response_time} response time
-                            </div>
+                            {tutorData.booked_stats && (
+                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                    <CalendarIcon className="w-5 h-5 text-gray-400" />
+                                    {tutorData.booked_stats}
+                                </div>
+                            )}
+                            {tutorData.response_time && (
+                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                    <Clock className="w-5 h-5 text-gray-400" />
+                                    {tutorData.response_time} response time
+                                </div>
+                            )}
+                            {tutorData.location && (
+                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                    <MapPin className="w-5 h-5 text-gray-400" />
+                                    {tutorData.location}
+                                </div>
+                            )}
+                            {tutorData.languages.length > 0 && (
+                                <div className="text-sm text-gray-500">
+                                    <div className="mb-2 font-medium text-gray-400">Languages</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {tutorData.languages.map((lang) => (
+                                            <span
+                                                key={lang}
+                                                className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700"
+                                            >
+                                                {lang}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-baseline gap-2">
-                                <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
-                                <span className="text-gray-500 font-medium">({tutorData.reviewsCount})</span>
-                            </div>
-                            <button className="text-purple-600 text-sm font-bold hover:text-purple-700">View all</button>
-                        </div>
-
-                        <div className="flex items-start gap-6 mb-8">
-                            <div className="text-center">
-                                <div className="text-4xl font-bold text-[#8B5CF6] mb-1">4.9</div>
-                                <div className="flex justify-center gap-0.5 mb-1">
-                                    {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                                </div>
-                                <div className="text-[10px] text-gray-400 font-medium">{tutorData.reviewsCount} Reviews</div>
-                            </div>
-                            <div className="flex-grow space-y-2">
-                                {[
-                                    { label: 'Qualifications', val: '4.9' },
-                                    { label: 'Expertise', val: '4.8' },
-                                    { label: 'Communication', val: '5.0' },
-                                    { label: 'Value for money', val: '4.9' }
-                                ].map((stat) => (
-                                    <div key={stat.label} className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-500 w-24">{stat.label}</span>
-                                        <div className="flex-grow mx-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(parseFloat(stat.val) / 5) * 100}%` }}></div>
-                                        </div>
-                                        <span className="font-bold text-gray-700">{stat.val}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="border-b border-gray-50 last:border-0 pb-6 last:pb-0">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex gap-3">
-                                            <div className="w-10 h-10 rounded-full overflow-hidden relative">
-                                                <Image src={review.avatar} alt={review.user} fill className="object-cover" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-1">
-                                                    <span className="font-bold text-sm text-gray-900">{review.user}</span>
-                                                    {review.verified && <CheckCircle className="w-3.5 h-3.5 text-purple-600 fill-purple-600 stroke-white" />}
-                                                </div>
-                                                <div className="text-xs text-gray-400">{review.role}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-0.5">
-                                            {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                                        </div>
-                                    </div>
-                                    <p className="text-gray-600 text-xs leading-relaxed">
-                                        {review.comment}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-                            <p className="text-xs text-gray-400 mb-2">Invaluable experience, tons of useful knowledge.</p>
-
-                        </div>
-                    </div>
-
                 </div>
 
             </div>

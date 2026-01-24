@@ -54,6 +54,12 @@ const proposalSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected', 'withdrawn'],
     default: 'pending'
   },
+
+  // Conversation created for this proposal
+  conversation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'chat'
+  },
   
   // Additional details
   coverLetter: {
@@ -120,6 +126,7 @@ proposalSchema.index({ assignment: 1, status: 1 });
 proposalSchema.index({ tutor: 1, status: 1 });
 proposalSchema.index({ student: 1, status: 1 });
 proposalSchema.index({ submittedAt: -1 });
+proposalSchema.index({ conversation: 1 });
 
 // Virtual for checking if proposal is still valid
 proposalSchema.virtual('isExpired').get(function() {
@@ -131,7 +138,8 @@ proposalSchema.virtual('isExpired').get(function() {
 // Static methods
 proposalSchema.statics.findByAssignment = function(assignmentId, options = {}) {
   return this.find({ assignment: assignmentId, isActive: true, ...options })
-    .populate('tutor', 'name profileImage tutorProfile')
+    .populate('tutor', 'name profileImage tutorProfile publicStats')
+    .populate('conversation', 'name assignment assignmentTitle')
     .sort({ submittedAt: -1 });
 };
 
@@ -139,13 +147,15 @@ proposalSchema.statics.findByTutor = function(tutorId, options = {}) {
   return this.find({ tutor: tutorId, isActive: true, ...options })
     .populate('assignment', 'title subject deadline status')
     .populate('student', 'name profileImage')
+    .populate('conversation', 'name assignment assignmentTitle')
     .sort({ submittedAt: -1 });
 };
 
 proposalSchema.statics.findByStudent = function(studentId, options = {}) {
   return this.find({ student: studentId, isActive: true, ...options })
-    .populate('tutor', 'name profileImage tutorProfile')
+    .populate('tutor', 'name profileImage tutorProfile publicStats')
     .populate('assignment', 'title subject deadline')
+    .populate('conversation', 'name assignment assignmentTitle')
     .sort({ submittedAt: -1 });
 };
 

@@ -1,9 +1,59 @@
 import ProposalModel from '../models/Proposal.js';
 import AssignmentModel from '../models/Assignment.js';
 import UserModel from '../models/User.js';
+import ChatModel from '../models/Chat.js';
+import NotificationModel from '../models/Notification.js';
 import mongoose from 'mongoose';
 
 class ProposalController {
+  static ensureProposalConversation = async (proposal, assignment) => {
+    if (proposal.conversation) {
+      return proposal;
+    }
+
+    const existingChat = await ChatModel.findOne({
+      assignment: assignment._id,
+      type: 'direct',
+      'participants.user': { $all: [proposal.tutor, proposal.student] },
+      isActive: true
+    });
+
+    if (existingChat) {
+      proposal.conversation = existingChat._id;
+      await proposal.save();
+      await proposal.populate('conversation', 'name assignment assignmentTitle');
+      return proposal;
+    }
+
+    const tutor = await UserModel.findById(proposal.tutor).select('name');
+    const student = await UserModel.findById(proposal.student).select('name');
+
+    const chatName = assignment.title
+      ? `Assignment: ${assignment.title}`
+      : `${student?.name || 'Student'} & ${tutor?.name || 'Tutor'}`;
+
+    const newChat = new ChatModel({
+      name: chatName,
+      description: assignment.description,
+      type: 'direct',
+      participants: [
+        { user: assignment.student, role: 'member' },
+        { user: proposal.tutor, role: 'member' }
+      ],
+      createdBy: proposal.tutor,
+      assignment: assignment._id,
+      assignmentTitle: assignment.title,
+      isActive: true,
+      lastActivity: new Date()
+    });
+
+    await newChat.save();
+    proposal.conversation = newChat._id;
+    await proposal.save();
+    await proposal.populate('conversation', 'name assignment assignmentTitle');
+    return proposal;
+  };
+
   // Create a new proposal (for tutors)
   static createProposal = async (req, res) => {
     try {
@@ -42,6 +92,13 @@ class ProposalController {
         });
       }
 
+      if (assignment.requestedTutor && assignment.requestedTutor.toString() !== tutorId.toString()) {
+        return res.status(403).json({
+          status: 'failed',
+          message: 'This assignment is restricted to a specific tutor'
+        });
+      }
+
       // Check if tutor already submitted a proposal for this assignment
       const existingProposal = await ProposalModel.findOne({
         assignment: assignmentId,
@@ -69,6 +126,42 @@ class ProposalController {
       }
 
       // Create new proposal
+      const existingChat = await ChatModel.findOne({
+        assignment: assignmentId,
+        type: 'direct',
+        'participants.user': { $all: [tutorId, assignment.student] },
+        isActive: true
+      });
+
+      let conversationId = existingChat?._id;
+
+      if (!conversationId) {
+        const tutor = await UserModel.findById(tutorId).select('name');
+        const student = await UserModel.findById(assignment.student).select('name');
+
+        const chatName = assignment.title
+          ? `Assignment: ${assignment.title}`
+          : `${student?.name || 'Student'} & ${tutor?.name || 'Tutor'}`;
+
+        const newChat = new ChatModel({
+          name: chatName,
+          description: assignment.description,
+          type: 'direct',
+          participants: [
+            { user: assignment.student, role: 'member' },
+            { user: tutorId, role: 'member' }
+          ],
+          createdBy: tutorId,
+          assignment: assignment._id,
+          assignmentTitle: assignment.title,
+          isActive: true,
+          lastActivity: new Date()
+        });
+
+        await newChat.save();
+        conversationId = newChat._id;
+      }
+
       const proposal = new ProposalModel({
         assignment: assignmentId,
         tutor: tutorId,
@@ -79,17 +172,46 @@ class ProposalController {
         estimatedDeliveryTime: parseInt(estimatedDeliveryTime),
         coverLetter: coverLetter?.trim(),
         relevantExperience: relevantExperience?.trim(),
-        attachments
+        attachments,
+        conversation: conversationId
       });
 
       await proposal.save();
 
       // Populate related data for response
       await proposal.populate([
-        { path: 'tutor', select: 'name email profileImage tutorProfile' },
+        { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' },
-        { path: 'student', select: 'name email' }
+        { path: 'student', select: 'name email' },
+        { path: 'conversation', select: 'name assignment assignmentTitle' }
       ]);
+
+      const socketManager = req.app.get('socketManager');
+      const studentId = assignment.student?.toString();
+      const chatId = conversationId?.toString();
+      if (studentId) {
+        const notification = await NotificationModel.create({
+          user: studentId,
+          type: 'proposal_received',
+          title: 'New proposal received',
+          message: `${req.user?.name || 'A tutor'} sent a proposal for "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: {
+            assignmentId: assignment._id,
+            proposalId: proposal._id,
+            conversationId: chatId
+          }
+        });
+
+        if (socketManager) {
+          socketManager.emitToUser(studentId, 'notification', { notification });
+          socketManager.emitToUser(studentId, 'chat_updated', {
+            chatId,
+            assignmentId: assignment._id,
+            proposalId: proposal._id
+          });
+        }
+      }
 
       res.status(201).json({
         status: 'success',
@@ -121,7 +243,7 @@ class ProposalController {
       }
 
       const proposal = await ProposalModel.findById(proposalId)
-        .populate('tutor', 'name email profileImage tutorProfile')
+        .populate('tutor', 'name email profileImage tutorProfile publicStats')
         .populate('assignment', 'title subject deadline status')
         .populate('student', 'name email profileImage');
 
@@ -195,12 +317,15 @@ class ProposalController {
       }
 
       const proposals = await ProposalModel.findByAssignment(assignmentId);
+      const proposalsWithConversations = await Promise.all(
+        proposals.map((proposal) => ProposalController.ensureProposalConversation(proposal, assignment))
+      );
 
       res.status(200).json({
         status: 'success',
         data: { 
-          proposals,
-          count: proposals.length
+          proposals: proposalsWithConversations,
+          count: proposalsWithConversations.length
         }
       });
 
@@ -360,7 +485,7 @@ class ProposalController {
         updateData,
         { new: true, runValidators: true }
       ).populate([
-        { path: 'tutor', select: 'name email profileImage tutorProfile' },
+        { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' },
         { path: 'student', select: 'name email' }
       ]);
@@ -423,7 +548,8 @@ class ProposalController {
       // Update assignment status and assign tutor
       await AssignmentModel.findByIdAndUpdate(proposal.assignment, {
         status: 'assigned',
-        assignedTutor: proposal.tutor
+        assignedTutor: proposal.tutor,
+        chatId: proposal.conversation || undefined
       });
 
       // Reject all other proposals for this assignment
@@ -437,7 +563,7 @@ class ProposalController {
       );
 
       await proposal.populate([
-        { path: 'tutor', select: 'name email profileImage tutorProfile' },
+        { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' }
       ]);
 
@@ -497,7 +623,7 @@ class ProposalController {
       await proposal.save();
 
       await proposal.populate([
-        { path: 'tutor', select: 'name email profileImage tutorProfile' },
+        { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' }
       ]);
 

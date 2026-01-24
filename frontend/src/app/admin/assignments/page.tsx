@@ -191,7 +191,7 @@ export default function AdminAssignmentsPage() {
                         <td className="py-3 pr-4 text-gray-600">{assignment.student?.name || "N/A"}</td>
                         <td className="py-3 pr-4 text-gray-600">{assignment.subject}</td>
                         <td className="py-3 pr-4 text-gray-700">
-                          {assignment.estimatedCost || assignment.paymentAmount || 0}
+                          {assignment.budget ?? assignment.estimatedCost ?? assignment.paymentAmount ?? 0}
                         </td>
                         <td className="py-3 pr-4">
                           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
@@ -275,7 +275,7 @@ export default function AdminAssignmentsPage() {
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Budget</p>
-                        <p className="font-semibold text-gray-900">৳{assignment.estimatedCost || 0}</p>
+                        <p className="font-semibold text-gray-900">৳{assignment.budget ?? assignment.estimatedCost ?? 0}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Status</p>

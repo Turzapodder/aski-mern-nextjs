@@ -1,6 +1,7 @@
 'use client'
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useSocket } from '@/lib/hooks/useSocket';
+import { toast } from 'sonner';
 import { 
   useGetUserChatsQuery, 
   useGetChatMessagesQuery,
@@ -22,6 +23,10 @@ interface ChatContextType {
   onlineUsers: User[];
   isConnected: boolean;
   isLoading: boolean;
+  chatsLoading: boolean;
+  messagesLoading: boolean;
+  chatsError: unknown;
+  messagesError: unknown;
   currentUserId: string | null;
   
   // Actions
@@ -33,7 +38,7 @@ interface ChatContextType {
   stopTyping: () => void;
   refreshChats: () => void;
   refreshMessages: () => void;
-  createDirectChat: (tutorId: string) => Promise<void>;
+  clearSelectedChat: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -63,10 +68,20 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const currentUserId = userData?.user?._id || null;
 
   // RTK Query hooks
-  const { data: chatsData, isLoading: chatsLoading, refetch: refetchChats } = useGetUserChatsQuery({});
-  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGetChatMessagesQuery(
+  const {
+    data: chatsData,
+    isLoading: chatsLoading,
+    error: chatsError,
+    refetch: refetchChats,
+  } = useGetUserChatsQuery({});
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    error: messagesError,
+    refetch: refetchMessages,
+  } = useGetChatMessagesQuery(
     selectedChat ? { chatId: selectedChat._id } : { chatId: '' },
-    { skip: !selectedChat }
+    { skip: !selectedChat, refetchOnMountOrArgChange: true }
   );
   
   const [sendMessageMutation] = useSendMessageMutation();
@@ -86,9 +101,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     onMessageReceived: (data: any) => {
       console.log('Received new message:', data);
       const message = data.message || data;
+      const messageChatId =
+        typeof message.chat === "object" && message.chat
+          ? message.chat._id
+          : message.chat;
       
       // Only add message if it's for the currently selected chat
-      if (selectedChat && message.chat === selectedChat._id) {
+      if (selectedChat && messageChatId === selectedChat._id) {
         setMessages(prev => {
           // Check if message already exists to avoid duplicates
           const exists = prev.find(m => m._id === message._id);
@@ -100,11 +119,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       // Update last message in chats list regardless of selected chat
       setChats(prev => prev.map(chat => 
-        chat._id === message.chat 
+        chat._id === messageChatId 
           ? { 
               ...chat, 
               lastMessage: {
-                content: message.content || 'File',
+                content: message.content || (message.type === 'offer' ? 'Custom offer' : 'File'),
                 sender: message.sender,
                 createdAt: message.createdAt
               }
@@ -172,14 +191,42 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             : msg
         ));
       }
+    },
+    onChatUpdated: () => {
+      refetchChats();
     }
   });
+
+  const connectionRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (connectionRef.current === null) {
+      connectionRef.current = isConnected;
+      return;
+    }
+
+    if (connectionRef.current && !isConnected) {
+      toast.error('Realtime connection lost. Messages may be delayed.');
+    }
+
+    if (!connectionRef.current && isConnected) {
+      toast.success('Realtime connection restored.');
+    }
+
+    connectionRef.current = isConnected;
+  }, [isConnected]);
 
   // Update local state when RTK Query data changes
   useEffect(() => {
     if (chatsData?.data?.chats) {
       console.log('Updating chats from API:', chatsData.data.chats.length);
-      setChats(chatsData.data.chats);
+      const normalized = chatsData.data.chats.map((chat: any) => ({
+        ...chat,
+        participants: Array.isArray(chat.participants)
+          ? chat.participants.map((participant: any) => participant.user || participant)
+          : []
+      }));
+      setChats(normalized);
     }
   }, [chatsData]);
 
@@ -189,6 +236,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       setMessages(messagesData.data.messages);
     }
   }, [messagesData]);
+
+  useEffect(() => {
+    if (selectedChat) {
+      refetchMessages();
+    }
+  }, [selectedChat, refetchMessages]);
 
   // Join/leave chat rooms when selected chat changes
   useEffect(() => {
@@ -206,10 +259,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Mark messages as read when chat is selected
   useEffect(() => {
     if (selectedChat && messages.length > 0 && currentUserId) {
-      const unreadMessages = messages.filter(msg => 
-        msg.sender._id !== currentUserId && 
-        !msg.readBy.some(r => r.user === currentUserId)
-      );
+      const unreadMessages = messages.filter(msg => {
+        const senderId = typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
+        return senderId !== currentUserId && !msg.readBy.some(r => r.user === currentUserId);
+      });
       
       if (unreadMessages.length > 0) {
         socketMarkAsRead(selectedChat._id);
@@ -246,8 +299,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     try {
       console.log('Sending message:', { chatId: selectedChat._id, content });
       
-      // Send via Socket.IO for real-time delivery
-      socketSendMessage(selectedChat._id, content, replyTo);
+      const shouldUseSocket = isConnected;
+      if (shouldUseSocket) {
+        // Send via Socket.IO for real-time delivery
+        socketSendMessage(selectedChat._id, content, replyTo);
+      }
       
       // Also send via REST API for persistence (as backup)
       const result = await sendMessageMutation({
@@ -257,10 +313,32 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       }).unwrap();
       
       console.log('Message sent successfully:', result);
+
+      if (!shouldUseSocket && result?.data) {
+        const newMessage = result.data;
+        setMessages(prev => {
+          const exists = prev.find(m => m._id === newMessage._id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+
+        setChats(prev => prev.map(chat =>
+          chat._id === selectedChat._id
+            ? {
+                ...chat,
+                lastMessage: {
+                  content: newMessage.content || '',
+                  sender: newMessage.sender,
+                  createdAt: newMessage.createdAt
+                }
+              }
+            : chat
+        ));
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
     }
-  }, [selectedChat, socketSendMessage, sendMessageMutation]);
+  }, [selectedChat, socketSendMessage, sendMessageMutation, isConnected]);
 
   const sendFile = useCallback(async (file: File, replyTo?: string) => {
     if (!selectedChat) {
@@ -278,11 +356,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       }).unwrap();
       
       console.log('File sent successfully:', result);
+      toast.success('File sent');
       
       // Refresh messages to get the new file message
       refetchMessages();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send file:', error);
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        'Unable to send file. Please try again.';
+      toast.error(message);
     }
   }, [selectedChat, sendFileMutation, refetchMessages]);
 
@@ -330,55 +414,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     refetchMessages();
   }, [refetchMessages]);
 
-  const createDirectChat = useCallback(async (tutorId: string) => {
-    try {
-      console.log('Creating direct chat with tutor:', tutorId);
-      
-      // Check if a direct chat already exists with this tutor
-      const existingChat = chats.find(
-        (chat: any) => 
-          chat.type === 'direct' && 
-          chat.participants.some((p: any) => p.user._id === tutorId || p.user === tutorId)
-      );
-      
-      if (existingChat) {
-        console.log('Direct chat already exists:', existingChat._id);
-        selectChat(existingChat);
-        return;
-      }
-      
-      // Create direct chat via API
-      const response = await fetch('http://localhost:8000/api/chat/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${document.cookie.split('accessToken=')[1]?.split(';')[0]}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          type: 'direct',
-          tutorId
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        console.log('Direct chat created successfully:', data.chat);
-        // Add new chat to local state
-        setChats(prev => [data.chat, ...prev]);
-        selectChat(data.chat);
-        // Refresh chats to get updated list
-        refetchChats();
-      } else {
-        throw new Error(data.message || 'Failed to create chat');
-      }
-      
-    } catch (error) {
-      console.error('Error creating direct chat:', error);
-      throw error;
+  const clearSelectedChat = useCallback(() => {
+    if (selectedChat) {
+      leaveChat(selectedChat._id);
     }
-  }, [chats, selectChat, refetchChats]);
+    setSelectedChat(null);
+    setMessages([]);
+  }, [leaveChat, selectedChat]);
 
   const contextValue: ChatContextType = {
     // State
@@ -389,6 +431,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     onlineUsers,
     isConnected,
     isLoading: chatsLoading || messagesLoading,
+    chatsLoading,
+    messagesLoading,
+    chatsError,
+    messagesError,
     currentUserId,
     
     // Actions
@@ -400,7 +446,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     stopTyping,
     refreshChats,
     refreshMessages,
-    createDirectChat
+    clearSelectedChat
   };
 
   return (

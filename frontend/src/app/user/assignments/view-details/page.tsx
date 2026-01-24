@@ -267,10 +267,10 @@ const AllAssignmentsPage = () => {
                         <Clock className="h-4 w-4" />
                         <span>Posted: {formatDate(assignment.createdAt)}</span>
                       </div>
-                      {assignment.estimatedCost > 0 && (
+                      {(assignment.budget ?? assignment.estimatedCost) > 0 && (
                         <div className="flex items-center space-x-1">
                           <DollarSign className="h-4 w-4" />
-                          <span>${assignment.estimatedCost}</span>
+                          <span>${assignment.budget ?? assignment.estimatedCost}</span>
                         </div>
                       )}
                     </div>

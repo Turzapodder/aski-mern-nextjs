@@ -146,6 +146,23 @@ export interface QuizQuestion {
   isActive: boolean
 }
 
+export interface ReportRecord {
+  _id: string
+  reporterType: string
+  reportedType: string
+  reason: string
+  comments?: string
+  status: string
+  adminAction?: string
+  createdAt: string
+  reviewedAt?: string
+  reporterId?: {
+    name?: string
+    email?: string
+  }
+  reportedEntity?: Record<string, unknown> | null
+}
+
 const handleAdminError = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     if (error.response?.data) {
@@ -273,6 +290,12 @@ export const adminApi = {
         url: `/v1/admin/assignments/${id}`,
         method: "GET",
       }),
+    update: (id: string, payload: Record<string, unknown>) =>
+      request<Record<string, unknown>>({
+        url: `/v1/admin/assignments/${id}`,
+        method: "PUT",
+        data: payload,
+      }),
     delete: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
         url: `/v1/admin/assignments/${id}/delete`,
@@ -324,6 +347,20 @@ export const adminApi = {
     resolve: (id: string, payload: Record<string, unknown>) =>
       request<Record<string, unknown>>({
         url: `/v1/admin/disputes/${id}/resolve`,
+        method: "POST",
+        data: payload,
+      }),
+  },
+  reports: {
+    getAll: (params?: Record<string, unknown>) =>
+      request<ReportRecord[]>({
+        url: "/v1/admin/reports",
+        method: "GET",
+        params,
+      }),
+    takeAction: (id: string, payload: Record<string, unknown>) =>
+      request<Record<string, unknown>>({
+        url: `/v1/admin/reports/${id}/action`,
         method: "POST",
         data: payload,
       }),

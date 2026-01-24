@@ -5,6 +5,7 @@ import verifyAdmin from "../middlewares/admin-middleware.js";
 import AdminController from "../controllers/adminController.js";
 import AdminSettingsController from "../controllers/adminSettingsController.js";
 import AdminQuizController from "../controllers/adminQuizController.js";
+import ReportController from "../controllers/reportController.js";
 
 const router = express.Router();
 
@@ -43,6 +44,7 @@ router.post("/tutors/:id/demote", AdminController.demoteTutor);
 // Assignments
 router.get("/assignments", AdminController.getAssignments);
 router.get("/assignments/:id", AdminController.getAssignmentDetails);
+router.put("/assignments/:id", AdminController.updateAssignment);
 router.post("/assignments/:id/delete", AdminController.deleteAssignment);
 router.post("/assignments/:id/force-cancel", AdminController.forceCancelAssignment);
 
@@ -56,6 +58,10 @@ router.post("/withdrawals/:id/process", AdminController.processWithdrawal);
 router.get("/disputes", AdminController.getDisputes);
 router.get("/disputes/:id", AdminController.getDisputeDetails);
 router.post("/disputes/:id/resolve", AdminController.resolveDispute);
+
+// Reports
+router.get("/reports", ReportController.getReports);
+router.post("/reports/:reportId/action", ReportController.takeAction);
 
 // Settings
 router.get("/settings", AdminSettingsController.getSettings);

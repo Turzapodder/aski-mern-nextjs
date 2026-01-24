@@ -11,11 +11,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface UploadProjectFormProps {
   onSubmit?: (formData: FormData) => void // Kept for backward compatibility or override
   onSuccess?: () => void // New prop for success callback
+  onCreated?: (assignmentId: string) => void
   onCancel?: () => void
   onSaveDraft?: (formData: FormData) => void
   className?: string
   maxWidth?: string
   advanced?: boolean
+  requestedTutorId?: string
+  requestedTutorName?: string
 }
 
 interface FormData {
@@ -45,11 +48,14 @@ const SUBJECTS = [
 const UploadProjectForm = ({
   onSubmit,
   onSuccess,
+  onCreated,
   onCancel,
   onSaveDraft,
   className = "",
   maxWidth = "max-w-3xl",
   advanced = false,
+  requestedTutorId,
+  requestedTutorName,
 }: UploadProjectFormProps) => {
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -218,7 +224,8 @@ const UploadProjectForm = ({
         deadline: formData.deadline || new Date().toISOString(),
         estimatedCost: formData.budget || 0,
         priority: 'medium',
-        status: 'pending'
+        status: 'pending',
+        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {})
       }
 
       // Add assignment data to FormData
@@ -241,7 +248,7 @@ const UploadProjectForm = ({
       }
 
       // Call the mutation
-      await createAssignment(submitFormData).unwrap()
+      const response = await createAssignment(submitFormData).unwrap()
 
       // Reset form
       setFormData({
@@ -257,9 +264,13 @@ const UploadProjectForm = ({
       if (fileInputRef.current) fileInputRef.current.value = ''
 
       // Call onSuccess callback if provided
+      if (onCreated && response?.data?._id) {
+        onCreated(response.data._id)
+      }
+
       if (onSuccess) {
         onSuccess()
-      } else {
+      } else if (!onCreated) {
         alert('Assignment posted successfully!')
       }
 
@@ -288,7 +299,8 @@ const UploadProjectForm = ({
         deadline: formData.deadline || new Date().toISOString(),
         estimatedCost: formData.budget || 0,
         priority: 'medium',
-        status: 'draft'
+        status: 'draft',
+        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {})
       }
 
       // Add assignment data to FormData
@@ -392,10 +404,25 @@ const UploadProjectForm = ({
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Post a <span className="text-secondary-500">New Project</span>
+            {requestedTutorName ? "Request a Proposal" : (
+              <>
+                Post a <span className="text-secondary-500">New Project</span>
+              </>
+            )}
           </h2>
-          <p className="text-gray-600 text-sm">Please provide the necessary details below</p>
+          <p className="text-gray-600 text-sm">
+            {requestedTutorName
+              ? "Share your assignment details to invite this tutor to send a proposal."
+              : "Please provide the necessary details below"}
+          </p>
         </div>
+
+        {requestedTutorName && (
+          <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+            Requesting proposal from <span className="font-semibold text-gray-900">{requestedTutorName}</span>.
+            Once submitted, only this tutor will see the request.
+          </div>
+        )}
 
         {/* Project Title */}
         <div className="mb-6">

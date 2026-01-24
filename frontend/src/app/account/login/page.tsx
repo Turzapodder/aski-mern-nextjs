@@ -62,10 +62,13 @@ const Login = () => {
           setTimeout(() => {
             const redirect = searchParams.get('redirect');
             const user = response.data.user;
+            const isAdmin = user?.roles?.includes('admin');
             const isTutor = user?.roles?.includes('tutor');
             const onboardingStatus = user?.onboardingStatus;
 
-            if (isTutor && onboardingStatus && onboardingStatus !== 'completed' && onboardingStatus !== 'approved') {
+            if (isAdmin) {
+              router.push('/admin');
+            } else if (isTutor && onboardingStatus && onboardingStatus !== 'completed' && onboardingStatus !== 'approved') {
               router.push('/account/tutor-onboarding');
             } else if (redirect === 'whatsapp') {
               window.location.href = 'https://wa.me/';

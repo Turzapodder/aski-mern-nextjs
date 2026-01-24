@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import UserModel from '../models/User.js';
 import ChatModel from '../models/Chat.js';
 import MessageModel from '../models/Message.js';
+import ProposalModel from '../models/Proposal.js';
 import logger from '../utils/logger.js';
 
 class SocketManager {
@@ -12,6 +13,46 @@ class SocketManager {
     this.userSockets = new Map(); // socketId -> userId
     this.typingUsers = new Map(); // chatId -> Set of userIds
     this.chatRooms = new Map(); // chatId -> Set of socketIds
+  }
+
+  async canTutorSendMessage(chat, socketUser) {
+    const roles = Array.isArray(socketUser.roles) ? socketUser.roles : [];
+    const isTutor = roles.includes('tutor');
+
+    if (!isTutor || chat.type !== 'direct') {
+      return { allowed: true };
+    }
+
+    const proposal = await ProposalModel.findOne({
+      conversation: chat._id,
+      isActive: true
+    }).lean();
+
+    if (!proposal) {
+      return { allowed: false, reason: 'Submit a proposal to start conversation' };
+    }
+
+    if (proposal.tutor.toString() !== socketUser._id.toString()) {
+      return { allowed: true };
+    }
+
+    const gate = process.env.CHAT_TUTOR_MESSAGE_GATE || 'user_first';
+    if (gate === 'proposal_accepted' && proposal.status !== 'accepted') {
+      return { allowed: false, reason: 'Proposal must be accepted before messaging' };
+    }
+
+    if (gate === 'user_first') {
+      const studentHasMessaged = await MessageModel.exists({
+        chat: chat._id,
+        sender: proposal.student,
+        isDeleted: false
+      });
+      if (!studentHasMessaged) {
+        return { allowed: false, reason: 'Wait for the student to start the conversation' };
+      }
+    }
+
+    return { allowed: true };
   }
 
   initialize(server) {
@@ -176,6 +217,12 @@ class SocketManager {
 
         if (!chat) {
           socket.emit('error', { message: 'Chat not found or access denied' });
+          return;
+        }
+
+        const gate = await this.canTutorSendMessage(chat, socket.user);
+        if (!gate.allowed) {
+          socket.emit('error', { message: gate.reason || 'Message not allowed' });
           return;
         }
 
@@ -508,6 +555,10 @@ class SocketManager {
   emitToChat(chatId, event, data) {
     this.io.to(chatId).emit(event, data);
     logger.info(`Emitted ${event} to chat ${chatId}`);
+  }
+
+  sendToChat(chatId, event, data) {
+    return this.emitToChat(chatId, event, data);
   }
 
   getChatUsers(chatId) {

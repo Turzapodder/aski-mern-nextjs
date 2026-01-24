@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import Image from "next/image";
-import { X, ChevronDown, ChevronUp, Image as ImageIcon, Video, FileText, Music, Link as LinkIcon, Mic } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Image as ImageIcon, Video, FileText, Music, Link as LinkIcon, Calendar, DollarSign } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 
 const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-    const { selectedChat, currentUserId, onlineUsers } = useChatContext();
+    const { selectedChat, currentUserId, onlineUsers, messages } = useChatContext();
     const [expandedSection, setExpandedSection] = useState<string | null>('photos');
 
     if (!isOpen || !selectedChat) return null;
@@ -39,6 +39,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
     const chatName = getChatName();
     const avatar = getChatAvatar();
+    const assignment = selectedChat.assignment;
 
     const AccordionItem = ({
         id,
@@ -79,18 +80,29 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         );
     };
 
+    const attachments = messages.flatMap((message: any) => message.attachments || []);
+    const photos = attachments.filter((file: any) => file.mimetype?.startsWith('image/'));
+    const videos = attachments.filter((file: any) => file.mimetype?.startsWith('video/'));
+    const audio = attachments.filter((file: any) => file.mimetype?.startsWith('audio/'));
+    const documents = attachments.filter((file: any) => !file.mimetype?.startsWith('image/') && !file.mimetype?.startsWith('video/') && !file.mimetype?.startsWith('audio/'));
+    const linkRegex = /(https?:\/\/[^\s]+)/g;
+    const linkCount = messages.reduce((count: number, message: any) => {
+        const matches = typeof message.content === 'string' ? message.content.match(linkRegex) : null;
+        return count + (matches ? matches.length : 0);
+    }, 0);
+
     return (
         <div className="w-80 bg-white border-l border-gray-100 flex flex-col h-full">
             {/* Header */}
-            <div className="p-6 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">Receiver Info</h3>
+            <div className="p-6 flex items-center justify-between border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900">Details</h3>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                     <X size={20} />
                 </button>
             </div>
 
             {/* Profile Info */}
-            <div className="px-6 pb-6 flex flex-col items-center border-b border-gray-100">
+            <div className="px-6 py-6 flex flex-col items-center border-b border-gray-100">
                 <div className="relative mb-4">
                     {avatar ? (
                         <Image
@@ -118,25 +130,67 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 </div>
             </div>
 
+            {assignment && (
+                <div className="px-6 py-5 border-b border-gray-100">
+                    <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Assignment</h5>
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 space-y-3">
+                        <div>
+                            <p className="text-xs text-gray-500">Title</p>
+                            <p className="text-sm font-semibold text-gray-900">{assignment.title || 'Assignment'}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                            <span className="flex items-center gap-1">
+                                <DollarSign className="h-3.5 w-3.5" />
+                                {assignment.budget ?? assignment.estimatedCost ?? 0}
+                            </span>
+                            {assignment.deadline && (
+                                <span className="flex items-center gap-1">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {new Date(assignment.deadline).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Files & Media */}
             <div className="flex-1 overflow-y-auto px-6 py-2">
                 <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-4">Files</h5>
 
-                <AccordionItem id="photos" title="Photos" icon={ImageIcon} count={265}>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                        {/* Placeholders for now */}
-                        <div className="aspect-square bg-gray-100 rounded-lg"></div>
-                        <div className="aspect-square bg-gray-100 rounded-lg"></div>
-                        <div className="aspect-square bg-gray-100 rounded-lg"></div>
-                        <div className="aspect-square bg-gray-100 rounded-lg"></div>
-                    </div>
+                <AccordionItem id="photos" title="Photos" icon={ImageIcon} count={photos.length}>
+                    {photos.length === 0 && (
+                        <p className="text-xs text-gray-500">No photos shared yet.</p>
+                    )}
+                    {photos.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                            {photos.slice(0, 6).map((photo: any) => (
+                                <a
+                                    key={photo.url}
+                                    href={photo.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 block"
+                                >
+                                    <Image src={photo.url} alt={photo.originalName || 'Photo'} width={80} height={80} className="w-full h-full object-cover" />
+                                </a>
+                            ))}
+                        </div>
+                    )}
                 </AccordionItem>
 
-                <AccordionItem id="videos" title="Videos" icon={Video} count={13} />
-                <AccordionItem id="files" title="Files" icon={FileText} count={378} />
-                <AccordionItem id="audio" title="Audio files" icon={Music} count={21} />
-                <AccordionItem id="links" title="Shared links" icon={LinkIcon} count={45} />
-                <AccordionItem id="voice" title="Voice messages" icon={Mic} count={2589} />
+                <AccordionItem id="videos" title="Videos" icon={Video} count={videos.length}>
+                    {videos.length === 0 && <p className="text-xs text-gray-500">No videos shared yet.</p>}
+                </AccordionItem>
+                <AccordionItem id="files" title="Files" icon={FileText} count={documents.length}>
+                    {documents.length === 0 && <p className="text-xs text-gray-500">No files shared yet.</p>}
+                </AccordionItem>
+                <AccordionItem id="audio" title="Audio files" icon={Music} count={audio.length}>
+                    {audio.length === 0 && <p className="text-xs text-gray-500">No audio shared yet.</p>}
+                </AccordionItem>
+                <AccordionItem id="links" title="Shared links" icon={LinkIcon} count={linkCount}>
+                    {linkCount === 0 && <p className="text-xs text-gray-500">No links shared yet.</p>}
+                </AccordionItem>
             </div>
         </div>
     );

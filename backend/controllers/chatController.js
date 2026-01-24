@@ -1,21 +1,61 @@
 import ChatModel from '../models/Chat.js';
 import UserModel from '../models/User.js';
 import MessageModel from '../models/Message.js';
+import ProposalModel from '../models/Proposal.js';
+import AssignmentModel from '../models/Assignment.js';
 
 class ChatController {
   // Create a new chat
   static createChat = async (req, res) => {
     try {
-      const { name, description, type = 'group', participants = [], tutorId } = req.body;
+      const {
+        name,
+        description,
+        type = 'group',
+        participants = [],
+        tutorId,
+        assignmentId,
+        proposalId
+      } = req.body;
       const userId = req.user._id;
 
       console.log('Creating chat:', { type, tutorId, participants, userId: userId.toString() });
 
       let chatParticipants = [];
       let chatName = name;
+      let assignment = null;
 
       if (type === 'direct' && tutorId) {
-        // For direct chats with a tutor
+        const isStudent =
+          Array.isArray(req.user.roles) &&
+          (req.user.roles.includes('student') || req.user.roles.includes('user'));
+
+        if (!isStudent) {
+          return res.status(403).json({
+            status: 'failed',
+            message: 'Only students can initiate direct chats'
+          });
+        }
+
+        let proposal = null;
+        if (proposalId) {
+          proposal = await ProposalModel.findById(proposalId);
+        } else if (assignmentId) {
+          proposal = await ProposalModel.findOne({
+            assignment: assignmentId,
+            tutor: tutorId,
+            student: userId,
+            isActive: true
+          });
+        }
+
+        if (!proposal) {
+          return res.status(403).json({
+            status: 'failed',
+            message: 'A proposal is required to start a direct chat'
+          });
+        }
+
         const tutor = await UserModel.findById(tutorId).select('name email avatar');
         if (!tutor) {
           return res.status(404).json({
@@ -23,6 +63,10 @@ class ChatController {
             message: 'Tutor not found'
           });
         }
+
+        assignment = proposal.assignment
+          ? await AssignmentModel.findById(proposal.assignment).select('title')
+          : null;
 
         // Check if direct chat already exists
         const existingChat = await ChatModel.findOne({
@@ -46,7 +90,9 @@ class ChatController {
 
         // Generate name for direct chat
         const currentUser = await UserModel.findById(userId).select('name');
-        chatName = `${currentUser.name} & ${tutor.name}`;
+        chatName = assignment?.title
+          ? `Assignment: ${assignment.title}`
+          : `${currentUser.name} & ${tutor.name}`;
 
       } else if (type === 'group') {
         // For group chats
@@ -84,6 +130,8 @@ class ChatController {
         type,
         participants: chatParticipants,
         createdBy: userId,
+        assignment: assignmentId || assignment?._id || undefined,
+        assignmentTitle: assignment?.title || undefined,
         isActive: true,
         lastActivity: new Date()
       });
@@ -91,7 +139,7 @@ class ChatController {
       await newChat.save();
       
       // Populate participants
-      await newChat.populate('participants.user', 'name email avatar');
+      await newChat.populate('participants.user', 'name email avatar roles');
       await newChat.populate('createdBy', 'name email avatar');
 
       console.log('Chat created successfully:', newChat._id);
@@ -122,8 +170,9 @@ class ChatController {
         'participants.user': userId,
         isActive: true
       })
-      .populate('participants.user', 'name email avatar')
+      .populate('participants.user', 'name email avatar roles')
       .populate('createdBy', 'name email avatar')
+      .populate('assignment', 'title deadline estimatedCost budget student')
       .populate({
         path: 'lastMessage',
         populate: {
@@ -142,7 +191,7 @@ class ChatController {
             chat: chat._id,
             'readBy.user': { $ne: userId },
             sender: { $ne: userId },
-            isDeleted: false
+            isDeleted: { $ne: true }
           });
 
           return {
@@ -182,8 +231,9 @@ class ChatController {
         'participants.user': userId,
         isActive: true
       })
-      .populate('participants.user', 'name email avatar')
+      .populate('participants.user', 'name email avatar roles')
       .populate('createdBy', 'name email avatar')
+      .populate('assignment', 'title deadline estimatedCost budget student')
       .populate({
         path: 'lastMessage',
         populate: {
@@ -372,46 +422,6 @@ class ChatController {
     }
   };
 
-  // Search tutors for creating direct chats
-  static searchTutors = async (req, res) => {
-    try {
-      const { search = '', limit = 30 } = req.query;
-      const userId = req.user._id;
-
-      console.log('Searching tutors:', { search, limit });
-
-      let searchQuery = {
-        _id: { $ne: userId }, // Exclude current user
-        isActive: true
-      };
-
-      // Add search criteria if provided
-      if (search.trim()) {
-        searchQuery.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { subjects: { $in: [new RegExp(search, 'i')] } }
-        ];
-      }
-
-      const tutors = await UserModel.find(searchQuery)
-        .select('name email avatar subjects')
-        .limit(parseInt(limit));
-
-      console.log(`Found ${tutors.length} tutors`);
-
-      res.status(200).json({
-        status: 'success',
-        tutors
-      });
-    } catch (error) {
-      console.error('Search tutors error:', error);
-      res.status(500).json({
-        status: 'failed',
-        message: 'Unable to search tutors'
-      });
-    }
-  };
 }
 
 export default ChatController;

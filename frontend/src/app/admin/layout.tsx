@@ -8,6 +8,7 @@ import {
   BookOpen,
   DollarSign,
   FileText,
+  Flag,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -30,6 +31,7 @@ const navItems = [
   { label: "Assignments", href: "/admin/assignments", icon: FileText },
   { label: "Finance", href: "/admin/finance", icon: DollarSign },
   { label: "Disputes", href: "/admin/reports", icon: AlertTriangle },
+  { label: "Reports", href: "/admin/content-reports", icon: Flag },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
