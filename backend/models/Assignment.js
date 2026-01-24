@@ -32,6 +32,11 @@ const assignmentSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  budget: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
   
   // File attachments
   attachments: [{
@@ -53,6 +58,11 @@ const assignmentSchema = new mongoose.Schema({
     required: true
   },
   assignedTutor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
+    default: null
+  },
+  requestedTutor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
     default: null
@@ -150,6 +160,7 @@ const assignmentSchema = new mongoose.Schema({
 // Indexes for better query performance
 assignmentSchema.index({ student: 1, status: 1 });
 assignmentSchema.index({ assignedTutor: 1, status: 1 });
+assignmentSchema.index({ requestedTutor: 1, status: 1 });
 assignmentSchema.index({ deadline: 1 });
 assignmentSchema.index({ status: 1 });
 assignmentSchema.index({ createdAt: -1 });
@@ -167,6 +178,12 @@ assignmentSchema.virtual('isOverdue').get(function() {
 assignmentSchema.pre('save', function(next) {
   if (this.isOverdue && this.status === 'pending') {
     this.status = 'overdue';
+  }
+  if (this.isModified('budget') && !this.isModified('estimatedCost')) {
+    this.estimatedCost = this.budget ?? this.estimatedCost;
+  }
+  if (this.isModified('estimatedCost') && !this.isModified('budget')) {
+    this.budget = this.estimatedCost ?? this.budget;
   }
   next();
 });

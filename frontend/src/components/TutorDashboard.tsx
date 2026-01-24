@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import {
   MoreVertical,
@@ -22,19 +22,25 @@ const TutorDashboard = ({ user }: { user: any }) => {
   // Assuming strict filtering might not be available on 'getAssignments', we fetch and filter client-side for now
   // or pass params if the API supports it. We'll try passing status.
 
-  const { data: assignmentsData, isLoading } = useGetAssignmentsQuery({});
+  const { data: ongoingData, isLoading: ongoingLoading } = useGetAssignmentsQuery({
+    status: "assigned,submitted",
+    sortBy: "updatedAt",
+    sortOrder: "desc",
+    limit: 20,
+  });
+  const { data: availableData, isLoading: availableLoading } = useGetAssignmentsQuery({
+    status: "pending",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    limit: 20,
+  });
 
-  const allAssignments = assignmentsData?.data || [];
+  const ongoingProjects = ongoingData?.data || [];
+  const availableAssignments = availableData?.data || [];
 
-  // Filter for Ongoing Projects (Assigned to current user)
-  // Note: Adjust logic if 'assignedTutor' object structure matches user._id or user.id
-  const ongoingProjects = allAssignments.filter(
-    (a) => a.assignedTutor?._id === user?._id && a.status === 'assigned'
-  );
-
-  // Filter for Market (Pending/Open assignments)
-  const availableAssignments = allAssignments.filter(
-    (a) => a.status === 'pending' || a.status === 'draft' // Assuming pending is the state for open market
+  const activeBudgetTotal = ongoingProjects.reduce(
+    (sum, assignment) => sum + (assignment.budget ?? assignment.estimatedCost ?? 0),
+    0
   );
 
   const StatCard = ({
@@ -79,7 +85,24 @@ const TutorDashboard = ({ user }: { user: any }) => {
     </div>
   );
 
-  const ProjectCard = ({ assignment }: { assignment: Assignment }) => (
+  const getProgressPercent = (status: Assignment["status"]) => {
+    switch (status) {
+      case "assigned":
+        return 30;
+      case "submitted":
+        return 70;
+      case "completed":
+        return 100;
+      case "overdue":
+        return 60;
+      default:
+        return 10;
+    }
+  };
+
+  const ProjectCard = ({ assignment }: { assignment: Assignment }) => {
+    const progress = getProgressPercent(assignment.status);
+    return (
     <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
@@ -99,7 +122,7 @@ const TutorDashboard = ({ user }: { user: any }) => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-xs text-gray-400">Budget</p>
-          <p className="font-bold text-gray-900">${assignment.estimatedCost}</p>
+          <p className="font-bold text-gray-900">${assignment.budget ?? assignment.estimatedCost}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-400">Deadline</p>
@@ -110,14 +133,15 @@ const TutorDashboard = ({ user }: { user: any }) => {
       </div>
 
       <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
       </div>
       <div className="flex justify-between items-center text-xs text-gray-500">
         <span>Progress</span>
-        <span>60%</span> {/* Placeholder progress */}
+        <span>{progress}%</span>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans">
@@ -150,12 +174,12 @@ const TutorDashboard = ({ user }: { user: any }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Stat Card as a summary */}
             <StatCard
-              title="Total Earnings"
-              value="$17,643.41"
-              subtitle="Portfolio Balance"
+              title="Active Projects"
+              value={`${ongoingProjects.length}`}
+              subtitle={`Active budget $${activeBudgetTotal.toFixed(2)}`}
               colorClass="bg-[#E3F2FD]"
               iconClass="bg-blue-500 text-blue-500"
-              trend="+2.5%"
+              trend={ongoingProjects.length > 0 ? "Active now" : undefined}
             />
 
             {/* Dynamic Project Cards */}
@@ -163,7 +187,13 @@ const TutorDashboard = ({ user }: { user: any }) => {
               <ProjectCard key={assignment._id} assignment={assignment} />
             ))}
 
-            {ongoingProjects.length === 0 && (
+            {(ongoingLoading || availableLoading) && ongoingProjects.length === 0 && (
+              <div className="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-8 bg-white rounded-[2rem] border border-dashed border-gray-200">
+                <div className="text-sm text-gray-500">Loading projects...</div>
+              </div>
+            )}
+
+            {!ongoingLoading && ongoingProjects.length === 0 && (
               <div className="col-span-1 md:col-span-2 flex flex-col items-center justify-center p-8 bg-white rounded-[2rem] border border-dashed border-gray-300">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                   <Briefcase className="text-gray-400" />
@@ -218,7 +248,7 @@ const TutorDashboard = ({ user }: { user: any }) => {
                         <span className="text-sm font-medium text-gray-700">{assignment.subject}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-green-600">${assignment.estimatedCost}</span>
+                        <span className="text-sm font-bold text-green-600">${assignment.budget ?? assignment.estimatedCost}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-500">
@@ -234,7 +264,15 @@ const TutorDashboard = ({ user }: { user: any }) => {
                     </tr>
                   ))}
 
-                  {availableAssignments.length === 0 && (
+                  {availableLoading && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                        Loading available assignments...
+                      </td>
+                    </tr>
+                  )}
+
+                  {!availableLoading && availableAssignments.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                         No available assignments found.

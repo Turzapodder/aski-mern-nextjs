@@ -17,8 +17,12 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['text', 'file', 'image'],
+    enum: ['text', 'file', 'image', 'offer'],
     default: 'text'
+  },
+  meta: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   },
   attachments: [{
     filename: {
@@ -81,11 +85,19 @@ messageSchema.index({ 'readBy.user': 1 });
 
 // Validation: Either content or attachments must be present
 messageSchema.pre('save', function(next) {
-  if (!this.content && (!this.attachments || this.attachments.length === 0)) {
-    next(new Error('Message must have either content or attachments'));
-  } else {
-    next();
+  const hasContent = Boolean(this.content && this.content.trim().length > 0);
+  const hasAttachments = Array.isArray(this.attachments) && this.attachments.length > 0;
+  const isOffer = this.type === 'offer';
+
+  if (!hasContent && !hasAttachments && !isOffer) {
+    return next(new Error('Message must have either content or attachments'));
   }
+
+  if (isOffer && (!this.meta || typeof this.meta !== 'object')) {
+    return next(new Error('Offer message must include metadata'));
+  }
+
+  return next();
 });
 
 const MessageModel = mongoose.model('message', messageSchema);

@@ -104,7 +104,6 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         {/* We keep TopNavbar but maybe refine its mobile visibility or behavior */}
         <div className="hidden md:block">
           <TopNavbar
-            notificationCount={3}
             onSearch={(query) => console.log("Search:", query)}
             onNotificationClick={() => console.log("Notifications clicked")}
             onProfileClick={() => console.log("Profile clicked")}

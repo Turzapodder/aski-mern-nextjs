@@ -949,11 +949,23 @@ class AdminController {
       if (subject) {
         filter.subject = new RegExp(subject, "i");
       }
-      if (Number.isFinite(minBudget)) {
-        filter.estimatedCost = { ...(filter.estimatedCost || {}), $gte: minBudget };
-      }
-      if (Number.isFinite(maxBudget)) {
-        filter.estimatedCost = { ...(filter.estimatedCost || {}), $lte: maxBudget };
+      if (Number.isFinite(minBudget) || Number.isFinite(maxBudget)) {
+        const range = {};
+        if (Number.isFinite(minBudget)) {
+          range.$gte = minBudget;
+        }
+        if (Number.isFinite(maxBudget)) {
+          range.$lte = maxBudget;
+        }
+        filter.$and = [
+          ...(filter.$and || []),
+          {
+            $or: [
+              { budget: range },
+              { budget: { $exists: false }, estimatedCost: range },
+            ],
+          },
+        ];
       }
       if (startDate || endDate) {
         filter.createdAt = {};
@@ -1035,6 +1047,87 @@ class AdminController {
       return res.status(500).json({
         status: "failed",
         message: "Unable to fetch assignment details",
+      });
+    }
+  };
+
+  static updateAssignment = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        title,
+        description,
+        subject,
+        status,
+        budget,
+        deadline,
+        priority,
+        tags
+      } = req.body || {};
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid assignment ID",
+        });
+      }
+
+      const update = {};
+      if (typeof title === "string") update.title = title.trim();
+      if (typeof description === "string") update.description = description.trim();
+      if (typeof subject === "string") update.subject = subject.trim();
+      if (typeof status === "string") update.status = status;
+      if (typeof priority === "string") update.priority = priority;
+      if (Array.isArray(tags)) update.tags = tags;
+      if (deadline) update.deadline = new Date(deadline);
+
+      if (budget !== undefined) {
+        const parsedBudget = Number(budget);
+        if (!Number.isFinite(parsedBudget) || parsedBudget <= 0) {
+          return res.status(400).json({
+            status: "failed",
+            message: "Budget must be a positive number",
+          });
+        }
+        update.budget = parsedBudget;
+        update.estimatedCost = parsedBudget;
+      }
+
+      const updated = await AssignmentModel.findByIdAndUpdate(
+        id,
+        { $set: update },
+        { new: true, runValidators: true }
+      )
+        .populate("student", "name email profileImage")
+        .populate("assignedTutor", "name email profileImage")
+        .lean();
+
+      if (!updated) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Assignment not found",
+        });
+      }
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "UPDATE_ASSIGNMENT",
+        targetId: updated._id,
+        targetType: "Assignment",
+        metadata: {
+          fields: Object.keys(update),
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Assignment updated successfully",
+        data: updated,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to update assignment",
       });
     }
   };

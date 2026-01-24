@@ -1,18 +1,20 @@
 "use client";
 import { useState } from "react";
-import {
-  Search,
-  Bell,
-  User,
-  Plus,
-  ChevronDown,
-  LogOut,
-  Settings,
-} from "lucide-react";
+import { Search, User, Plus, ChevronDown, LogOut, Settings } from "lucide-react";
 import Image from "next/image";
 import PostAssignmentModal from "./PostAssignmentModal";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useGetUserQuery, useLogoutUserMutation } from "@/lib/services/auth";
+import {
+  useGetNotificationsQuery,
+  useMarkAllReadMutation,
+  useMarkNotificationReadMutation,
+} from "@/lib/services/notifications";
+import { notificationsApi } from "@/lib/services/notifications";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/lib/store";
+import { useSocket } from "@/lib/hooks/useSocket";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface TopNavbarProps {
@@ -34,12 +36,61 @@ const TopNavbar = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const { data: userData } = useGetUserQuery();
   const [logoutUser] = useLogoutUserMutation();
 
   const user = userData?.user;
+  const { data: notificationsData, refetch: refetchNotifications } =
+    useGetNotificationsQuery(
+      { page: 1, limit: 6 },
+      { skip: !user, pollingInterval: 30000 }
+    );
+  const [markNotificationRead] = useMarkNotificationReadMutation();
+  const [markAllRead] = useMarkAllReadMutation();
+
+  const notifications = notificationsData?.data?.notifications || [];
+  const unreadCount = notificationsData?.data?.unreadCount ?? notificationCount;
+
+  useSocket({
+    onNotification: (payload) => {
+      if (!user) return;
+      const incoming = payload?.notification || payload;
+      if (!incoming?._id) return;
+
+      toast(incoming.title || "New notification", {
+        description: incoming.message,
+        action: incoming.link
+          ? {
+              label: "View",
+              onClick: () => router.push(incoming.link),
+            }
+          : undefined,
+      });
+
+      dispatch(
+        notificationsApi.util.updateQueryData(
+          "getNotifications",
+          { page: 1, limit: 6 },
+          (draft) => {
+            if (!draft?.data) return;
+            const exists = draft.data.notifications.some(
+              (notification) => notification._id === incoming._id
+            );
+            if (!exists) {
+              draft.data.notifications.unshift(incoming);
+              draft.data.notifications = draft.data.notifications.slice(0, 6);
+            }
+            if (!incoming.isRead) {
+              draft.data.unreadCount = (draft.data.unreadCount || 0) + 1;
+            }
+          }
+        )
+      );
+    },
+  });
 
   const handleLogout = async () => {
     try {
@@ -67,6 +118,19 @@ const TopNavbar = ({
     if (onNotificationClick) {
       onNotificationClick();
     }
+    if (!showNotifications) {
+      refetchNotifications();
+    }
+  };
+
+  const handleNotificationItemClick = async (notification: any) => {
+    if (!notification.isRead) {
+      await markNotificationRead(notification._id).unwrap();
+    }
+    if (notification.link) {
+      router.push(notification.link);
+    }
+    setShowNotifications(false);
   };
 
   return (
@@ -154,9 +218,9 @@ const TopNavbar = ({
                   className='h-full object-cover'
                 />
               </div>
-              {notificationCount > 0 && (
+              {unreadCount > 0 && (
                 <span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center'>
-                  {notificationCount > 9 ? "9+" : notificationCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
@@ -164,33 +228,44 @@ const TopNavbar = ({
             {/* Notification Dropdown */}
             {showNotifications && (
               <div className='absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50'>
-                <div className='p-4 border-b border-gray-200'>
+                <div className='p-4 border-b border-gray-200 flex items-center justify-between'>
                   <h3 className='font-semibold text-gray-900'>Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => markAllRead().unwrap()}
+                      className='text-xs font-semibold text-primary-500 hover:text-primary-600'
+                    >
+                      Mark all read
+                    </button>
+                  )}
                 </div>
                 <div className='max-h-64 overflow-y-auto'>
-                  {notificationCount > 0 ? (
-                    <div className='p-4'>
-                      <div className='space-y-3'>
-                        <div className='flex items-start space-x-3 p-2 hover:bg-gray-50 rounded'>
-                          <div className='w-2 h-2 bg-secondary-200 rounded-full mt-2'></div>
-                          <div className='flex-1'>
-                            <p className='text-sm font-medium text-gray-900'>
-                              New task assigned
-                            </p>
-                            <p className='text-xs text-gray-600'>
-                              2 minutes ago
-                            </p>
-                          </div>
-                        </div>
-                        <div className='flex items-start space-x-3 p-2 hover:bg-gray-50 rounded'>
-                          <div className='w-2 h-2 bg-primary-200 rounded-full mt-2'></div>
-                          <div className='flex-1'>
-                            <p className='text-sm font-medium text-gray-900'>
-                              Project deadline reminder
-                            </p>
-                            <p className='text-xs text-gray-600'>1 hour ago</p>
-                          </div>
-                        </div>
+                  {notifications.length > 0 ? (
+                    <div className='p-2'>
+                      <div className='space-y-2'>
+                        {notifications.map((notification) => (
+                          <button
+                            key={notification._id}
+                            onClick={() => handleNotificationItemClick(notification)}
+                            className='w-full text-left flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors'
+                          >
+                            <div
+                              className={`w-2 h-2 rounded-full mt-2 ${notification.isRead ? "bg-gray-300" : "bg-primary-400"
+                                }`}
+                            ></div>
+                            <div className='flex-1'>
+                              <p className='text-sm font-medium text-gray-900'>
+                                {notification.title}
+                              </p>
+                              <p className='text-xs text-gray-600'>
+                                {notification.message}
+                              </p>
+                              <p className='text-[11px] text-gray-400 mt-1'>
+                                {new Date(notification.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   ) : (

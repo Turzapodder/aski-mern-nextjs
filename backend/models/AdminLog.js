@@ -18,6 +18,7 @@ const adminLogSchema = new mongoose.Schema(
         "DEMOTE_TUTOR",
         "DELETE_ASSIGNMENT",
         "FORCE_CANCEL_ASSIGNMENT",
+        "UPDATE_ASSIGNMENT",
         "PROCESS_WITHDRAWAL",
         "RESOLVE_DISPUTE_REFUND",
         "RESOLVE_DISPUTE_RELEASE",
@@ -30,6 +31,7 @@ const adminLogSchema = new mongoose.Schema(
         "PROMOTE_ADMIN",
         "UPDATE_ADMIN_ROLE",
         "REVOKE_ADMIN",
+        "REPORT_ACTION",
       ],
     },
     targetId: {

@@ -8,6 +8,7 @@ interface User {
   avatar?: string;
   subjects?: string[];
   isActive?: boolean;
+  roles?: string[];
 }
 
 interface Chat {
@@ -16,6 +17,15 @@ interface Chat {
   description?: string;
   type: 'direct' | 'group';
   participants: User[];
+  assignment?: {
+    _id: string;
+    title?: string;
+    deadline?: string;
+    estimatedCost?: number;
+    budget?: number;
+    student?: string;
+  };
+  assignmentTitle?: string;
   creator: string;
   avatar?: string;
   isActive: boolean;
@@ -23,6 +33,14 @@ interface Chat {
     content: string;
     sender: User;
     createdAt: string;
+    type?: 'text' | 'file' | 'image' | 'offer';
+    attachments?: {
+      filename: string;
+      originalName: string;
+      mimetype: string;
+      size: number;
+      url: string;
+    }[];
   };
   unreadCount?: number;
   createdAt: string;
@@ -31,10 +49,10 @@ interface Chat {
 
 interface Message {
   _id: string;
-  chat: string;
-  sender: User;
+  chat: string | { _id?: string };
+  sender: User | string;
   content?: string;
-  type: 'text' | 'file' | 'image';
+  type: 'text' | 'file' | 'image' | 'offer';
   attachments?: {
     filename: string;
     originalName: string;
@@ -42,6 +60,7 @@ interface Message {
     size: number;
     url: string;
   }[];
+  meta?: Record<string, any> | null;
   readBy: {
     user: string;
     readAt: Date;
@@ -84,10 +103,15 @@ interface MarkAsReadRequest {
   messageId: string;
 }
 
+const chatApiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:8000';
+
 export const chatApi = createApi({
   reducerPath: 'chatApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8000/api/chat/',
+    baseUrl: `${chatApiBaseUrl}/api/chat/`,
     credentials: 'include'
   }),
   tagTypes: ['Chat', 'Message', 'User'],
@@ -149,7 +173,7 @@ export const chatApi = createApi({
     sendFileMessage: builder.mutation<ChatResponse, { chatId: string; file: File; replyTo?: string }>({
       query: ({ chatId, file, replyTo }) => {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('files', file);
         if (replyTo) formData.append('replyTo', replyTo);
         
         return {
@@ -223,14 +247,6 @@ export const chatApi = createApi({
       invalidatesTags: ['Chat']
     }),
 
-    // Tutor search
-    searchTutors: builder.query<{ tutors: User[] }, { search?: string; limit?: number }>({
-      query: ({ search = '', limit = 30 }) => ({
-        url: `/tutors/search?search=${encodeURIComponent(search)}&limit=${limit}`,
-        method: 'GET'
-      }),
-      providesTags: ['User']
-    })
   })
 });
 
@@ -246,8 +262,7 @@ export const {
   useEditMessageMutation,
   useAddParticipantMutation,
   useRemoveParticipantMutation,
-  useLeaveChatMutation,
-  useSearchTutorsQuery
+  useLeaveChatMutation
 } = chatApi;
 
 // Export types for use in components

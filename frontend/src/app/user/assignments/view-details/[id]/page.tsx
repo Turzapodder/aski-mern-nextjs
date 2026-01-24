@@ -14,13 +14,14 @@ import {
   CreditCard,
   Award,
   AlertCircle,
+  User as UserIcon,
 } from "lucide-react";
 import { useState } from "react";
 import SendProposalModal from "@/components/SendProposalModal";
-import TutorProposalsComponent from "@/components/TutorProposalsComponent";
 import ProposalsList from "@/components/ProposalsList";
 import PaymentComponent from "@/components/PaymentComponent";
 import CompletionFeedbackComponent from "@/components/CompletionFeedbackComponent";
+import ReportModal from "@/components/ReportModal";
 import { useGetAssignmentByIdQuery } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,8 @@ const AssignmentDetails = () => {
   // State to track which step is active
   const [activeStep, setActiveStep] = useState<string>("details");
   const [progressWidth, setProgressWidth] = useState<string>("25%");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportStudentOpen, setReportStudentOpen] = useState(false);
 
   // Fetch assignment data using RTK Query
   const {
@@ -48,10 +51,21 @@ const AssignmentDetails = () => {
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
   const isTutor = currentUser?.roles?.includes('tutor');
+  const reporterType = isTutor ? "tutor" : "user";
   const assignment = assignmentData?.data;
+  const canTutorSubmitProposal =
+    Boolean(isTutor) &&
+    assignment?.status === "pending" &&
+    !assignment?.assignedTutor &&
+    (!assignment?.requestedTutor || assignment?.requestedTutor?._id === currentUser?._id);
 
   const handleSendProposal = () => {
     setShowProposal(true);
+  };
+
+  const handleRequestedTutorProfile = () => {
+    if (!assignment?.requestedTutor?._id) return;
+    router.push(`/user/tutors/tutor-profile/${assignment.requestedTutor._id}`);
   };
 
   const handlePaymentComplete = () => {
@@ -179,7 +193,10 @@ const AssignmentDetails = () => {
               <span className='text-primary-300 font-medium'>
                 Report assignment issue
               </span>{" "}
-              <button className='text-gray-400 hover:text-gray-600 p-2'>
+              <button
+                onClick={() => setReportOpen(true)}
+                className='text-gray-400 hover:text-gray-600 p-2'
+              >
                 <Flag size={16} />
               </button>
             </div>
@@ -408,7 +425,7 @@ const AssignmentDetails = () => {
                   </div>
                   <div>
                     <div className='text-2xl font-bold text-gray-900'>
-                      ${assignment.estimatedCost}
+                      ${assignment.budget ?? assignment.estimatedCost}
                     </div>
                     <div className='text-sm text-gray-600'>Estimated Cost</div>
                   </div>
@@ -540,7 +557,7 @@ const AssignmentDetails = () => {
               <div className='text-sm text-gray-600 mb-2'>
                 Budget:
               </div>
-              <div className='text-2xl font-bold text-gray-900 mb-1'>${assignment.estimatedCost}</div>
+              <div className='text-2xl font-bold text-gray-900 mb-1'>${assignment.budget ?? assignment.estimatedCost}</div>
               <div className='text-sm text-gray-500 mb-4 capitalize'>{assignment.priority} priority</div>
             </div>
           </div>
@@ -579,6 +596,36 @@ const AssignmentDetails = () => {
                   </div>
                 </div>
               </div>
+              {assignment.requestedTutor && (
+                <div className='mt-4 pt-4 border-t border-gray-200'>
+                  <div className='text-sm font-medium text-gray-900 mb-2'>
+                    Requested Tutor
+                  </div>
+                  <div className='flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2'>
+                    <div className='flex items-center gap-2 text-sm text-gray-700'>
+                      <UserIcon size={16} className='text-gray-400' />
+                      <span>{assignment.requestedTutor.name}</span>
+                    </div>
+                    <button
+                      onClick={handleRequestedTutorProfile}
+                      className='text-xs font-semibold text-primary-400 hover:text-primary-500'
+                    >
+                      View profile
+                    </button>
+                  </div>
+                  <p className='mt-2 text-xs text-gray-500'>
+                    This assignment request is visible only to the selected tutor.
+                  </p>
+                </div>
+              )}
+              {isTutor && assignment.student?._id && (
+                <button
+                  onClick={() => setReportStudentOpen(true)}
+                  className='mt-4 w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-100'
+                >
+                  Report student profile
+                </button>
+              )}
             </div>
           </div>
 
@@ -587,15 +634,6 @@ const AssignmentDetails = () => {
             <h3 className='text-lg font-semibold text-gray-900 mb-4'>
               Resources
             </h3>
-
-            <div className='bg-gray-50 rounded-lg p-4 mb-4'>
-              <div className='text-sm text-gray-600 mb-1'>
-                <strong>Textbook:</strong> Stewart Calculus, 8th Edition
-              </div>
-              <div className='text-sm text-gray-600'>
-                Chapter 7: Techniques of Integration
-              </div>
-            </div>
 
             <div className='space-y-3'>
               {/* Dynamic attachments from assignment */}
@@ -625,8 +663,11 @@ const AssignmentDetails = () => {
                   ))}
                 </>
               )}
+              {(!assignment.attachments || assignment.attachments.length === 0) && (
+                <div className='text-sm text-gray-500'>No attachments available.</div>
+              )}
             </div>
-            {activeStep === "details" && isTutor && (
+            {activeStep === "details" && isTutor && canTutorSubmitProposal && (
               <button
                 onClick={handleSendProposal}
                 className='bg-secondary-300 my-3 w-full flex justify-center hover:bg-secondary-200 text-gray-900 px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2'
@@ -635,10 +676,33 @@ const AssignmentDetails = () => {
                 <span>Send Proposal</span>
               </button>
             )}
+            {activeStep === "details" && isTutor && !canTutorSubmitProposal && (
+              <div className='mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700'>
+                This assignment is not accepting proposals right now.
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {assignment && (
+        <ReportModal
+          isOpen={reportOpen}
+          onClose={() => setReportOpen(false)}
+          reporterType={reporterType}
+          reportedType="assignment"
+          reportedId={assignment._id}
+        />
+      )}
+      {assignment?.student?._id && isTutor && (
+        <ReportModal
+          isOpen={reportStudentOpen}
+          onClose={() => setReportStudentOpen(false)}
+          reporterType="tutor"
+          reportedType="userProfile"
+          reportedId={assignment.student._id}
+        />
+      )}
 
     </div>
   );

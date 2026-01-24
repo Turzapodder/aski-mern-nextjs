@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo } from "react";
 import {
   Clock,
   DollarSign,
@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Calendar
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   useGetProposalsByAssignmentQuery,
   useAcceptProposalMutation,
@@ -24,7 +25,7 @@ interface ProposalsListProps {
 }
 
 const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
-  const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
+  const router = useRouter();
 
   const {
     data: proposalsData,
@@ -36,7 +37,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
   const [acceptProposal] = useAcceptProposalMutation();
   const [rejectProposal] = useRejectProposalMutation();
 
-  const proposals = proposalsData?.proposals || [];
+  const proposals = useMemo(() => proposalsData?.data?.proposals || [], [proposalsData]);
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
@@ -149,10 +150,19 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900">{proposal.tutor.name}</h4>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <span>4.8 (127 reviews)</span>
-                    </div>
+                    {typeof proposal.tutor.publicStats?.averageRating === "number" ? (
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Star className="h-4 w-4 text-yellow-400" />
+                        <span>
+                          {proposal.tutor.publicStats.averageRating.toFixed(1)}
+                          {proposal.tutor.publicStats.totalReviews
+                            ? ` (${proposal.tutor.publicStats.totalReviews} reviews)`
+                            : ""}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500">New tutor</div>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -241,24 +251,43 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
               )}
 
               {/* Actions for Students */}
-              {isStudent && proposal.status === 'pending' && (
-                <div className="flex space-x-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                {isStudent && proposal.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleAcceptProposal(proposal._id)}
+                      className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Accept Proposal</span>
+                    </button>
+                    <button
+                      onClick={() => handleRejectProposal(proposal._id)}
+                      className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <X className="h-4 w-4" />
+                      <span>Reject</span>
+                    </button>
+                  </>
+                )}
+                {proposal.conversation && (
                   <button
-                    onClick={() => handleAcceptProposal(proposal._id)}
-                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => {
+                      const conversationId =
+                        typeof proposal.conversation === "string"
+                          ? proposal.conversation
+                          : proposal.conversation?._id;
+                      if (conversationId) {
+                        router.push(`/user/messages?chatId=${conversationId}`);
+                      }
+                    }}
+                    className="flex-1 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Accept Proposal</span>
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Open chat</span>
                   </button>
-                  <button
-                    onClick={() => handleRejectProposal(proposal._id)}
-                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Reject</span>
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Accepted Status */}
               {proposal.status === 'accepted' && (

@@ -10,6 +10,7 @@ export interface Proposal {
     subject: string;
     deadline: string;
     estimatedCost: number;
+    budget?: number;
   };
   tutor: {
     _id: string;
@@ -21,12 +22,22 @@ export interface Proposal {
       rating: number;
       completedAssignments: number;
     };
+    publicStats?: {
+      averageRating?: number;
+      totalReviews?: number;
+    };
   };
   student: {
     _id: string;
     name: string;
     email: string;
   };
+  conversation?: {
+    _id: string;
+    name?: string;
+    assignment?: string;
+    assignmentTitle?: string;
+  } | string;
   title: string;
   description: string;
   proposedPrice: number;
@@ -54,21 +65,29 @@ export interface Proposal {
 
 export interface ProposalsResponse {
   status: string;
-  message: string;
-  proposals: Proposal[];
-  pagination?: {
-    currentPage: number;
-    totalPages: number;
-    totalProposals: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
+  message?: string;
+  data?: {
+    proposals: Proposal[];
+    count?: number;
+    pagination?: {
+      current?: number;
+      pages?: number;
+      total?: number;
+      currentPage?: number;
+      totalPages?: number;
+      totalProposals?: number;
+      hasNextPage?: boolean;
+      hasPrevPage?: boolean;
+    };
   };
 }
 
 export interface ProposalResponse {
   status: string;
-  message: string;
-  proposal: Proposal;
+  message?: string;
+  data?: {
+    proposal: Proposal;
+  };
 }
 
 export interface CreateProposalRequest {
@@ -109,10 +128,6 @@ export const proposalsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: 'http://localhost:8000/api/proposals',
     credentials: 'include',
-    prepareHeaders: (headers) => {
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
   }),
   endpoints: (builder) => ({
     // Get proposals with filters

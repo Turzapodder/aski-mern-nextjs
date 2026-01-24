@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import useSWR from "swr"
 import { FileText, User } from "lucide-react"
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type AssignmentDetails = {
   assignment?: Record<string, any>
@@ -33,6 +35,15 @@ export default function AdminAssignmentDetailsPage() {
   const [dialogMode, setDialogMode] = useState<"delete" | "force-cancel">("delete")
   const [reason, setReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    subject: "",
+    status: "",
+    budget: "",
+    deadline: ""
+  })
 
   const { data, error, isLoading, mutate } = useSWR(
     assignmentId ? ["admin-assignment", assignmentId] : null,
@@ -42,6 +53,20 @@ export default function AdminAssignmentDetailsPage() {
   const payload = data?.data as AssignmentDetails | undefined
   const assignment = payload?.assignment
   const chatHistory = payload?.chatHistory ?? []
+
+  useEffect(() => {
+    if (assignment) {
+      const deadline = assignment.deadline ? new Date(assignment.deadline) : null
+      setFormData({
+        title: assignment.title || "",
+        description: assignment.description || "",
+        subject: assignment.subject || "",
+        status: assignment.status || "pending",
+        budget: String(assignment.budget ?? assignment.estimatedCost ?? ""),
+        deadline: deadline && !Number.isNaN(deadline.getTime()) ? deadline.toISOString().slice(0, 10) : ""
+      })
+    }
+  }, [assignment])
 
   const openDialog = (mode: "delete" | "force-cancel") => {
     setDialogMode(mode)
@@ -66,6 +91,32 @@ export default function AdminAssignmentDetailsPage() {
       toast.error(submitError?.message || "Action failed")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!assignment?._id) return
+    const budgetValue = Number(formData.budget)
+    if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
+      toast.error("Budget must be a positive number")
+      return
+    }
+    setIsSaving(true)
+    try {
+      await adminApi.assignments.update(assignment._id, {
+        title: formData.title,
+        description: formData.description,
+        subject: formData.subject,
+        status: formData.status,
+        budget: budgetValue,
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : undefined
+      })
+      toast.success("Assignment updated")
+      mutate()
+    } catch (submitError: any) {
+      toast.error(submitError?.message || "Update failed")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -102,27 +153,79 @@ export default function AdminAssignmentDetailsPage() {
             <CardHeader>
               <CardTitle className="text-base font-semibold">Assignment info</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-gray-600">
-              <p>{assignment.description}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
+            <CardContent className="space-y-4 text-sm text-gray-600">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">Title</p>
+                  <Input
+                    value={formData.title}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, title: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">Subject</p>
+                  <Input
+                    value={formData.subject}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, subject: event.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Description</p>
+                <Textarea
+                  value={formData.description}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
                   <p className="text-xs text-gray-500">Budget</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {assignment.estimatedCost || assignment.paymentAmount || 0}
-                  </p>
+                  <Input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, budget: event.target.value }))}
+                  />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <p className="text-xs text-gray-500">Deadline</p>
-                  <p className="text-sm font-medium text-gray-900">{formatDate(assignment.deadline)}</p>
+                  <Input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, deadline: event.target.value }))}
+                  />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <p className="text-xs text-gray-500">Status</p>
-                  <p className="text-sm font-medium text-gray-900">{assignment.status}</p>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="submitted">Submitted</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="disputed">Disputed</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="overdue">Overdue</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">Created</p>
-                  <p className="text-sm font-medium text-gray-900">{formatDate(assignment.createdAt)}</p>
-                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>Created {formatDate(assignment.createdAt)}</span>
+                <Button onClick={handleSave} disabled={isSaving} className="bg-primary-600 hover:bg-primary-700">
+                  {isSaving ? "Saving..." : "Save changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>

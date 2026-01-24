@@ -15,6 +15,14 @@ const chatSchema = new mongoose.Schema({
     enum: ['direct', 'group'],
     default: 'group'
   },
+  assignment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Assignment'
+  },
+  assignmentTitle: {
+    type: String,
+    trim: true
+  },
   participants: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -59,6 +67,8 @@ const chatSchema = new mongoose.Schema({
 chatSchema.index({ 'participants.user': 1 });
 chatSchema.index({ lastActivity: -1 });
 chatSchema.index({ type: 1 });
+chatSchema.index({ assignment: 1 });
+chatSchema.index({ assignmentTitle: 1 });
 
 const ChatModel = mongoose.model('chat', chatSchema);
 

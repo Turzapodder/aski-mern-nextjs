@@ -1,5 +1,6 @@
 import MessageModel from '../models/Message.js';
 import ChatModel from '../models/Chat.js';
+import ProposalModel from '../models/Proposal.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -50,6 +51,48 @@ export const upload = multer({
   }
 });
 
+const CHAT_TUTOR_MESSAGE_GATE = process.env.CHAT_TUTOR_MESSAGE_GATE || 'user_first';
+
+const canTutorSendMessage = async ({ chat, user }) => {
+  const userRoles = Array.isArray(user.roles) ? user.roles : [];
+  const isTutor = userRoles.includes('tutor');
+
+  if (!isTutor || chat.type !== 'direct') {
+    return { allowed: true };
+  }
+
+  const proposal = await ProposalModel.findOne({
+    conversation: chat._id,
+    isActive: true
+  }).lean();
+
+  if (!proposal) {
+    return { allowed: false, reason: 'Submit a proposal to start conversation' };
+  }
+
+  if (proposal.tutor.toString() !== user._id.toString()) {
+    return { allowed: true };
+  }
+
+  if (CHAT_TUTOR_MESSAGE_GATE === 'proposal_accepted' && proposal.status !== 'accepted') {
+    return { allowed: false, reason: 'Proposal must be accepted before messaging' };
+  }
+
+  if (CHAT_TUTOR_MESSAGE_GATE === 'user_first') {
+    const studentHasMessaged = await MessageModel.exists({
+      chat: chat._id,
+      sender: proposal.student,
+      isDeleted: false
+    });
+
+    if (!studentHasMessaged) {
+      return { allowed: false, reason: 'Wait for the student to start the conversation' };
+    }
+  }
+
+  return { allowed: true };
+};
+
 class MessageController {
   // Send a text message (REST API backup - main sending happens via Socket.IO)
   static sendMessage = async (req, res) => {
@@ -86,6 +129,14 @@ class MessageController {
         return res.status(403).json({
           status: 'failed',
           message: 'Chat not found or access denied'
+        });
+      }
+
+      const gate = await canTutorSendMessage({ chat, user: req.user });
+      if (!gate.allowed) {
+        return res.status(403).json({
+          status: 'failed',
+          message: gate.reason || 'Message not allowed'
         });
       }
 
@@ -168,6 +219,14 @@ class MessageController {
         return res.status(403).json({
           status: 'failed',
           message: 'Chat not found or access denied'
+        });
+      }
+
+      const gate = await canTutorSendMessage({ chat, user: req.user });
+      if (!gate.allowed) {
+        return res.status(403).json({
+          status: 'failed',
+          message: gate.reason || 'Message not allowed'
         });
       }
 
@@ -258,7 +317,7 @@ class MessageController {
 
       const messages = await MessageModel.find({
         chat: chatId,
-        isDeleted: false
+        isDeleted: { $ne: true }
       })
       .populate('sender', 'name email avatar')
       .populate({
@@ -328,7 +387,7 @@ class MessageController {
           chat: chatId,
           'readBy.user': { $ne: userId },
           sender: { $ne: userId }, // Don't mark own messages as read
-          isDeleted: false
+          isDeleted: { $ne: true }
         },
         {
           $push: {

@@ -1,13 +1,14 @@
 import AssignmentModel from '../models/Assignment.js';
 import UserModel from '../models/User.js';
 import ProposalModel from '../models/Proposal.js';
+import NotificationModel from '../models/Notification.js';
 import mongoose from 'mongoose';
 
 class AssignmentController {
   // Create a new assignment
   static createAssignment = async (req, res) => {
     try {
-      const { title, description, subject, topics, deadline, estimatedCost, priority, tags } = req.body;
+      const { title, description, subject, topics, deadline, estimatedCost, priority, tags, requestedTutor } = req.body;
       const studentId = req.user._id;
 
       // Validate required fields
@@ -30,18 +31,40 @@ class AssignmentController {
         }));
       }
 
+      let requestedTutorId = null;
+      if (requestedTutor) {
+        if (!mongoose.Types.ObjectId.isValid(requestedTutor)) {
+          return res.status(400).json({
+            status: 'failed',
+            message: 'Invalid tutor ID'
+          });
+        }
+
+        const tutor = await UserModel.findById(requestedTutor);
+        if (!tutor || !tutor.roles.includes('tutor')) {
+          return res.status(400).json({
+            status: 'failed',
+            message: 'Requested tutor is not valid'
+          });
+        }
+        requestedTutorId = tutor._id;
+      }
+
       // Create new assignment
+      const parsedEstimatedCost = estimatedCost || 0;
       const assignment = new AssignmentModel({
         title: title.trim(),
         description: description.trim(),
         subject: subject.trim(),
         topics: Array.isArray(topics) ? topics : (topics ? [topics] : []),
         deadline: new Date(deadline),
-        estimatedCost: estimatedCost || 0,
+        estimatedCost: parsedEstimatedCost,
+        budget: parsedEstimatedCost,
         priority: priority || 'medium',
         tags: Array.isArray(tags) ? tags : (tags ? [tags] : []),
         attachments,
         student: studentId,
+        requestedTutor: requestedTutorId,
         status: 'pending' // Auto-submit when created
       });
 
@@ -49,6 +72,28 @@ class AssignmentController {
 
       // Populate student info for response
       await assignment.populate('student', 'name email profileImage');
+      await assignment.populate('requestedTutor', 'name email profileImage');
+
+      if (requestedTutorId) {
+        const notification = await NotificationModel.create({
+          user: requestedTutorId,
+          type: "assignment_request",
+          title: "New assignment request",
+          message: `${assignment.student?.name || "A student"} requested you for "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: {
+            assignmentId: assignment._id,
+            studentId: assignment.student?._id,
+          },
+        });
+
+        const socketManager = req.app.get("socketManager");
+        if (socketManager) {
+          socketManager.emitToUser(requestedTutorId.toString(), "notification", {
+            notification,
+          });
+        }
+      }
 
       res.status(201).json({
         status: 'success',
@@ -81,7 +126,8 @@ class AssignmentController {
 
       const assignment = await AssignmentModel.findById(id)
         .populate('student', 'name email profileImage phone')
-        .populate('assignedTutor', 'name email profileImage phone tutorProfile');
+        .populate('assignedTutor', 'name email profileImage phone tutorProfile')
+        .populate('requestedTutor', 'name email profileImage phone tutorProfile');
 
       if (!assignment) {
         return res.status(404).json({
@@ -100,7 +146,8 @@ class AssignmentController {
         req.user.roles.includes('tutor') &&
         assignment.isActive &&
         assignment.status === 'pending' &&
-        !assignment.assignedTutor;
+        !assignment.assignedTutor &&
+        (!assignment.requestedTutor || assignment.requestedTutor._id.toString() === userId.toString());
 
       if (!isStudent && !isTutor && !isAdmin && !canViewOpenAssignment) {
         return res.status(403).json({
@@ -164,7 +211,7 @@ class AssignmentController {
         // Tutors can see assigned assignments and unassigned ones
         filter.$or = [
           { assignedTutor: userId },
-          { assignedTutor: null, status: 'pending' }
+          { assignedTutor: null, status: 'pending', $or: [{ requestedTutor: null }, { requestedTutor: userId }] }
         ];
       } else {
         // Students can only see their own assignments
@@ -172,17 +219,35 @@ class AssignmentController {
       }
 
       // Apply additional filters
-      if (status) filter.status = status;
+      if (status) {
+        const statusList = Array.isArray(status)
+          ? status.filter(Boolean)
+          : typeof status === 'string'
+            ? status.split(',').map((value) => value.trim()).filter(Boolean)
+            : [];
+        if (statusList.length === 1) {
+          filter.status = statusList[0];
+        } else if (statusList.length > 1) {
+          filter.status = { $in: statusList };
+        }
+      }
       if (subject) filter.subject = new RegExp(subject, 'i');
       if (priority) filter.priority = priority;
 
       // Search functionality
       if (search) {
-        filter.$or = [
+        const searchFilter = [
           { title: new RegExp(search, 'i') },
           { description: new RegExp(search, 'i') },
           { subject: new RegExp(search, 'i') }
         ];
+
+        if (filter.$or) {
+          filter.$and = [{ $or: filter.$or }, { $or: searchFilter }];
+          delete filter.$or;
+        } else {
+          filter.$or = searchFilter;
+        }
       }
 
       // Pagination
@@ -193,6 +258,7 @@ class AssignmentController {
       const assignments = await AssignmentModel.find(filter)
         .populate('student', 'name email profileImage')
         .populate('assignedTutor', 'name email profileImage tutorProfile.professionalTitle')
+        .populate('requestedTutor', 'name email profileImage tutorProfile.professionalTitle')
         .sort(sortOptions)
         .skip(skip)
         .limit(parseInt(limit));
@@ -294,13 +360,25 @@ class AssignmentController {
 
       // Build filter
       let filter = { student: userId, isActive: true };
-      if (status) filter.status = status;
+      if (status) {
+        const statusList = Array.isArray(status)
+          ? status.filter(Boolean)
+          : typeof status === 'string'
+            ? status.split(',').map((value) => value.trim()).filter(Boolean)
+            : [];
+        if (statusList.length === 1) {
+          filter.status = statusList[0];
+        } else if (statusList.length > 1) {
+          filter.status = { $in: statusList };
+        }
+      }
 
       // Pagination
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
       const assignments = await AssignmentModel.find(filter)
         .populate('assignedTutor', 'name email profileImage')
+        .populate('requestedTutor', 'name email profileImage')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit));
@@ -370,6 +448,26 @@ class AssignmentController {
           url: file.location
         }));
         updateData.attachments = [...(assignment.attachments || []), ...newAttachments];
+      }
+
+      if (updateData.budget !== undefined) {
+        const budgetValue = Number(updateData.budget);
+        if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
+          return res.status(400).json({
+            status: 'failed',
+            message: 'Budget must be a positive number'
+          });
+        }
+        updateData.estimatedCost = budgetValue;
+      } else if (updateData.estimatedCost !== undefined) {
+        const costValue = Number(updateData.estimatedCost);
+        if (!Number.isFinite(costValue) || costValue < 0) {
+          return res.status(400).json({
+            status: 'failed',
+            message: 'Estimated cost must be a valid number'
+          });
+        }
+        updateData.budget = costValue;
       }
 
       // Update assignment

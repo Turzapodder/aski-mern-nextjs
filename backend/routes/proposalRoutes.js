@@ -96,12 +96,15 @@ router.put('/:proposalId', uploadProposalFiles.array('attachments', 5), Proposal
 
 // Accept a proposal (PATCH /api/proposals/:proposalId/accept)
 router.patch('/:proposalId/accept', ProposalController.acceptProposal);
+router.post('/:proposalId/accept', ProposalController.acceptProposal);
 
 // Reject a proposal (PATCH /api/proposals/:proposalId/reject)
-router.patch('/:proposalId/rejectProposal');
+router.patch('/:proposalId/reject', ProposalController.rejectProposal);
+router.post('/:proposalId/reject', ProposalController.rejectProposal);
 
 // Withdraw a proposal (PATCH /api/proposals/:proposalId/withdraw)
 router.patch('/:proposalId/withdraw', ProposalController.withdrawProposal);
+router.post('/:proposalId/withdraw', ProposalController.withdrawProposal);
 
 // Delete a proposal (DELETE /api/proposals/:proposalId)
 router.delete('/:proposalId', ProposalController.deleteProposal);

@@ -3,7 +3,11 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, DollarSign, Clock, User, BookOpen } from 'lucide-react';
 import { useCreateProposalMutation } from '@/lib/services/proposals';
+import { toast } from 'sonner';
 import { Assignment } from '@/lib/services/assignments';
+import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/lib/store';
+import { chatApi } from '@/lib/services/chat';
 
 
 interface SendProposalModalProps {
@@ -26,11 +30,12 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
   assignment
 }) => {
   const [createProposal, { isLoading }] = useCreateProposalMutation();
+  const dispatch = useDispatch<AppDispatch>();
   const [attachments, setAttachments] = useState<File[]>([]);
   const [formData, setFormData] = useState<ProposalFormData>({
     title: '',
     description: '',
-    proposedPrice: assignment.estimatedCost || 0,
+    proposedPrice: assignment.budget ?? assignment.estimatedCost ?? 0,
     estimatedDeliveryTime: 24,
     relevantExperience: ''
   });
@@ -114,19 +119,26 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
       });
 
       await createProposal(submitData).unwrap();
+      dispatch(chatApi.util.invalidateTags(['Chat']));
+      toast.success('Proposal sent');
       onClose();
 
       // Reset form
       setFormData({
         title: '',
         description: '',
-        proposedPrice: assignment.estimatedCost || 0,
+        proposedPrice: assignment.budget ?? assignment.estimatedCost ?? 0,
         estimatedDeliveryTime: 24,
         relevantExperience: ''
       });
       setAttachments([]);
       setErrors({});
     } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        'Unable to send proposal. Please try again.';
+      toast.error(message);
     }
   };
 
@@ -161,7 +173,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                 <span className="flex items-center">
                   <DollarSign className="w-4 h-4 mr-1" />
-                  Budget: ${assignment.estimatedCost}
+                  Budget: ${assignment.budget ?? assignment.estimatedCost}
                 </span>
                 <span className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
