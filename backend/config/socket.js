@@ -13,6 +13,7 @@ class SocketManager {
     this.userSockets = new Map(); // socketId -> userId
     this.typingUsers = new Map(); // chatId -> Set of userIds
     this.chatRooms = new Map(); // chatId -> Set of socketIds
+    this.readThrottle = new Map(); // `${chatId}:${userId}` -> last timestamp
   }
 
   async canTutorSendMessage(chat, socketUser) {
@@ -70,7 +71,19 @@ class SocketManager {
     // Authentication middleware
     this.io.use(async (socket, next) => {
       try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+        const parseCookies = (header = '') => header.split(';').reduce((acc, part) => {
+          const [rawKey, ...rest] = part.trim().split('=');
+          if (!rawKey) return acc;
+          acc[rawKey] = decodeURIComponent(rest.join('=') || '');
+          return acc;
+        }, {});
+
+        const authHeader = socket.handshake.headers.authorization;
+        const headerToken = authHeader ? authHeader.split(' ')[1] : undefined;
+        const cookieHeader = socket.handshake.headers.cookie || '';
+        const cookies = parseCookies(cookieHeader);
+        const cookieToken = cookies.accessToken || cookies.refreshToken;
+        const token = socket.handshake.auth?.token || headerToken || cookieToken;
         
         if (!token) {
           logger.warn('Socket connection denied: No token provided');
@@ -144,6 +157,11 @@ class SocketManager {
 
     // Join user to their chat rooms
     await this.joinUserChats(socket, userId);
+
+    // Send initial online users snapshot to the newly connected client
+    socket.emit('online_users', {
+      users: this.getOnlineUsers()
+    });
 
     // Broadcast user online status
     socket.broadcast.emit('user_online', {
@@ -370,7 +388,13 @@ class SocketManager {
       try {
         const { chatId } = data;
         
-        logger.info(`User ${userName} marking messages as read in chat: ${chatId}`);
+        const throttleKey = `${chatId}:${userId}`;
+        const now = Date.now();
+        const lastReadAt = this.readThrottle.get(throttleKey) || 0;
+        if (now - lastReadAt < 1500) {
+          return;
+        }
+        this.readThrottle.set(throttleKey, now);
 
         // Verify user is participant
         const chat = await ChatModel.findOne({
@@ -402,14 +426,16 @@ class SocketManager {
           }
         );
 
-        logger.info(`Marked ${updateResult.modifiedCount} messages as read for user ${userName}`);
+        if (updateResult.modifiedCount > 0) {
+          logger.info(`Marked ${updateResult.modifiedCount} messages as read for user ${userName}`);
 
-        // Notify other participants about read status
-        socket.to(chatId).emit('messages_read', {
-          chatId,
-          userId: userId,
-          readAt: new Date()
-        });
+          // Notify other participants about read status
+          socket.to(chatId).emit('messages_read', {
+            chatId,
+            userId: userId,
+            readAt: new Date()
+          });
+        }
 
       } catch (error) {
         logger.error('Mark messages read error:', error);

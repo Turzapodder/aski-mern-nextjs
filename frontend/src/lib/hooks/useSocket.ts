@@ -15,13 +15,16 @@ interface UseSocketReturn {
 
 interface SocketEvents {
   onMessageReceived?: (message: any) => void;
+  onMessageEdited?: (data: any) => void;
+  onMessageDeleted?: (data: { chatId: string; messageId: string }) => void;
   onTypingStart?: (data: { chatId: string; userId: string; userName: string }) => void;
   onTypingStop?: (data: { chatId: string; userId: string }) => void;
   onUserJoined?: (data: { chatId: string; user: any }) => void;
   onUserLeft?: (data: { chatId: string; user: any }) => void;
-  onMessageRead?: (data: { chatId: string; messageId: string; userId: string }) => void;
-  onUserOnline?: (data: { userId: string; status: string }) => void;
-  onUserOffline?: (data: { userId: string }) => void;
+  onMessageRead?: (data: { chatId: string; messageId?: string; userId: string; readAt?: string }) => void;
+  onUserOnline?: (data: { userId: string; status: string; userData?: any }) => void;
+  onUserOffline?: (data: { userId: string; userData?: any }) => void;
+  onOnlineUsers?: (data: { users: any[] }) => void;
   onNotification?: (data: any) => void;
   onChatUpdated?: (data: any) => void;
   onConnect?: () => void;
@@ -39,19 +42,21 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
 
   useEffect(() => {
     // Get JWT token from cookies - use accessToken first, then refreshToken as fallback
-    const accessToken = Cookies.get('accessToken') || Cookies.get('refreshToken');
-    
-    if (!accessToken) {
-      console.warn('No access token found for socket connection');
-      return;
-    }
+    // Note: httpOnly cookies are not readable from JS, so this may be undefined.
+    const getAuthToken = () => Cookies.get('accessToken') || Cookies.get('refreshToken');
+    const accessToken = getAuthToken();
+
+    const socketBaseUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.REACT_APP_API_URL ||
+      'http://localhost:8000';
 
     // Initialize socket connection
-    const socket = io('http://localhost:8000', {
-      auth: {
-        token: accessToken
-      },
+    const socket = io(socketBaseUrl, {
+      auth: accessToken ? { token: accessToken } : {},
       transports: ['websocket', 'polling'],
+      withCredentials: true,
       forceNew: true,
       reconnection: true,
       reconnectionDelay: 1000,
@@ -84,6 +89,13 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
       setIsConnected(true);
     });
 
+    socket.on('reconnect_attempt', () => {
+      const latestToken = getAuthToken();
+      if (latestToken) {
+        socket.auth = { token: latestToken };
+      }
+    });
+
     socket.on('reconnect_failed', () => {
       console.error('Failed to reconnect to chat server');
       setIsConnected(false);
@@ -93,6 +105,16 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     socket.on('new_message', (data) => {
       console.log('Message received via socket:', data);
       eventsRef.current.onMessageReceived?.(data);
+    });
+
+    socket.on('message_edited', (data) => {
+      console.log('Message edited via socket:', data);
+      eventsRef.current.onMessageEdited?.(data);
+    });
+
+    socket.on('message_deleted', (data) => {
+      console.log('Message deleted via socket:', data);
+      eventsRef.current.onMessageDeleted?.(data);
     });
 
     socket.on('user_typing', (data) => {
@@ -128,6 +150,11 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     socket.on('user_offline', (data) => {
       console.log('User went offline:', data);
       eventsRef.current.onUserOffline?.(data);
+    });
+
+    socket.on('online_users', (data) => {
+      console.log('Online users snapshot received:', data);
+      eventsRef.current.onOnlineUsers?.(data);
     });
 
     socket.on('notification', (data) => {

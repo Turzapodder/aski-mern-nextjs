@@ -100,7 +100,6 @@ interface GetMessagesRequest {
 
 interface MarkAsReadRequest {
   chatId: string;
-  messageId: string;
 }
 
 const chatApiBaseUrl =
@@ -187,26 +186,25 @@ export const chatApi = createApi({
 
     // Mark message as read
     markMessageAsRead: builder.mutation<ChatResponse, MarkAsReadRequest>({
-      query: ({ chatId, messageId }) => ({
-        url: `${chatId}/messages/${messageId}/read`,
+      query: ({ chatId }) => ({
+        url: `${chatId}/messages/read`,
         method: 'POST'
-      }),
-      invalidatesTags: ['Message']
+      })
     }),
 
     // Delete a message
-    deleteMessage: builder.mutation<ChatResponse, { chatId: string; messageId: string }>({
-      query: ({ chatId, messageId }) => ({
-        url: `${chatId}/messages/${messageId}`,
+    deleteMessage: builder.mutation<ChatResponse, { messageId: string }>({
+      query: ({ messageId }) => ({
+        url: `messages/${messageId}`,
         method: 'DELETE'
       }),
       invalidatesTags: ['Message', 'Chat']
     }),
 
     // Edit a message
-    editMessage: builder.mutation<ChatResponse, { chatId: string; messageId: string; content: string }>({
-      query: ({ chatId, messageId, content }) => ({
-        url: `${chatId}/messages/${messageId}`,
+    editMessage: builder.mutation<ChatResponse, { messageId: string; content: string }>({
+      query: ({ messageId, content }) => ({
+        url: `messages/${messageId}`,
         method: 'PUT',
         body: { content },
         headers: {

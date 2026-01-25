@@ -128,7 +128,9 @@ const startServer = async () => {
         return (
           req.path === "/health" ||
           req.path === "/" ||
-          req.path.includes("/socket.io/")
+          req.path.includes("/socket.io/") ||
+          (process.env.NODE_ENV !== "production" &&
+            req.path.includes("/messages/read"))
         );
       },
       handler: (req, res) => {
@@ -229,7 +231,12 @@ const startServer = async () => {
         },
         skip: (req, res) => {
           // Skip logging for health checks and socket.io polling to reduce noise
-          return req.path === "/health" || req.path.includes("/socket.io/");
+          return (
+            req.path === "/health" ||
+            req.path.includes("/socket.io/") ||
+            (process.env.NODE_ENV !== "production" &&
+              req.path.includes("/messages/read"))
+          );
         },
       })
     );
