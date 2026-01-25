@@ -52,6 +52,19 @@ export const upload = multer({
 });
 
 const CHAT_TUTOR_MESSAGE_GATE = process.env.CHAT_TUTOR_MESSAGE_GATE || 'user_first';
+const READ_THROTTLE_MS = Number(process.env.CHAT_READ_THROTTLE_MS || 1500);
+const readThrottleCache = new Map();
+
+const shouldThrottleRead = (chatId, userId) => {
+  const key = `${chatId}:${userId}`;
+  const now = Date.now();
+  const last = readThrottleCache.get(key) || 0;
+  if (now - last < READ_THROTTLE_MS) {
+    return true;
+  }
+  readThrottleCache.set(key, now);
+  return false;
+};
 
 const canTutorSendMessage = async ({ chat, user }) => {
   const userRoles = Array.isArray(user.roles) ? user.roles : [];
@@ -315,24 +328,31 @@ class MessageController {
         });
       }
 
+      const pageNumber = Number(page) || 1;
+      const limitNumber = Number(limit) || 50;
+
+      const totalMessages = await MessageModel.countDocuments({
+        chat: chatId,
+        isDeleted: { $ne: true }
+      });
+
+      const skipCount = Math.max(totalMessages - pageNumber * limitNumber, 0);
+
       const messages = await MessageModel.find({
         chat: chatId,
         isDeleted: { $ne: true }
       })
-      .populate('sender', 'name email avatar')
-      .populate({
-        path: 'replyTo',
-        populate: {
-          path: 'sender',
-          select: 'name email avatar'
-        }
-      })
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-      // Reverse to get chronological order
-      messages.reverse();
+        .populate('sender', 'name email avatar')
+        .populate({
+          path: 'replyTo',
+          populate: {
+            path: 'sender',
+            select: 'name email avatar'
+          }
+        })
+        .sort({ createdAt: 1 })
+        .limit(limitNumber)
+        .skip(skipCount);
 
       console.log('✅ Messages fetched successfully:', {
         chatId,
@@ -343,8 +363,9 @@ class MessageController {
         status: 'success',
         data: {
           messages,
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(messages.length / limit)
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalMessages / limitNumber),
+          totalMessages
         }
       });
     } catch (error) {
@@ -363,11 +384,6 @@ class MessageController {
       const userId = req.user._id;
       const socketManager = req.app.get('socketManager');
 
-      console.log('📖 Marking messages as read:', {
-        chatId,
-        userId: userId.toString()
-      });
-
       // Verify user is participant of the chat
       const chat = await ChatModel.findOne({
         _id: chatId,
@@ -378,6 +394,15 @@ class MessageController {
         return res.status(403).json({
           status: 'failed',
           message: 'Chat not found or access denied'
+        });
+      }
+
+      if (shouldThrottleRead(chatId, userId.toString())) {
+        return res.status(200).json({
+          status: 'success',
+          message: 'Messages already marked as read',
+          markedCount: 0,
+          throttled: true
         });
       }
 
@@ -399,14 +424,16 @@ class MessageController {
         }
       );
 
-      console.log(`✅ Marked ${updateResult.modifiedCount} messages as read`);
+      if (updateResult.modifiedCount > 0) {
+        console.log(`✅ Marked ${updateResult.modifiedCount} messages as read`);
 
-      // Notify via Socket.IO
-      if (socketManager) {
-        socketManager.sendToChat(chatId, 'messages_read', {
-          chatId,
-          userId: userId.toString()
-        });
+        // Notify via Socket.IO
+        if (socketManager) {
+          socketManager.sendToChat(chatId, 'messages_read', {
+            chatId,
+            userId: userId.toString()
+          });
+        }
       }
 
       res.status(200).json({

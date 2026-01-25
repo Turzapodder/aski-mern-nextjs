@@ -166,40 +166,64 @@ class ChatController {
 
       console.log('Fetching chats for user:', userId.toString());
 
-      const chats = await ChatModel.find({
-        'participants.user': userId,
-        isActive: true
-      })
-      .populate('participants.user', 'name email avatar roles')
-      .populate('createdBy', 'name email avatar')
-      .populate('assignment', 'title deadline estimatedCost budget student')
-      .populate({
-        path: 'lastMessage',
-        populate: {
-          path: 'sender',
-          select: 'name email avatar'
-        }
-      })
-      .sort({ lastActivity: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      const pageNumber = Number(page) || 1;
+      const limitNumber = Number(limit) || 20;
 
-      // Calculate unread count for each chat
-      const chatsWithUnread = await Promise.all(
-        chats.map(async (chat) => {
-          const unreadCount = await MessageModel.countDocuments({
-            chat: chat._id,
-            'readBy.user': { $ne: userId },
-            sender: { $ne: userId },
-            isDeleted: { $ne: true }
-          });
-
-          return {
-            ...chat.toObject(),
-            unreadCount
-          };
+      const [totalChats, chats] = await Promise.all([
+        ChatModel.countDocuments({
+          'participants.user': userId,
+          isActive: true
+        }),
+        ChatModel.find({
+          'participants.user': userId,
+          isActive: true
         })
-      );
+          .populate('participants.user', 'name email avatar roles')
+          .populate('createdBy', 'name email avatar')
+          .populate('assignment', 'title deadline estimatedCost budget student')
+          .populate({
+            path: 'lastMessage',
+            populate: {
+              path: 'sender',
+              select: 'name email avatar'
+            }
+          })
+          .sort({ lastActivity: -1 })
+          .limit(limitNumber)
+          .skip((pageNumber - 1) * limitNumber)
+      ]);
+
+      const chatIds = chats.map(chat => chat._id);
+      let unreadCountsByChat = {};
+
+      if (chatIds.length > 0) {
+        const unreadCounts = await MessageModel.aggregate([
+          {
+            $match: {
+              chat: { $in: chatIds },
+              'readBy.user': { $ne: userId },
+              sender: { $ne: userId },
+              isDeleted: { $ne: true }
+            }
+          },
+          {
+            $group: {
+              _id: '$chat',
+              count: { $sum: 1 }
+            }
+          }
+        ]);
+
+        unreadCountsByChat = unreadCounts.reduce((acc, item) => {
+          acc[item._id.toString()] = item.count;
+          return acc;
+        }, {});
+      }
+
+      const chatsWithUnread = chats.map(chat => ({
+        ...chat.toObject(),
+        unreadCount: unreadCountsByChat[chat._id.toString()] || 0
+      }));
 
       console.log(`Found ${chatsWithUnread.length} chats for user`);
 
@@ -207,8 +231,9 @@ class ChatController {
         status: 'success',
         data: {
           chats: chatsWithUnread,
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(chatsWithUnread.length / limit)
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalChats / limitNumber),
+          totalChats
         }
       });
     } catch (error) {

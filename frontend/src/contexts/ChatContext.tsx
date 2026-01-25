@@ -33,7 +33,7 @@ interface ChatContextType {
   selectChat: (chat: Chat) => void;
   sendMessage: (content: string, replyTo?: string) => void;
   sendFile: (file: File, replyTo?: string) => void;
-  markMessageAsRead: (messageId: string) => void;
+  markMessageAsRead: (messageId?: string) => void;
   startTyping: () => void;
   stopTyping: () => void;
   refreshChats: () => void;
@@ -88,12 +88,49 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [sendFileMutation] = useSendFileMessageMutation();
   const [markAsReadMutation] = useMarkMessageAsReadMutation();
 
+  const connectionRef = useRef<boolean | null>(null);
+  const joinedChatsRef = useRef<Set<string>>(new Set());
+  const markReadInFlightRef = useRef<Record<string, boolean>>({});
+  const lastReadTimeRef = useRef<Record<string, number>>({});
+  const markChatReadRef = useRef<(chatId: string) => void>(() => {});
+
+  const normalizeId = useCallback((value: any) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value._id) {
+      return typeof value._id === 'string' ? value._id : value._id.toString?.() || '';
+    }
+    return value.toString?.() || '';
+  }, []);
+
+  const applyLocalRead = useCallback((chatId: string) => {
+    if (!currentUserId) {
+      return;
+    }
+
+    setMessages(prev => prev.map(msg => {
+      const senderId = normalizeId(msg.sender);
+      const existingReadBy = msg.readBy || [];
+      const alreadyRead = existingReadBy.some(entry => normalizeId(entry.user) === currentUserId);
+
+      if (senderId === currentUserId || alreadyRead) return msg;
+
+      return {
+        ...msg,
+        readBy: [...existingReadBy, { user: currentUserId as string, readAt: new Date() }]
+      };
+    }));
+
+    setChats(prev => prev.map(chat =>
+      chat._id === chatId ? { ...chat, unreadCount: 0 } : chat
+    ));
+  }, [currentUserId, normalizeId]);
+
   // Socket connection with event handlers
   const { 
     isConnected, 
     sendMessage: socketSendMessage,
     joinChat,
-    leaveChat,
     startTyping: socketStartTyping,
     stopTyping: socketStopTyping,
     markAsRead: socketMarkAsRead
@@ -102,34 +139,106 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       console.log('Received new message:', data);
       const message = data.message || data;
       const messageChatId =
-        typeof message.chat === "object" && message.chat
-          ? message.chat._id
-          : message.chat;
-      
+        normalizeId(message?.chat);
+
+      if (!messageChatId) {
+        return;
+      }
+
+      const senderId =
+        normalizeId(message?.sender);
+      const isOwnMessage = Boolean(currentUserId && senderId === currentUserId);
+      const isSelectedChat = Boolean(selectedChat && messageChatId === selectedChat._id);
+
       // Only add message if it's for the currently selected chat
-      if (selectedChat && messageChatId === selectedChat._id) {
+      if (isSelectedChat) {
         setMessages(prev => {
-          // Check if message already exists to avoid duplicates
-          const exists = prev.find(m => m._id === message._id);
+          const incomingId = normalizeId(message?._id);
+          const exists = incomingId
+            ? prev.find(m => normalizeId(m._id) === incomingId)
+            : prev.find(m => m._id === message._id);
           if (exists) return prev;
-          
           return [...prev, message];
         });
+
+        if (!isOwnMessage) {
+          markChatReadRef.current(messageChatId);
+        }
       }
-      
-      // Update last message in chats list regardless of selected chat
-      setChats(prev => prev.map(chat => 
-        chat._id === messageChatId 
-          ? { 
-              ...chat, 
-              lastMessage: {
-                content: message.content || (message.type === 'offer' ? 'Custom offer' : 'File'),
-                sender: message.sender,
-                createdAt: message.createdAt
-              }
-            }
-          : chat
-      ));
+
+      // Update last message + unread counts + ordering
+      setChats(prev => {
+        const chatIndex = prev.findIndex(chat => chat._id === messageChatId);
+        if (chatIndex === -1) {
+          refetchChats();
+          return prev;
+        }
+
+        const existingChat = prev[chatIndex];
+        const currentUnread = existingChat.unreadCount || 0;
+        const nextUnread = isOwnMessage
+          ? currentUnread
+          : isSelectedChat
+            ? 0
+            : currentUnread + 1;
+
+        const previewContent =
+          message.content?.trim()
+            ? message.content
+            : message.type === 'offer'
+              ? 'Custom offer'
+              : message.attachments && message.attachments.length > 0
+                ? 'Attachment'
+                : 'File';
+
+        const updatedChat = {
+          ...existingChat,
+          lastMessage: {
+            content: previewContent,
+            sender: message.sender,
+            createdAt: message.createdAt,
+            type: message.type,
+            attachments: message.attachments
+          },
+          unreadCount: nextUnread
+        };
+
+        const nextChats = [...prev];
+        nextChats.splice(chatIndex, 1);
+        nextChats.unshift(updatedChat);
+        return nextChats;
+      });
+    },
+
+    onMessageEdited: (data: any) => {
+      console.log('Message edited:', data);
+      const editedMessage = data?.message || data;
+      const editedChatId =
+        data?.chatId || normalizeId(editedMessage?.chat);
+
+      if (selectedChat && editedChatId === selectedChat._id && editedMessage?._id) {
+        setMessages(prev => prev.map(msg => (
+          msg._id === editedMessage._id ? { ...msg, ...editedMessage } : msg
+        )));
+      }
+
+      if (editedChatId) {
+        refetchChats();
+      }
+    },
+
+    onMessageDeleted: (data: any) => {
+      console.log('Message deleted:', data);
+      const messageId = data?.messageId ? normalizeId(data.messageId) : '';
+      const deletedChatId = data?.chatId ? normalizeId(data.chatId) : '';
+
+      if (selectedChat && deletedChatId === selectedChat._id && messageId) {
+        setMessages(prev => prev.filter(msg => normalizeId(msg._id) !== messageId));
+      }
+
+      if (deletedChatId) {
+        refetchChats();
+      }
     },
     
     onTypingStart: ({ chatId, userId, userName }) => {
@@ -160,15 +269,28 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       }));
     },
     
-    onUserOnline: ({ userId, status }) => {
+    onUserOnline: ({ userId, status, userData }) => {
       console.log('User online status:', { userId, status });
       
       if (status === 'online') {
         setOnlineUsers(prev => {
-          const userExists = prev.find(u => u._id === userId);
-          if (userExists) return prev;
-          
-          return [...prev, { _id: userId, name: '', email: '', isActive: true }];
+          const userIndex = prev.findIndex(u => u._id === userId);
+          if (userIndex !== -1) {
+            const next = [...prev];
+            next[userIndex] = { ...next[userIndex], ...(userData || {}), isActive: true };
+            return next;
+          }
+
+          return [
+            ...prev,
+            {
+              _id: userId,
+              name: userData?.name || '',
+              email: userData?.email || '',
+              avatar: userData?.avatar,
+              isActive: true
+            }
+          ];
         });
       }
     },
@@ -177,27 +299,49 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       console.log('User went offline:', { userId });
       setOnlineUsers(prev => prev.filter(u => u._id !== userId));
     },
+
+    onOnlineUsers: ({ users }) => {
+      if (Array.isArray(users)) {
+        setOnlineUsers(users.map((user: any) => ({ ...user, isActive: true })));
+      }
+    },
     
     onMessageRead: ({ chatId, messageId, userId }) => {
       console.log('Message read:', { chatId, messageId, userId });
-      
-      if (selectedChat && chatId === selectedChat._id) {
-        setMessages(prev => prev.map(msg => 
-          msg._id === messageId
-            ? {
-                ...msg,
-                readBy: [...msg.readBy, { user: userId, readAt: new Date() }]
-              }
-            : msg
-        ));
+
+      if (currentUserId && userId === currentUserId) {
+        return;
+      }
+
+      const normalizedMessageId = messageId ? normalizeId(messageId) : '';
+
+      if (selectedChat && normalizeId(chatId) === selectedChat._id && userId) {
+        setMessages(prev => prev.map(msg => {
+          const senderId = normalizeId(msg.sender);
+          const readBy = msg.readBy || [];
+          const alreadyRead = readBy.some(entry => normalizeId(entry.user) === userId);
+
+          if (normalizedMessageId) {
+            if (normalizeId(msg._id) !== normalizedMessageId || alreadyRead) return msg;
+            return {
+              ...msg,
+              readBy: [...readBy, { user: userId, readAt: new Date() }]
+            };
+          }
+
+          if (senderId !== currentUserId || alreadyRead) return msg;
+
+          return {
+            ...msg,
+            readBy: [...readBy, { user: userId, readAt: new Date() }]
+          };
+        }));
       }
     },
     onChatUpdated: () => {
       refetchChats();
     }
   });
-
-  const connectionRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (connectionRef.current === null) {
@@ -227,6 +371,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           : []
       }));
       setChats(normalized);
+      setSelectedChat((prev) => {
+        if (!prev) return prev;
+        const updated = normalized.find((chat: any) => chat._id === prev._id);
+        return updated || prev;
+      });
     }
   }, [chatsData]);
 
@@ -243,52 +392,90 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [selectedChat, refetchMessages]);
 
-  // Join/leave chat rooms when selected chat changes
+  // Join chat rooms for all available conversations
   useEffect(() => {
-    if (selectedChat && isConnected) {
-      console.log('Joining chat room:', selectedChat._id);
-      joinChat(selectedChat._id);
-      
-      return () => {
-        console.log('Leaving chat room:', selectedChat._id);
-        leaveChat(selectedChat._id);
-      };
+    if (!isConnected) {
+      joinedChatsRef.current.clear();
+      return;
     }
-  }, [selectedChat, isConnected, joinChat, leaveChat]);
 
-  // Mark messages as read when chat is selected
-  useEffect(() => {
-    if (selectedChat && messages.length > 0 && currentUserId) {
-      const unreadMessages = messages.filter(msg => {
-        const senderId = typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
-        return senderId !== currentUserId && !msg.readBy.some(r => r.user === currentUserId);
-      });
-      
-      if (unreadMessages.length > 0) {
-        socketMarkAsRead(selectedChat._id);
+    chats.forEach((chat) => {
+      if (!joinedChatsRef.current.has(chat._id)) {
+        joinChat(chat._id);
+        joinedChatsRef.current.add(chat._id);
       }
+    });
+  }, [chats, isConnected, joinChat]);
+
+  const markChatReadOnce = useCallback((chatId: string) => {
+    if (!chatId || !currentUserId) {
+      return;
     }
-  }, [selectedChat, messages, currentUserId, socketMarkAsRead]);
+
+    if (markReadInFlightRef.current[chatId]) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - (lastReadTimeRef.current[chatId] || 0) < 1500) {
+      return;
+    }
+
+    markReadInFlightRef.current[chatId] = true;
+    lastReadTimeRef.current[chatId] = now;
+
+    applyLocalRead(chatId);
+
+    const finalize = () => {
+      markReadInFlightRef.current[chatId] = false;
+    };
+
+    if (isConnected) {
+      socketMarkAsRead(chatId);
+      finalize();
+      return;
+    }
+
+    markAsReadMutation({ chatId })
+      .unwrap()
+      .then(() => finalize())
+      .catch((error: any) => {
+        console.error('Failed to mark messages as read:', error);
+        markReadInFlightRef.current[chatId] = false;
+      });
+  }, [applyLocalRead, currentUserId, isConnected, markAsReadMutation, socketMarkAsRead]);
+
+  useEffect(() => {
+    markChatReadRef.current = markChatReadOnce;
+  }, [markChatReadOnce]);
 
   // Action handlers
   const selectChat = useCallback((chat: Chat) => {
     console.log('Selecting chat:', chat._id);
-    
-    if (selectedChat && selectedChat._id !== chat._id) {
-      leaveChat(selectedChat._id);
+
+    if (selectedChat?._id === chat._id) {
+      return;
     }
-    
+
+    const previousChatId = selectedChat?._id;
+
     setSelectedChat(chat);
     setMessages([]); // Clear messages when switching chats
-    
+
+    setChats(prev => prev.map(existing =>
+      existing._id === chat._id ? { ...existing, unreadCount: 0 } : existing
+    ));
+
     // Clear typing users for previous chat
-    if (selectedChat) {
+    if (previousChatId) {
       setTypingUsers(prev => ({
         ...prev,
-        [selectedChat._id]: []
+        [previousChatId]: []
       }));
     }
-  }, [selectedChat, leaveChat]);
+
+    markChatReadRef.current(chat._id);
+  }, [selectedChat]);
 
   const sendMessage = useCallback(async (content: string, replyTo?: string) => {
     if (!selectedChat || !content.trim()) {
@@ -301,11 +488,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       const shouldUseSocket = isConnected;
       if (shouldUseSocket) {
-        // Send via Socket.IO for real-time delivery
         socketSendMessage(selectedChat._id, content, replyTo);
+        return;
       }
-      
-      // Also send via REST API for persistence (as backup)
+
       const result = await sendMessageMutation({
         chatId: selectedChat._id,
         content,
@@ -314,10 +500,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       console.log('Message sent successfully:', result);
 
-      if (!shouldUseSocket && result?.data) {
+      if (result?.data) {
         const newMessage = result.data;
         setMessages(prev => {
-          const exists = prev.find(m => m._id === newMessage._id);
+          const incomingId = normalizeId(newMessage?._id);
+          const exists = incomingId
+            ? prev.find(m => normalizeId(m._id) === incomingId)
+            : prev.find(m => m._id === newMessage._id);
           if (exists) return prev;
           return [...prev, newMessage];
         });
@@ -370,27 +559,19 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [selectedChat, sendFileMutation, refetchMessages]);
 
-  const markMessageAsRead = useCallback(async (messageId: string) => {
+  const markMessageAsRead = useCallback(async () => {
     if (!selectedChat) {
       console.warn('Cannot mark message as read: no chat selected');
       return;
     }
 
     try {
-      // Mark as read via Socket.IO
-      socketMarkAsRead(selectedChat._id);
-      
-      // Also mark via REST API
-      await markAsReadMutation({
-        chatId: selectedChat._id,
-        messageId
-      }).unwrap();
-      
-      console.log('Message marked as read:', messageId);
+      markChatReadOnce(selectedChat._id);
+      console.log('Messages marked as read for chat:', selectedChat._id);
     } catch (error) {
       console.error('Failed to mark message as read:', error);
     }
-  }, [selectedChat, socketMarkAsRead, markAsReadMutation]);
+  }, [selectedChat, markChatReadOnce]);
 
   const startTyping = useCallback(() => {
     if (selectedChat && isConnected) {
@@ -415,12 +596,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [refetchMessages]);
 
   const clearSelectedChat = useCallback(() => {
-    if (selectedChat) {
-      leaveChat(selectedChat._id);
-    }
     setSelectedChat(null);
     setMessages([]);
-  }, [leaveChat, selectedChat]);
+  }, []);
 
   const contextValue: ChatContextType = {
     // State

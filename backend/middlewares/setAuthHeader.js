@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import refreshAccessToken from "../utils/refreshAccessTooken.js";
 import setTokensCookies from "../utils/setTokensCookies.js";
 
+const INVALID_REFRESH_TTL_MS = Number(process.env.INVALID_REFRESH_TTL_MS || 5 * 60 * 1000);
+const invalidRefreshCache = new Map();
+
 const isTokenExpired = (token) => {
     if (!token) {
         return true;
@@ -23,8 +26,6 @@ const isTokenExpired = (token) => {
 const AccessTokenAutoRefresh = async (req, res, next) => {
     try {
         const accessToken = req.cookies.accessToken;
-
-        console.log('accessToken', accessToken);
         
         // FIXED: Check if access token exists AND is not expired
         if (accessToken && !isTokenExpired(accessToken)) {
@@ -39,6 +40,11 @@ const AccessTokenAutoRefresh = async (req, res, next) => {
             // If Refresh token is also missing, throwing an error
             if (!refreshToken) {
                 throw new Error('Refresh token is missing');
+            }
+
+            const cachedInvalid = invalidRefreshCache.get(refreshToken);
+            if (cachedInvalid && Date.now() - cachedInvalid < INVALID_REFRESH_TTL_MS) {
+                throw new Error('Invalid refresh token');
             }
 
             // Check if refresh token is expired
@@ -63,9 +69,17 @@ const AccessTokenAutoRefresh = async (req, res, next) => {
         // Check if response has already been sent
         if (!res.headersSent) {
             // Clear cookies on error
-            // res.clearCookie('accessToken');
-            // res.clearCookie('refreshToken');
-            // res.clearCookie('is_auth');
+            res.clearCookie('accessToken');
+            res.clearCookie('refreshToken');
+            res.clearCookie('is_auth');
+
+            const refreshToken = req.cookies.refreshToken;
+            if (refreshToken && error.message) {
+                const message = error.message.toLowerCase();
+                if (message.includes('refresh') || message.includes('unauthorized') || message.includes('invalid')) {
+                    invalidRefreshCache.set(refreshToken, Date.now());
+                }
+            }
 
             res.status(401).json({
                 status: 'failed',
