@@ -233,7 +233,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const deletedChatId = data?.chatId ? normalizeId(data.chatId) : '';
 
       if (selectedChat && deletedChatId === selectedChat._id && messageId) {
-        setMessages(prev => prev.filter(msg => normalizeId(msg._id) !== messageId));
+        setMessages(prev => prev.map(msg => (
+          normalizeId(msg._id) === messageId
+            ? { ...msg, isDeleted: true, content: '', attachments: [] }
+            : msg
+        )));
       }
 
       if (deletedChatId) {
@@ -527,7 +531,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Failed to send message:', error);
     }
-  }, [selectedChat, socketSendMessage, sendMessageMutation, isConnected]);
+  }, [selectedChat, socketSendMessage, sendMessageMutation, isConnected, normalizeId]);
 
   const sendFile = useCallback(async (file: File, replyTo?: string) => {
     if (!selectedChat) {

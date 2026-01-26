@@ -23,13 +23,13 @@ const TutorDashboard = ({ user }: { user: any }) => {
   // or pass params if the API supports it. We'll try passing status.
 
   const { data: ongoingData, isLoading: ongoingLoading } = useGetAssignmentsQuery({
-    status: "assigned,submitted",
+    status: "proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue",
     sortBy: "updatedAt",
     sortOrder: "desc",
     limit: 20,
   });
   const { data: availableData, isLoading: availableLoading } = useGetAssignmentsQuery({
-    status: "pending",
+    status: "pending,created,proposal_received",
     sortBy: "createdAt",
     sortOrder: "desc",
     limit: 20,
@@ -87,14 +87,21 @@ const TutorDashboard = ({ user }: { user: any }) => {
 
   const getProgressPercent = (status: Assignment["status"]) => {
     switch (status) {
+      case "proposal_accepted":
+        return 20;
+      case "in_progress":
       case "assigned":
-        return 30;
+        return 40;
+      case "submission_pending":
+        return 55;
+      case "revision_requested":
+        return 50;
       case "submitted":
-        return 70;
+        return 80;
       case "completed":
         return 100;
       case "overdue":
-        return 60;
+        return 65;
       default:
         return 10;
     }

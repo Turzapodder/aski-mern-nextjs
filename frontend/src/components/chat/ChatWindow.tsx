@@ -1,18 +1,35 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
-import { ArrowLeft, BadgeDollarSign, Check, MoreVertical, Paperclip, Phone, Search, Send, X } from 'lucide-react';
+import { ArrowLeft, BadgeDollarSign, Check, ChevronDown, MoreVertical, Paperclip, Phone, Search, Send, X, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { useChatContext } from '@/contexts/ChatContext';
 import { useGetUserQuery } from '@/lib/services/auth';
+import { useDeleteMessageMutation, useEditMessageMutation, useLeaveChatMutation } from '@/lib/services/chat';
 import {
   useAcceptOfferMutation,
   useCreateOfferMutation,
   useDeclineOfferMutation,
   useGetActiveOfferQuery
 } from '@/lib/services/customOffers';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +48,7 @@ const ChatWindow = () => {
     typingUsers,
     startTyping,
     stopTyping,
+    refreshChats,
     refreshMessages,
     clearSelectedChat,
     isConnected,
@@ -49,6 +67,10 @@ const ChatWindow = () => {
   const [offerNote, setOfferNote] = useState('');
   const [offerError, setOfferError] = useState('');
   const [offerActionId, setOfferActionId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [messageToDelete, setMessageToDelete] = useState<any | null>(null);
+  const [chatDeleteOpen, setChatDeleteOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +86,20 @@ const ChatWindow = () => {
   const [createOffer, { isLoading: isSendingOffer }] = useCreateOfferMutation();
   const [acceptOffer] = useAcceptOfferMutation();
   const [declineOffer] = useDeclineOfferMutation();
+  const [editMessage] = useEditMessageMutation();
+  const [deleteMessage] = useDeleteMessageMutation();
+  const [leaveChat, { isLoading: leavingChat }] = useLeaveChatMutation();
+
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    'http://localhost:8000';
+
+  const resolveFileUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${apiBaseUrl}${url}`;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -207,6 +243,62 @@ const ChatWindow = () => {
     }
   };
 
+  const handleEditMessage = (msg: any) => {
+    setEditingMessageId(msg._id);
+    setEditingContent(msg.content || '');
+  };
+
+  const cancelEditMessage = () => {
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
+
+  const saveEditedMessage = async () => {
+    if (!editingMessageId) return;
+    const content = editingContent.trim();
+    if (!content) {
+      toast.error('Message cannot be empty');
+      return;
+    }
+    try {
+      await editMessage({ messageId: editingMessageId, content }).unwrap();
+      toast.success('Message updated');
+      cancelEditMessage();
+      refreshMessages();
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Unable to edit message');
+    }
+  };
+
+  const confirmDeleteMessage = (msg: any) => {
+    setMessageToDelete(msg);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete?._id) return;
+    try {
+      await deleteMessage({ messageId: messageToDelete._id }).unwrap();
+      toast.success('Message deleted');
+      setMessageToDelete(null);
+      refreshMessages();
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Unable to delete message');
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!selectedChat?._id) return;
+    try {
+      await leaveChat(selectedChat._id).unwrap();
+      toast.success('Chat removed');
+      clearSelectedChat();
+      refreshChats();
+      setChatDeleteOpen(false);
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Unable to delete chat');
+    }
+  };
+
   const handleOfferDecision = async (offerId: string, action: 'accept' | 'decline') => {
     try {
       setOfferActionId(offerId);
@@ -267,7 +359,18 @@ const ChatWindow = () => {
           )}
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Search size={18} /></button>
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Phone size={18} /></button>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><MoreVertical size={18} /></button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <MoreVertical size={18} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => setChatDeleteOpen(true)} className="text-rose-600">
+                Delete chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -338,6 +441,9 @@ const ChatWindow = () => {
           const showAvatar = !isMe && (index === 0 || prevSenderId !== senderId);
           const isRead = isMe && msg.readBy?.some((entry) => entry.user !== currentUserId);
           const offerId = msg.meta?.offerId;
+          const canEdit = isMe && msg.type === 'text' && !msg.isDeleted;
+          const canDelete = isMe && !msg.isDeleted;
+          const isEditing = editingMessageId === msg._id;
 
           return (
             <div key={msg._id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
@@ -410,28 +516,102 @@ const ChatWindow = () => {
                     )}
                   </div>
                 ) : (
-                  <div className={`p-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap ${isMe
-                    ? 'bg-[#2563EB] text-white rounded-tr-none shadow-sm'
-                    : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
-                    }`}>
-                    {msg.content}
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {msg.attachments.map((file, idx) => (
-                          <a
-                            key={`${msg._id}-${idx}`}
-                            href={file.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`block rounded-lg border px-3 py-2 text-xs ${
-                              isMe
-                                ? 'border-white/10 bg-white/20 text-white/90'
-                                : 'border-gray-200 bg-white text-gray-600'
-                            }`}
-                          >
-                            {file.originalName}
-                          </a>
-                        ))}
+                  <div className="relative group w-full">
+                    <div
+                      className={`p-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap ${
+                        isMe
+                          ? 'bg-[#2563EB] text-white rounded-tr-none shadow-sm'
+                          : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
+                      }`}
+                    >
+                      {msg.isDeleted ? (
+                        <span className={isMe ? 'text-white/70 italic' : 'text-gray-400 italic'}>
+                          This message was deleted
+                        </span>
+                      ) : isEditing ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs text-gray-400">
+                            <span>Editing message</span>
+                            <span>{editingContent.length}/{MAX_MESSAGE_LENGTH}</span>
+                          </div>
+                          <Textarea
+                            value={editingContent}
+                            onChange={(event) => setEditingContent(event.target.value)}
+                            rows={3}
+                            className="text-gray-900 bg-white"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditMessage}
+                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                            >
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={saveEditedMessage}>
+                              Save changes
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {msg.content}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {msg.attachments.map((file, idx) => (
+                                <a
+                                  key={`${msg._id}-${idx}`}
+                                  href={resolveFileUrl(file.url)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`block rounded-lg border px-3 py-2 text-xs ${
+                                    isMe
+                                      ? 'border-white/10 bg-white/20 text-white/90'
+                                      : 'border-gray-200 bg-white text-gray-600'
+                                  }`}
+                                >
+                                  {file.originalName}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {(canEdit || canDelete) && !isEditing && !msg.isDeleted && (
+                      <div
+                        className={`absolute top-2 ${isMe ? 'right-2' : 'left-2'} opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}
+                      >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className={`flex h-6 w-6 items-center justify-center rounded-full border shadow-sm ${
+                                isMe
+                                  ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
+                                  : 'border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                              }`}
+                              aria-label="Message actions"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-44">
+                            {canEdit && (
+                              <DropdownMenuItem onClick={() => handleEditMessage(msg)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit message
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete && (
+                              <DropdownMenuItem className="text-rose-600" onClick={() => confirmDeleteMessage(msg)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete message
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     )}
                   </div>
@@ -441,6 +621,9 @@ const ChatWindow = () => {
                   <span className="text-[11px] text-gray-400">
                     {format(new Date(msg.createdAt), 'hh:mm a')}
                   </span>
+                  {!msg.isDeleted && msg.editedAt && (
+                    <span className="text-[10px] text-gray-400">Edited</span>
+                  )}
                   {isMe && (
                     <span className="text-[10px] text-gray-400">{isRead ? 'Read' : 'Sent'}</span>
                   )}
@@ -564,6 +747,57 @@ const ChatWindow = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(messageToDelete)} onOpenChange={(open) => !open && setMessageToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the message for both participants.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => setMessageToDelete(null)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMessage}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={chatDeleteOpen} onOpenChange={setChatDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the conversation from your inbox.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={leavingChat}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteChat}
+              disabled={leavingChat}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {leavingChat ? 'Deleting...' : 'Delete chat'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

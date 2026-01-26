@@ -17,9 +17,9 @@ import { useRouter } from "next/navigation";
 
 const TopStats = ({ assignments }: { assignments: Assignment[] }) => {
   const completedCount = assignments.filter(a => a.status === 'completed').length;
-  const pendingCount = assignments.filter(a => ['pending', 'draft'].includes(a.status)).length;
+  const pendingCount = assignments.filter(a => ['pending', 'draft', 'created', 'proposal_received', 'proposal_accepted'].includes(a.status)).length;
   const overdueCount = assignments.filter(a => a.status === 'overdue').length;
-  const activeCount = assignments.filter(a => ['assigned', 'submitted'].includes(a.status)).length;
+  const activeCount = assignments.filter(a => ['assigned', 'in_progress', 'submission_pending', 'revision_requested', 'submitted'].includes(a.status)).length;
 
   const stats = [
     {
@@ -91,6 +91,9 @@ const TaskItem = ({ task }: { task: Assignment }) => {
         return <CheckCircle className="w-6 h-6 text-green-500" />;
       case 'pending':
       case 'draft':
+      case 'created':
+      case 'proposal_received':
+      case 'proposal_accepted':
         return <Clock className="w-6 h-6 text-orange-500" />;
       case 'overdue':
         return <AlertCircle className="w-6 h-6 text-red-500" />;
@@ -103,7 +106,11 @@ const TaskItem = ({ task }: { task: Assignment }) => {
     switch (status) {
       case 'completed': return 'bg-green-100';
       case 'pending':
-      case 'draft': return 'bg-orange-100';
+      case 'draft':
+      case 'created':
+      case 'proposal_received':
+      case 'proposal_accepted':
+        return 'bg-orange-100';
       case 'overdue': return 'bg-red-100';
       default: return 'bg-blue-100';
     }
@@ -146,7 +153,7 @@ const TaskItem = ({ task }: { task: Assignment }) => {
           <div className="col-span-1 flex items-center justify-start md:justify-end">
             <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize
               ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                task.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                ['pending', 'draft', 'created', 'proposal_received', 'proposal_accepted'].includes(task.status) ? 'bg-orange-100 text-orange-800' :
                   task.status === 'overdue' ? 'bg-red-100 text-red-800' :
                     'bg-blue-100 text-blue-800'
               }`}>
@@ -224,9 +231,9 @@ const DashboardComponent = () => {
   const { data: assignmentsData, isLoading } = useGetAssignmentsQuery({});
   const assignments = assignmentsData?.data || [];
 
-  const ongoingAssignments = assignments.filter(a => ['assigned', 'submitted', 'in_progress'].includes(a.status));
+  const ongoingAssignments = assignments.filter(a => ['assigned', 'submitted', 'in_progress', 'submission_pending', 'revision_requested'].includes(a.status));
   const completedAssignments = assignments.filter(a => a.status === 'completed');
-  const pendingAssignments = assignments.filter(a => ['pending', 'draft'].includes(a.status));
+  const pendingAssignments = assignments.filter(a => ['pending', 'draft', 'created', 'proposal_received', 'proposal_accepted'].includes(a.status));
 
 
   return (
