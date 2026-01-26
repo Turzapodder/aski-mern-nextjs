@@ -21,15 +21,26 @@ type AssignmentRow = Record<string, any>
 
 const statusTone = (status?: string) => {
   switch (status) {
+    case "created":
     case "pending":
+    case "proposal_received":
       return "bg-blue-100 text-blue-700"
+    case "proposal_accepted":
+      return "bg-indigo-100 text-indigo-700"
+    case "in_progress":
+    case "submission_pending":
     case "assigned":
-    case "submitted":
       return "bg-amber-100 text-amber-700"
+    case "revision_requested":
+      return "bg-orange-100 text-orange-700"
+    case "submitted":
+      return "bg-teal-100 text-teal-700"
     case "completed":
       return "bg-emerald-100 text-emerald-700"
+    case "overdue":
     case "disputed":
       return "bg-rose-100 text-rose-700"
+    case "resolved":
     case "cancelled":
       return "bg-gray-200 text-gray-600"
     default:
@@ -114,12 +125,20 @@ export default function AdminAssignmentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="pending">Open</SelectItem>
-                <SelectItem value="assigned">In progress</SelectItem>
+                <SelectItem value="created">Created</SelectItem>
+                <SelectItem value="proposal_received">Proposal received</SelectItem>
+                <SelectItem value="proposal_accepted">Proposal accepted</SelectItem>
+                <SelectItem value="in_progress">In progress</SelectItem>
+                <SelectItem value="submission_pending">Submission pending</SelectItem>
+                <SelectItem value="revision_requested">Revision requested</SelectItem>
+                <SelectItem value="pending">Pending (legacy)</SelectItem>
+                <SelectItem value="assigned">Assigned (legacy)</SelectItem>
                 <SelectItem value="submitted">Submitted</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="disputed">Disputed</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -246,7 +265,7 @@ export default function AdminAssignmentsPage() {
                           {assignment.title}
                         </button>
                         <p className="text-xs text-gray-500 truncate">
-                          {assignment.subject} • {assignment.student?.name || "N/A"}
+                          {assignment.subject} - {assignment.student?.name || "N/A"}
                         </p>
                       </div>
                       <DropdownMenu>
@@ -275,7 +294,7 @@ export default function AdminAssignmentsPage() {
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Budget</p>
-                        <p className="font-semibold text-gray-900">৳{assignment.budget ?? assignment.estimatedCost ?? 0}</p>
+                        <p className="font-semibold text-gray-900">${assignment.budget ?? assignment.estimatedCost ?? 0}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Status</p>

@@ -11,7 +11,22 @@ export interface Assignment {
   estimatedCost: number;
   budget?: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'draft' | 'pending' | 'assigned' | 'submitted' | 'completed' | 'cancelled' | 'overdue';
+  status:
+    | 'draft'
+    | 'created'
+    | 'proposal_received'
+    | 'proposal_accepted'
+    | 'in_progress'
+    | 'submission_pending'
+    | 'revision_requested'
+    | 'pending'
+    | 'assigned'
+    | 'submitted'
+    | 'completed'
+    | 'cancelled'
+    | 'overdue'
+    | 'disputed'
+    | 'resolved';
   createdAt: string;
   updatedAt: string;
   student: {
@@ -47,8 +62,36 @@ export interface Assignment {
       url: string;
       uploadedAt: string;
     }>;
+    submissionLinks?: Array<{
+      url: string;
+      label?: string;
+      addedAt?: string;
+    }>;
     submissionNotes?: string;
   };
+  submissionHistory?: Array<{
+    submittedAt?: string;
+    submissionFiles?: Array<{
+      filename: string;
+      originalName: string;
+      mimetype: string;
+      size: number;
+      url: string;
+      uploadedAt: string;
+    }>;
+    submissionLinks?: Array<{
+      url: string;
+      label?: string;
+      addedAt?: string;
+    }>;
+    submissionNotes?: string;
+    revisionIndex?: number;
+  }>;
+  revisionRequests?: Array<{
+    note?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+  }>;
   feedback?: {
     rating?: number;
     comments?: string;
@@ -210,11 +253,37 @@ export const assignmentsApi = createApi({
     }),
 
     // Submit feedback for assignment
-    submitFeedback: builder.mutation<AssignmentResponse, { id: string; rating: number; comments: string }>({
+    submitFeedback: builder.mutation<AssignmentResponse, { id: string; rating?: number; comments?: string }>({
       query: ({ id, rating, comments }) => ({
         url: `/${id}/feedback`,
         method: 'POST',
         body: { rating, comments },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Assignment', id },
+        'Assignments',
+      ],
+    }),
+
+    // Dummy payment for assignment
+    processPayment: builder.mutation<AssignmentResponse, { id: string; amount?: number; method?: string }>({
+      query: ({ id, amount, method }) => ({
+        url: `/${id}/payment`,
+        method: 'POST',
+        body: { amount, method },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Assignment', id },
+        'Assignments',
+      ],
+    }),
+
+    // Request revision
+    requestRevision: builder.mutation<AssignmentResponse, { id: string; note: string }>({
+      query: ({ id, note }) => ({
+        url: `/${id}/request-revision`,
+        method: 'POST',
+        body: { note },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Assignment', id },
@@ -252,5 +321,7 @@ export const {
   useSubmitAssignmentSolutionMutation,
   useAssignTutorMutation,
   useSubmitFeedbackMutation,
+  useProcessPaymentMutation,
+  useRequestRevisionMutation,
   useGetAssignmentStatsQuery,
 } = assignmentsApi;

@@ -58,11 +58,29 @@ const AllAssignmentsPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'assigned': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'created':
+      case 'pending':
+      case 'proposal_received':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'proposal_accepted':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'in_progress':
+      case 'submission_pending':
+      case 'assigned':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'revision_requested':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'submitted':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'overdue':
+      case 'disputed':
+        return 'bg-rose-100 text-rose-800 border-rose-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -167,10 +185,19 @@ const AllAssignmentsPage = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="assigned">Assigned</option>
+                <option value="created">Created</option>
+                <option value="proposal_received">Proposal received</option>
+                <option value="proposal_accepted">Proposal accepted</option>
+                <option value="in_progress">In progress</option>
+                <option value="submission_pending">Submission pending</option>
+                <option value="revision_requested">Revision requested</option>
+                <option value="pending">Pending (legacy)</option>
+                <option value="assigned">Assigned (legacy)</option>
+                <option value="submitted">Submitted</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="overdue">Overdue</option>
+                <option value="disputed">Disputed</option>
               </select>
             </div>
 
@@ -292,15 +319,18 @@ const AllAssignmentsPage = () => {
                     </button>
 
                     {/* Show Send Proposal button only for tutors */}
-                    {isTutor && assignment.status === 'pending' && (
-                      <button
-                        onClick={() => handleSendProposal(assignment)}
-                        className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2 sm:w-auto lg:w-full"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span>Send Proposal</span>
-                      </button>
-                    )}
+                    {isTutor &&
+                      ['pending', 'created', 'proposal_received'].includes(assignment.status) &&
+                      !assignment.assignedTutor &&
+                      (!assignment.requestedTutor || assignment.requestedTutor?._id === currentUser?._id) && (
+                        <button
+                          onClick={() => handleSendProposal(assignment)}
+                          className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2 sm:w-auto lg:w-full"
+                        >
+                          <Send className="h-4 w-4" />
+                          <span>Send Proposal</span>
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>

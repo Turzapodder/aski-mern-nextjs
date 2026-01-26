@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +97,7 @@ export default function TutorProfilePage() {
               </div>
             )}
           </div>
-          <div className="text-right">
+          <div className="flex flex-col items-start gap-3 md:items-end">
             {typeof tutorProfile.hourlyRate === "number" && tutorProfile.hourlyRate > 0 ? (
               <>
                 <div className="text-sm text-gray-500">Hourly rate</div>
@@ -105,6 +106,12 @@ export default function TutorProfilePage() {
             ) : (
               <div className="text-sm text-gray-500">Hourly rate not set</div>
             )}
+            <Link
+              href="/user/profile"
+              className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Edit profile
+            </Link>
           </div>
         </div>
 
@@ -205,7 +212,7 @@ export default function TutorProfilePage() {
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
-          Update your profile in settings to change availability and pricing.
+          Keep your profile updated to attract more students.
         </div>
       </div>
     </div>

@@ -1,125 +1,256 @@
-import React from 'react';
-import { Award, Star, ThumbsUp, MessageSquare, Download } from 'lucide-react';
+import React, { useMemo, useState } from "react";
+import { FileText, Link as LinkIcon, Star } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Assignment,
+  useRequestRevisionMutation,
+  useSubmitFeedbackMutation,
+} from "@/lib/services/assignments";
 
 interface CompletionFeedbackComponentProps {
-  onSubmitFeedback: (rating: number, feedback: string) => void;
+  assignment: Assignment;
+  onCompleted?: (assignment: Assignment) => void;
 }
 
-const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = ({ 
-  onSubmitFeedback 
+const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = ({
+  assignment,
+  onCompleted,
 }) => {
-  const [rating, setRating] = React.useState<number>(0);
-  const [feedback, setFeedback] = React.useState<string>('');
+  const [rating, setRating] = useState<number | undefined>(
+    assignment.feedback?.rating
+  );
+  const [comments, setComments] = useState(assignment.feedback?.comments || "");
+  const [revisionNote, setRevisionNote] = useState("");
+  const [submitFeedback, { isLoading: feedbackLoading }] =
+    useSubmitFeedbackMutation();
+  const [requestRevision, { isLoading: revisionLoading }] =
+    useRequestRevisionMutation();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmitFeedback(rating, feedback);
+  const latestSubmission = useMemo(() => {
+    if (assignment.submissionDetails?.submissionFiles?.length ||
+        assignment.submissionDetails?.submissionLinks?.length ||
+        assignment.submissionDetails?.submissionNotes) {
+      return assignment.submissionDetails;
+    }
+    if (assignment.submissionHistory && assignment.submissionHistory.length > 0) {
+      return assignment.submissionHistory[assignment.submissionHistory.length - 1];
+    }
+    return undefined;
+  }, [assignment.submissionDetails, assignment.submissionHistory]);
+
+  const submissionFiles = latestSubmission?.submissionFiles ?? [];
+  const submissionLinks = latestSubmission?.submissionLinks ?? [];
+  const submissionNotes = latestSubmission?.submissionNotes;
+  const isSubmitted = assignment.status === "submitted";
+  const isCompleted = assignment.status === "completed";
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:8000";
+  const resolveFileUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${apiBaseUrl}${url}`;
+  };
+
+  const handleSubmitFeedback = async () => {
+    try {
+      const result = await submitFeedback({
+        id: assignment._id,
+        rating,
+        comments: comments.trim() || undefined,
+      }).unwrap();
+      toast.success("Feedback submitted. Assignment marked as complete.");
+      if (result?.data && onCompleted) {
+        onCompleted(result.data);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Unable to submit feedback");
+    }
+  };
+
+  const handleRequestRevision = async () => {
+    if (!revisionNote.trim()) {
+      toast.error("Please add a revision note.");
+      return;
+    }
+    try {
+      await requestRevision({
+        id: assignment._id,
+        note: revisionNote.trim(),
+      }).unwrap();
+      toast.success("Revision requested.");
+      setRevisionNote("");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Unable to request revision");
+    }
   };
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-          <Award size={32} className="text-primary-500" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Assignment Completed!</h2>
-        <p className="text-gray-600">Your assignment has been successfully completed and delivered.</p>
-      </div>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Submission review</h2>
 
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <ThumbsUp className="h-5 w-5 text-green-500" />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-green-800">Solution Delivered</h3>
-            <div className="mt-2 text-sm text-green-700">
-              <p>The solution to your calculus assignment has been delivered and is ready for download.</p>
-            </div>
-          </div>
+      {!latestSubmission && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+          No submission has been received yet.
         </div>
-      </div>
+      )}
 
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Solution Files</h3>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                <MessageSquare size={20} className="text-primary-600" />
+      {latestSubmission && (
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Files</p>
+            {submissionFiles.length === 0 && (
+              <p className="text-sm text-gray-500">No files submitted.</p>
+            )}
+            {submissionFiles.length > 0 && (
+              <div className="space-y-2">
+                {submissionFiles.map((file) => (
+                  <a
+                    key={file.url}
+                    href={resolveFileUrl(file.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 text-sm text-primary-600 hover:underline"
+                  >
+                    <FileText className="h-4 w-4" />
+                    {file.originalName || file.filename}
+                  </a>
+                ))}
               </div>
-              <div>
-                <div className="text-sm font-medium text-gray-900">Calculus_Integration_Solution.pdf</div>
-                <div className="text-xs text-gray-500">PDF • 3.2 MB • Uploaded 2 days ago</div>
-              </div>
-            </div>
-            <button className="text-primary-600 hover:text-primary-700">
-              <Download size={20} />
-            </button>
+            )}
           </div>
-          
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center">
-                <MessageSquare size={20} className="text-secondary-600" />
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Links</p>
+            {submissionLinks.length === 0 && (
+              <p className="text-sm text-gray-500">No links submitted.</p>
+            )}
+            {submissionLinks.length > 0 && (
+              <div className="space-y-2">
+                {submissionLinks.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 text-sm text-primary-600 hover:underline"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    {link.label || link.url}
+                  </a>
+                ))}
               </div>
-              <div>
-                <div className="text-sm font-medium text-gray-900">Step_by_Step_Explanation.pdf</div>
-                <div className="text-xs text-gray-500">PDF • 1.8 MB • Uploaded 2 days ago</div>
-              </div>
-            </div>
-            <button className="text-primary-600 hover:text-primary-700">
-              <Download size={20} />
-            </button>
+            )}
           </div>
+
+          {submissionNotes && (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Tutor notes</p>
+              <p className="text-sm text-gray-600 whitespace-pre-line">{submissionNotes}</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      <form onSubmit={handleSubmit} className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Provide Your Feedback</h3>
-        
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Rate your experience
-          </label>
-          <div className="flex space-x-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                className="focus:outline-none"
+      {assignment.submissionHistory && assignment.submissionHistory.length > 1 && (
+        <div className="mt-6">
+          <p className="text-sm font-medium text-gray-700 mb-2">Submission history</p>
+          <div className="space-y-2">
+            {assignment.submissionHistory.map((entry, index) => (
+              <div
+                key={`${entry.submittedAt || "submission"}-${index}`}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-600"
               >
-                <Star
-                  size={24}
-                  className={`${rating >= star ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                />
-              </button>
+                <div className="flex items-center justify-between">
+                  <span>Revision {entry.revisionIndex ?? index + 1}</span>
+                  <span>
+                    {entry.submittedAt
+                      ? new Date(entry.submittedAt).toLocaleString()
+                      : "Unknown date"}
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] text-gray-500">
+                  {(entry.submissionFiles?.length || 0)} files,{" "}
+                  {(entry.submissionLinks?.length || 0)} links
+                </div>
+              </div>
             ))}
           </div>
         </div>
-        
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your feedback
-          </label>
-          <textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Share your experience with the solution provided..."
-            rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-300 resize-none"
-          />
+      )}
+
+      {isSubmitted && (
+        <div className="mt-6 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Rating</p>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRating(value)}
+                  className={`rounded-full p-1 ${
+                    (rating ?? 0) >= value ? "text-amber-500" : "text-gray-300"
+                  }`}
+                  aria-label={`Rate ${value} stars`}
+                >
+                  <Star className="h-5 w-5 fill-current" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Feedback (optional)
+            </label>
+            <textarea
+              value={comments}
+              onChange={(event) => setComments(event.target.value)}
+              rows={4}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Request revision
+              </label>
+              <input
+                value={revisionNote}
+                onChange={(event) => setRevisionNote(event.target.value)}
+                placeholder="Add a short revision note"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleRequestRevision}
+              disabled={revisionLoading}
+              className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+            >
+              {revisionLoading ? "Requesting..." : "Request revision"}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSubmitFeedback}
+            disabled={feedbackLoading}
+            className="w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
+          >
+            {feedbackLoading ? "Submitting..." : "Approve & complete"}
+          </button>
         </div>
-        
-        <button
-          type="submit"
-          className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
-        >
-          Submit Feedback
-        </button>
-      </form>
+      )}
+
+      {isCompleted && (
+        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          This assignment is completed. Thank you for your feedback.
+        </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, Award, Zap, User, GraduationCap, MapPin } from 'lucide-react'
+import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, Award, Zap, User, GraduationCap, MapPin, Edit } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import ReportModal from '@/components/ReportModal'
@@ -53,6 +53,7 @@ const TutorProfilePage = () => {
     const reporterType = viewer?.roles?.includes('tutor') ? 'tutor' : 'user'
     const canReportTutor = Boolean(viewer) && reporterType === 'user'
     const canRequestProposal = !viewer || !viewer.roles?.includes('tutor')
+    const isOwner = Boolean(viewer?._id && tutor?._id && viewer._id === tutor._id)
 
     useEffect(() => {
         const fetchTutor = async () => {
@@ -266,6 +267,15 @@ const TutorProfilePage = () => {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        {isOwner && (
+                                            <button
+                                                onClick={() => router.push('/user/profile')}
+                                                className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 flex items-center gap-1"
+                                            >
+                                                <Edit className="h-3.5 w-3.5" />
+                                                Edit profile
+                                            </button>
+                                        )}
                                         {canReportTutor && tutor?._id && (
                                             <button
                                                 onClick={() => setReportOpen(true)}

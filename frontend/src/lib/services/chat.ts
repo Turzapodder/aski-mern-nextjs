@@ -67,6 +67,8 @@ interface Message {
   }[];
   isEdited: boolean;
   isDeleted: boolean;
+  editedAt?: string;
+  deletedAt?: string;
   replyTo?: string;
   createdAt: string;
   updatedAt: string;

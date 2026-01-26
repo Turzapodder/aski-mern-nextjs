@@ -1,5 +1,7 @@
 import React from 'react';
-import { CreditCard, CheckCircle, Shield } from 'lucide-react';
+import { CreditCard, Shield } from 'lucide-react';
+import { Assignment, useProcessPaymentMutation } from '@/lib/services/assignments';
+import { toast } from 'sonner';
 
 interface PaymentMethod {
   id: string;
@@ -8,15 +10,19 @@ interface PaymentMethod {
 }
 
 interface PaymentComponentProps {
-  onPaymentComplete: () => void;
+  assignment: Assignment;
+  onPaymentComplete?: (assignment: Assignment) => void;
 }
 
-const PaymentComponent: React.FC<PaymentComponentProps> = ({ onPaymentComplete }) => {
+const PaymentComponent: React.FC<PaymentComponentProps> = ({ assignment, onPaymentComplete }) => {
   const [selectedMethod, setSelectedMethod] = React.useState<string>('credit_card');
   const [cardNumber, setCardNumber] = React.useState('');
   const [cardName, setCardName] = React.useState('');
   const [expiryDate, setExpiryDate] = React.useState('');
   const [cvv, setCvv] = React.useState('');
+  const [processPayment, { isLoading }] = useProcessPaymentMutation();
+  const paymentAmount = assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0;
+  const isPaid = assignment.paymentStatus === 'paid';
   
   const paymentMethods: PaymentMethod[] = [
     {
@@ -36,17 +42,36 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({ onPaymentComplete }
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would process the payment here
-    setTimeout(() => {
-      onPaymentComplete();
-    }, 1500);
+    if (!paymentAmount || paymentAmount <= 0) {
+      toast.error('Invalid payment amount');
+      return;
+    }
+
+    try {
+      const result = await processPayment({
+        id: assignment._id,
+        amount: paymentAmount,
+        method: selectedMethod,
+      }).unwrap();
+      toast.success('Payment completed');
+      if (result?.data && onPaymentComplete) {
+        onPaymentComplete(result.data);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Payment failed');
+    }
   };
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Details</h2>
+      {isPaid && (
+        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          Payment already completed. You can proceed to the submission stage.
+        </div>
+      )}
       
       <div className="mb-6">
         <div className="text-sm font-medium text-gray-700 mb-3">Select Payment Method</div>
@@ -168,24 +193,25 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({ onPaymentComplete }
         <div className="pt-4 border-t border-gray-200 mt-6">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Assignment Fee:</span>
-            <span className="font-medium">$45.00</span>
+            <span className="font-medium">${paymentAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Service Fee:</span>
-            <span className="font-medium">$5.00</span>
+            <span className="font-medium">$0.00</span>
           </div>
           <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-gray-200">
             <span>Total:</span>
-            <span>$50.00</span>
+            <span>${paymentAmount.toFixed(2)}</span>
           </div>
         </div>
 
         <button
           type="submit"
-          className="w-full mt-6 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+          disabled={isLoading || isPaid}
+          className="w-full mt-6 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <CreditCard size={18} />
-          <span>Pay Now</span>
+          <span>{isLoading ? 'Processing...' : 'Pay Now'}</span>
         </button>
       </form>
     </div>

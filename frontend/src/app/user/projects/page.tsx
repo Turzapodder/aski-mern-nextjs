@@ -8,6 +8,10 @@ import { useGetUserQuery } from "@/lib/services/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const statusStyles: Record<string, string> = {
+  proposal_accepted: "bg-indigo-100 text-indigo-800",
+  in_progress: "bg-blue-100 text-blue-800",
+  submission_pending: "bg-amber-100 text-amber-800",
+  revision_requested: "bg-orange-100 text-orange-800",
   assigned: "bg-blue-100 text-blue-800",
   submitted: "bg-amber-100 text-amber-800",
   overdue: "bg-rose-100 text-rose-800",
@@ -21,7 +25,7 @@ export default function ProjectsPage() {
   const isTutor = user?.roles?.includes("tutor");
 
   const { data: assignmentsData, isLoading, error } = useGetAssignmentsQuery({
-    status: "assigned,submitted,overdue",
+    status: "proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue",
     sortBy: "updatedAt",
     sortOrder: "desc",
     limit: 50,

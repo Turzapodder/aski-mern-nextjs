@@ -18,7 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type AssignmentDetails = {
   assignment?: Record<string, any>
+  chat?: Record<string, any>
   chatHistory?: Record<string, any>[]
+  proposals?: Record<string, any>[]
 }
 
 const formatDate = (value?: string) => {
@@ -52,7 +54,9 @@ export default function AdminAssignmentDetailsPage() {
 
   const payload = data?.data as AssignmentDetails | undefined
   const assignment = payload?.assignment
+  const chat = payload?.chat
   const chatHistory = payload?.chatHistory ?? []
+  const proposals = payload?.proposals ?? []
 
   useEffect(() => {
     if (assignment) {
@@ -138,7 +142,20 @@ export default function AdminAssignmentDetailsPage() {
   }
 
   const attachments = assignment.attachments || []
-  const submissions = assignment.submissionDetails?.submissionFiles || []
+  const submissionFiles = assignment.submissionDetails?.submissionFiles || []
+  const submissionLinks = assignment.submissionDetails?.submissionLinks || []
+  const submissionNotes = assignment.submissionDetails?.submissionNotes
+  const submissionHistory = assignment.submissionHistory || []
+  const chatParticipants = Array.isArray(chat?.participants) ? chat?.participants : []
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:8000"
+  const resolveFileUrl = (url?: string) => {
+    if (!url) return ""
+    if (url.startsWith("http")) return url
+    return `${apiBaseUrl}${url}`
+  }
 
   return (
     <div className="space-y-6">
@@ -208,8 +225,14 @@ export default function AdminAssignmentDetailsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="created">Created</SelectItem>
+                      <SelectItem value="proposal_received">Proposal received</SelectItem>
+                      <SelectItem value="proposal_accepted">Proposal accepted</SelectItem>
+                      <SelectItem value="in_progress">In progress</SelectItem>
+                      <SelectItem value="submission_pending">Submission pending</SelectItem>
+                      <SelectItem value="revision_requested">Revision requested</SelectItem>
+                      <SelectItem value="pending">Pending (legacy)</SelectItem>
+                      <SelectItem value="assigned">Assigned (legacy)</SelectItem>
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="disputed">Disputed</SelectItem>
@@ -218,6 +241,23 @@ export default function AdminAssignmentDetailsPage() {
                       <SelectItem value="overdue">Overdue</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-1 text-xs text-gray-500">
+                  <p>Payment status</p>
+                  <p className="text-sm text-gray-700 capitalize">{assignment.paymentStatus || "pending"}</p>
+                </div>
+                <div className="space-y-1 text-xs text-gray-500">
+                  <p>Payment amount</p>
+                  <p className="text-sm text-gray-700">
+                    {assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0}
+                  </p>
+                </div>
+                <div className="space-y-1 text-xs text-gray-500">
+                  <p>Chat ID</p>
+                  <p className="text-sm text-gray-700">{assignment.chatId || "N/A"}</p>
                 </div>
               </div>
 
@@ -267,7 +307,7 @@ export default function AdminAssignmentDetailsPage() {
                     {attachments.map((file: Record<string, any>) => (
                       <a
                         key={file.url}
-                        href={file.url}
+                        href={resolveFileUrl(file.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 text-sm text-primary"
@@ -282,13 +322,15 @@ export default function AdminAssignmentDetailsPage() {
 
               <div>
                 <p className="text-xs text-gray-500 mb-2">Tutor submissions</p>
-                {submissions.length === 0 && <p className="text-sm text-gray-500">No submissions yet.</p>}
-                {submissions.length > 0 && (
+                {submissionFiles.length === 0 && submissionLinks.length === 0 && !submissionNotes && (
+                  <p className="text-sm text-gray-500">No submissions yet.</p>
+                )}
+                {submissionFiles.length > 0 && (
                   <div className="space-y-2">
-                    {submissions.map((file: Record<string, any>) => (
+                    {submissionFiles.map((file: Record<string, any>) => (
                       <a
                         key={file.url}
-                        href={file.url}
+                        href={resolveFileUrl(file.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 text-sm text-primary"
@@ -299,7 +341,74 @@ export default function AdminAssignmentDetailsPage() {
                     ))}
                   </div>
                 )}
+                {submissionLinks.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {submissionLinks.map((link: Record<string, any>) => (
+                      <a
+                        key={link.url}
+                        href={resolveFileUrl(link.url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary"
+                      >
+                        <FileText className="h-4 w-4" />
+                        {link.label || link.url}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {submissionNotes && (
+                  <p className="mt-3 text-sm text-gray-600 whitespace-pre-line">{submissionNotes}</p>
+                )}
+                {submissionHistory.length > 1 && (
+                  <div className="mt-4 space-y-2">
+                    {submissionHistory.map((entry: Record<string, any>, index: number) => (
+                      <div key={`${entry.submittedAt || "history"}-${index}`} className="rounded-lg border border-gray-100 p-3 text-xs text-gray-600">
+                        <div className="flex items-center justify-between">
+                          <span>Revision {entry.revisionIndex ?? index + 1}</span>
+                          <span>{formatDate(entry.submittedAt)}</span>
+                        </div>
+                        <div className="mt-1 text-[11px] text-gray-500">
+                          {(entry.submissionFiles?.length || 0)} files, {(entry.submissionLinks?.length || 0)} links
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">Proposals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {proposals.length === 0 && <p className="text-sm text-gray-500">No proposals yet.</p>}
+              {proposals.length > 0 && (
+                <div className="space-y-3">
+                  {proposals.map((proposal: Record<string, any>) => (
+                    <div key={proposal._id} className="rounded-lg border border-gray-100 p-3 text-sm text-gray-700">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {proposal.tutor?.name || "Tutor"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {proposal.title || "Proposal"} - {formatDate(proposal.createdAt || proposal.submittedAt)}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs capitalize text-gray-600">
+                          {proposal.status}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Price: {proposal.proposedPrice ?? 0} - ETA: {proposal.estimatedDeliveryTime ?? 0} hrs
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -308,18 +417,83 @@ export default function AdminAssignmentDetailsPage() {
               <CardTitle className="text-base font-semibold">Chat history</CardTitle>
             </CardHeader>
             <CardContent>
-              {chatHistory.length === 0 && <p className="text-sm text-gray-500">No messages recorded.</p>}
+              {chat && (
+                <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-gray-900">{chat.name || "Assignment chat"}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Participants: {chatParticipants.length || 0}
+                  </p>
+                  {chatParticipants.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
+                      {chatParticipants.map((participant: Record<string, any>) => (
+                        <span
+                          key={participant.user?._id || participant._id}
+                          className="rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-700"
+                        >
+                          {participant.user?.name || "User"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {chatHistory.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  {chat ? "No messages recorded yet." : "No chat found for this assignment."}
+                </p>
+              )}
               {chatHistory.length > 0 && (
-                <ScrollArea className="h-64 rounded-lg border border-gray-200 p-3">
+                <ScrollArea className="h-72 rounded-lg border border-gray-200 p-3">
                   <div className="space-y-3">
-                    {chatHistory.map((message: Record<string, any>) => (
-                      <div key={message._id} className="rounded-lg border border-gray-100 p-3 text-sm">
-                        <p className="text-xs text-gray-500 mb-1">
-                          {message.sender?.name || "User"} | {formatDate(message.createdAt)}
-                        </p>
-                        <p className="text-gray-700">{message.content || "Attachment"}</p>
-                      </div>
-                    ))}
+                    {chatHistory.map((message: Record<string, any>) => {
+                      const attachments = Array.isArray(message.attachments)
+                        ? message.attachments
+                        : [];
+                      const isOffer = message.type === "offer";
+                      const offerMeta = message.meta || {};
+                      return (
+                        <div key={message._id} className="rounded-lg border border-gray-100 bg-white p-3 text-sm">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                            <span>{message.sender?.name || "User"}</span>
+                            <span>{formatDate(message.createdAt)}</span>
+                          </div>
+                          {message.content && (
+                            <p className="text-gray-700 whitespace-pre-line">{message.content}</p>
+                          )}
+                          {isOffer && (
+                            <div className="mt-2 rounded-lg border border-purple-100 bg-purple-50 px-3 py-2 text-xs text-purple-700">
+                              <p className="font-semibold">Custom offer</p>
+                              <p className="mt-1">
+                                Budget: {offerMeta.proposedBudget ?? offerMeta.budget ?? "N/A"}
+                              </p>
+                              <p>
+                                Deadline: {offerMeta.proposedDeadline ? formatDate(offerMeta.proposedDeadline) : "N/A"}
+                              </p>
+                              {offerMeta.message && (
+                                <p className="mt-1 text-purple-600">{offerMeta.message}</p>
+                              )}
+                            </div>
+                          )}
+                          {attachments.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {attachments.map((file: Record<string, any>) => (
+                                <a
+                                  key={file.url}
+                                href={resolveFileUrl(file.url)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-2 text-xs text-primary"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  {file.originalName || file.filename}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}

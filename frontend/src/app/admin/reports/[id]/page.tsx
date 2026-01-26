@@ -54,6 +54,15 @@ export default function AdminDisputeDetailsPage() {
   const escrowAmount = payload?.escrowAmount || 0
   const platformFeeRate = settingsResponse?.data?.platformFeeRate || 0
   const minFee = settingsResponse?.data?.minTransactionFee || 0
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:8000"
+  const resolveFileUrl = (url?: string) => {
+    if (!url) return ""
+    if (url.startsWith("http")) return url
+    return `${apiBaseUrl}${url}`
+  }
 
   const summary = useMemo(() => {
     let studentAmount = 0
@@ -191,7 +200,7 @@ export default function AdminDisputeDetailsPage() {
                     {submissions.map((file: Record<string, any>) => (
                       <a
                         key={file.url}
-                        href={file.url}
+                        href={resolveFileUrl(file.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 text-sm text-primary"
@@ -211,7 +220,7 @@ export default function AdminDisputeDetailsPage() {
                     {attachments.map((file: Record<string, any>) => (
                       <a
                         key={file.url}
-                        href={file.url}
+                        href={resolveFileUrl(file.url)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 text-sm text-primary"
