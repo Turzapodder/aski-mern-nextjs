@@ -85,7 +85,8 @@ class ProposalController {
         });
       }
 
-      if (assignment.status !== 'pending') {
+      const openStatuses = ['pending', 'created', 'proposal_received'];
+      if (!openStatuses.includes(assignment.status)) {
         return res.status(400).json({
           status: 'failed',
           message: 'This assignment is no longer accepting proposals'
@@ -177,6 +178,11 @@ class ProposalController {
       });
 
       await proposal.save();
+
+      if (['pending', 'created'].includes(assignment.status)) {
+        assignment.status = 'proposal_received';
+        await assignment.save();
+      }
 
       // Populate related data for response
       await proposal.populate([
@@ -547,9 +553,13 @@ class ProposalController {
 
       // Update assignment status and assign tutor
       await AssignmentModel.findByIdAndUpdate(proposal.assignment, {
-        status: 'assigned',
+        status: 'proposal_accepted',
         assignedTutor: proposal.tutor,
-        chatId: proposal.conversation || undefined
+        chatId: proposal.conversation || undefined,
+        paymentStatus: 'pending',
+        paymentAmount: proposal.proposedPrice,
+        budget: proposal.proposedPrice,
+        estimatedCost: proposal.proposedPrice
       });
 
       // Reject all other proposals for this assignment

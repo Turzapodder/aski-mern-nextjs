@@ -73,8 +73,14 @@ const assignmentSchema = new mongoose.Schema({
     type: String,
     enum: [
       'draft',           // Created but not submitted
-      'pending',         // Submitted, waiting for tutor assignment
-      'assigned',        // Tutor assigned, work in progress
+      'created',         // Created and visible for proposals
+      'proposal_received', // At least one proposal received
+      'proposal_accepted', // Proposal accepted, awaiting payment
+      'in_progress',     // Payment confirmed, tutor working
+      'submission_pending', // Tutor can submit work
+      'revision_requested', // Student requested revision
+      'pending',         // Legacy: Submitted, waiting for tutor assignment
+      'assigned',        // Legacy: Tutor assigned, work in progress
       'submitted',       // Tutor submitted the work
       'completed',       // Student approved the work
       'disputed',        // Dispute opened by student or tutor
@@ -106,8 +112,48 @@ const assignmentSchema = new mongoose.Schema({
         default: Date.now
       }
     }],
+    submissionLinks: [{
+      url: { type: String, trim: true },
+      label: { type: String, trim: true },
+      addedAt: { type: Date, default: Date.now }
+    }],
     submissionNotes: String
   },
+
+  submissionHistory: [
+    {
+      submittedAt: Date,
+      submissionFiles: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }],
+      submissionLinks: [{
+        url: { type: String, trim: true },
+        label: { type: String, trim: true },
+        addedAt: { type: Date, default: Date.now }
+      }],
+      submissionNotes: String,
+      revisionIndex: { type: Number, default: 0 }
+    }
+  ],
+
+  revisionRequests: [
+    {
+      note: { type: String, trim: true },
+      requestedAt: { type: Date, default: Date.now },
+      requestedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
+      }
+    }
+  ],
   
   // Feedback and grading
   feedback: {
@@ -176,7 +222,10 @@ assignmentSchema.virtual('isOverdue').get(function() {
 
 // Pre-save middleware to update status if overdue
 assignmentSchema.pre('save', function(next) {
-  if (this.isOverdue && this.status === 'pending') {
+  if (
+    this.isOverdue &&
+    ['pending', 'created', 'proposal_received', 'submission_pending', 'in_progress'].includes(this.status)
+  ) {
     this.status = 'overdue';
   }
   if (this.isModified('budget') && !this.isModified('estimatedCost')) {
@@ -204,7 +253,7 @@ assignmentSchema.statics.findByTutor = function(tutorId, options = {}) {
 // Instance method to check if user can edit
 assignmentSchema.methods.canEdit = function(userId) {
   return this.student.toString() === userId.toString() && 
-         ['draft', 'pending'].includes(this.status);
+         ['draft', 'pending', 'created', 'proposal_received'].includes(this.status);
 };
 
 const AssignmentModel = mongoose.model('Assignment', assignmentSchema);

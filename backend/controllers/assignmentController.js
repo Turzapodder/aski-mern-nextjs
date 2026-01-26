@@ -2,7 +2,56 @@ import AssignmentModel from '../models/Assignment.js';
 import UserModel from '../models/User.js';
 import ProposalModel from '../models/Proposal.js';
 import NotificationModel from '../models/Notification.js';
+import TransactionModel from "../models/Transaction.js";
+import PlatformSettingsModel from "../models/PlatformSettings.js";
 import mongoose from 'mongoose';
+
+const parseNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const sanitizeText = (value) => (typeof value === "string" ? value.trim() : "");
+
+const isValidUrl = (value) => {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+};
+
+const normalizeSubmissionLinks = (raw) => {
+  if (!raw) return [];
+  const rawLinks = Array.isArray(raw)
+    ? raw
+    : typeof raw === "string"
+      ? raw.split(",")
+      : [];
+
+  return rawLinks
+    .map((entry) => {
+      if (typeof entry === "string") {
+        const trimmed = entry.trim();
+        return { url: trimmed, label: "" };
+      }
+      if (entry && typeof entry === "object") {
+        return {
+          url: sanitizeText(entry.url),
+          label: sanitizeText(entry.label),
+        };
+      }
+      return null;
+    })
+    .filter((entry) => entry && isValidUrl(entry.url))
+    .map((entry) => ({
+      url: entry.url,
+      label: entry.label || "",
+      addedAt: new Date(),
+    }));
+};
 
 class AssignmentController {
   // Create a new assignment
@@ -65,7 +114,9 @@ class AssignmentController {
         attachments,
         student: studentId,
         requestedTutor: requestedTutorId,
-        status: 'pending' // Auto-submit when created
+        status: 'created',
+        paymentStatus: 'pending',
+        paymentAmount: parsedEstimatedCost
       });
 
       await assignment.save();
@@ -142,10 +193,11 @@ class AssignmentController {
         assignment.assignedTutor &&
         assignment.assignedTutor._id.toString() === userId.toString();
       const isAdmin = req.user.roles.includes('admin');
+      const openStatuses = ['pending', 'created', 'proposal_received'];
       const canViewOpenAssignment =
         req.user.roles.includes('tutor') &&
         assignment.isActive &&
-        assignment.status === 'pending' &&
+        openStatuses.includes(assignment.status) &&
         !assignment.assignedTutor &&
         (!assignment.requestedTutor || assignment.requestedTutor._id.toString() === userId.toString());
 
@@ -211,7 +263,11 @@ class AssignmentController {
         // Tutors can see assigned assignments and unassigned ones
         filter.$or = [
           { assignedTutor: userId },
-          { assignedTutor: null, status: 'pending', $or: [{ requestedTutor: null }, { requestedTutor: userId }] }
+          {
+            assignedTutor: null,
+            status: { $in: ['pending', 'created', 'proposal_received'] },
+            $or: [{ requestedTutor: null }, { requestedTutor: userId }]
+          }
         ];
       } else {
         // Students can only see their own assignments
@@ -298,7 +354,7 @@ class AssignmentController {
       };
 
       if (status === "IN_PROGRESS") {
-        filter.status = { $in: ["assigned", "submitted"] };
+        filter.status = { $in: ["assigned", "submitted", "proposal_accepted", "in_progress", "submission_pending", "revision_requested"] };
       } else if (status) {
         filter.status = status;
       }
@@ -573,7 +629,8 @@ class AssignmentController {
         id,
         {
           assignedTutor: tutorId,
-          status: 'assigned'
+          status: 'proposal_accepted',
+          paymentStatus: 'pending'
         },
         { new: true }
       ).populate('student', 'name email')
@@ -606,7 +663,7 @@ class AssignmentController {
   static submitWork = async (req, res) => {
     try {
       const { id } = req.params;
-      const { submissionNotes } = req.body;
+      const { submissionNotes, submissionLinks } = req.body;
       const tutorId = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -633,6 +690,13 @@ class AssignmentController {
         });
       }
 
+      if (assignment.paymentStatus !== 'paid') {
+        return res.status(403).json({
+          status: 'failed',
+          message: 'Payment must be completed before submitting work'
+        });
+      }
+
       // Process submission files
       let submissionFiles = [];
       if (req.files && req.files.length > 0) {
@@ -645,15 +709,76 @@ class AssignmentController {
         }));
       }
 
+      let parsedLinks = submissionLinks;
+      if (typeof parsedLinks === "string") {
+        try {
+          parsedLinks = JSON.parse(parsedLinks);
+        } catch {
+          parsedLinks = submissionLinks;
+        }
+      }
+      const normalizedLinks = normalizeSubmissionLinks(parsedLinks);
+      const sanitizedNotes = sanitizeText(submissionNotes);
+
+      if (submissionFiles.length === 0 && normalizedLinks.length === 0 && !sanitizedNotes) {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Please include submission files, links, or notes'
+        });
+      }
+
+      const revisionIndex = Array.isArray(assignment.submissionHistory)
+        ? assignment.submissionHistory.length
+        : 0;
+
       // Update assignment with submission
       assignment.submissionDetails = {
         submittedAt: new Date(),
         submissionFiles,
-        submissionNotes: submissionNotes || ''
+        submissionLinks: normalizedLinks,
+        submissionNotes: sanitizedNotes
       };
+      assignment.submissionHistory = Array.isArray(assignment.submissionHistory)
+        ? [
+            ...assignment.submissionHistory,
+            {
+              submittedAt: new Date(),
+              submissionFiles,
+              submissionLinks: normalizedLinks,
+              submissionNotes: sanitizedNotes,
+              revisionIndex
+            }
+          ]
+        : [
+            {
+              submittedAt: new Date(),
+              submissionFiles,
+              submissionLinks: normalizedLinks,
+              submissionNotes: sanitizedNotes,
+              revisionIndex
+            }
+          ];
       assignment.status = 'submitted';
 
       await assignment.save();
+
+      const notification = await NotificationModel.create({
+        user: assignment.student,
+        type: "submission_ready",
+        title: "Submission received",
+        message: `${req.user?.name || "Your tutor"} submitted work for "${assignment.title}".`,
+        link: `/user/assignments/view-details/${assignment._id}`,
+        data: {
+          assignmentId: assignment._id,
+        },
+      });
+
+      const socketManager = req.app.get("socketManager");
+      if (socketManager) {
+        socketManager.emitToUser(assignment.student.toString(), "notification", {
+          notification,
+        });
+      }
 
       res.status(200).json({
         status: 'success',
@@ -667,6 +792,352 @@ class AssignmentController {
         status: 'failed',
         message: 'Unable to submit work',
         error: error.message
+      });
+    }
+  };
+
+  // Dummy payment processing (by student)
+  static processPayment = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount, method } = req.body || {};
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid assignment ID",
+        });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Assignment not found",
+        });
+      }
+
+      if (assignment.student.toString() !== userId.toString()) {
+        return res.status(403).json({
+          status: "failed",
+          message: "Only the student can pay for this assignment",
+        });
+      }
+
+      if (!assignment.assignedTutor) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Please accept a proposal before paying",
+        });
+      }
+
+      if (assignment.paymentStatus === "paid") {
+        return res.status(400).json({
+          status: "failed",
+          message: "Payment has already been completed",
+        });
+      }
+
+      const paymentAmount = parseNumber(
+        amount,
+        assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
+      );
+      if (!paymentAmount || paymentAmount <= 0) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Payment amount must be greater than 0",
+        });
+      }
+
+      assignment.paymentAmount = paymentAmount;
+      assignment.paymentStatus = "paid";
+      if (["proposal_accepted", "assigned", "pending", "created", "proposal_received"].includes(assignment.status)) {
+        assignment.status = "in_progress";
+      }
+
+      await assignment.save();
+
+      await UserModel.updateOne(
+        { _id: userId },
+        { $inc: { "wallet.escrowBalance": paymentAmount } }
+      );
+
+      await TransactionModel.create({
+        userId,
+        type: "escrow_hold",
+        amount: paymentAmount,
+        status: "completed",
+        relatedTo: { model: "Assignment", id: assignment._id },
+        metadata: {
+          method: sanitizeText(method) || "dummy",
+        },
+      });
+
+      const notification = await NotificationModel.create({
+        user: assignment.assignedTutor,
+        type: "payment_received",
+        title: "Payment confirmed",
+        message: `${req.user?.name || "A student"} completed payment for "${assignment.title}".`,
+        link: `/user/assignments/view-details/${assignment._id}`,
+        data: {
+          assignmentId: assignment._id,
+        },
+      });
+
+      const socketManager = req.app.get("socketManager");
+      if (socketManager) {
+        socketManager.emitToUser(String(assignment.assignedTutor), "notification", {
+          notification,
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Payment completed",
+        data: assignment,
+      });
+    } catch (error) {
+      console.error("Payment error:", error);
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to process payment",
+      });
+    }
+  };
+
+  // Request revision (by student)
+  static requestRevision = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { note } = req.body || {};
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid assignment ID",
+        });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Assignment not found",
+        });
+      }
+
+      if (assignment.student.toString() !== userId.toString()) {
+        return res.status(403).json({
+          status: "failed",
+          message: "Only the student can request revisions",
+        });
+      }
+
+      if (!["submitted", "revision_requested"].includes(assignment.status)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Revision can only be requested after a submission",
+        });
+      }
+
+      const noteValue = sanitizeText(note);
+      if (!noteValue) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Revision note is required",
+        });
+      }
+
+      assignment.status = "revision_requested";
+      assignment.revisionRequests = Array.isArray(assignment.revisionRequests)
+        ? [
+            ...assignment.revisionRequests,
+            { note: noteValue, requestedAt: new Date(), requestedBy: userId },
+          ]
+        : [{ note: noteValue, requestedAt: new Date(), requestedBy: userId }];
+
+      await assignment.save();
+
+      if (assignment.assignedTutor) {
+        const notification = await NotificationModel.create({
+          user: assignment.assignedTutor,
+          type: "revision_requested",
+          title: "Revision requested",
+          message: `${req.user?.name || "A student"} requested revisions for "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: {
+            assignmentId: assignment._id,
+          },
+        });
+
+        const socketManager = req.app.get("socketManager");
+        if (socketManager) {
+          socketManager.emitToUser(String(assignment.assignedTutor), "notification", {
+            notification,
+          });
+        }
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Revision requested",
+        data: assignment,
+      });
+    } catch (error) {
+      console.error("Request revision error:", error);
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to request revision",
+      });
+    }
+  };
+
+  // Submit feedback and complete assignment (by student)
+  static submitFeedback = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rating, comments } = req.body || {};
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid assignment ID",
+        });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Assignment not found",
+        });
+      }
+
+      if (assignment.student.toString() !== userId.toString()) {
+        return res.status(403).json({
+          status: "failed",
+          message: "Only the student can complete this assignment",
+        });
+      }
+
+      if (!["submitted", "revision_requested"].includes(assignment.status)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Assignment must be submitted before completion",
+        });
+      }
+
+      const ratingValue = rating !== undefined ? parseNumber(rating, 0) : 0;
+      if (ratingValue && (ratingValue < 1 || ratingValue > 5)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Rating must be between 1 and 5",
+        });
+      }
+
+      assignment.feedback = {
+        rating: ratingValue || undefined,
+        comments: sanitizeText(comments) || undefined,
+        feedbackDate: new Date(),
+      };
+      assignment.status = "completed";
+      assignment.paymentStatus = assignment.paymentStatus || "paid";
+
+      await assignment.save();
+
+      const amount = parseNumber(
+        assignment.paymentAmount ?? assignment.estimatedCost ?? assignment.budget ?? 0,
+        0
+      );
+
+      if (amount > 0 && assignment.assignedTutor) {
+        const [student, tutor, settings] = await Promise.all([
+          UserModel.findById(assignment.student),
+          UserModel.findById(assignment.assignedTutor),
+          PlatformSettingsModel.findOne().lean(),
+        ]);
+
+        if (student && tutor) {
+          const platformFeeRate = parseNumber(settings?.platformFeeRate, 0);
+          const minTransactionFee = parseNumber(settings?.minTransactionFee, 0);
+          let platformFee = Math.max(0, amount * platformFeeRate);
+          if (platformFee > 0 && minTransactionFee > 0) {
+            platformFee = Math.max(platformFee, minTransactionFee);
+          }
+          const tutorNet = Math.max(0, amount - platformFee);
+
+          await UserModel.updateOne(
+            { _id: student._id, "wallet.escrowBalance": { $gte: amount } },
+            { $inc: { "wallet.escrowBalance": -amount } }
+          );
+
+          if (tutorNet > 0) {
+            await UserModel.updateOne(
+              { _id: tutor._id },
+              { $inc: { "wallet.availableBalance": tutorNet, "wallet.totalEarnings": tutorNet } }
+            );
+          }
+
+          const transactions = [];
+          if (tutorNet > 0) {
+            transactions.push({
+              userId: tutor._id,
+              type: "escrow_release",
+              amount: tutorNet,
+              status: "completed",
+              relatedTo: { model: "Assignment", id: assignment._id },
+              metadata: { resolution: "completion" },
+            });
+          }
+          if (platformFee > 0) {
+            transactions.push({
+              userId: tutor._id,
+              type: "platform_fee",
+              amount: platformFee,
+              status: "completed",
+              relatedTo: { model: "Assignment", id: assignment._id },
+              metadata: { resolution: "completion" },
+            });
+          }
+          if (transactions.length) {
+            await TransactionModel.create(transactions);
+          }
+        }
+      }
+
+      if (assignment.assignedTutor) {
+        const notification = await NotificationModel.create({
+          user: assignment.assignedTutor,
+          type: "assignment_completed",
+          title: "Assignment completed",
+          message: `${req.user?.name || "A student"} completed "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: {
+            assignmentId: assignment._id,
+          },
+        });
+
+        const socketManager = req.app.get("socketManager");
+        if (socketManager) {
+          socketManager.emitToUser(String(assignment.assignedTutor), "notification", {
+            notification,
+          });
+        }
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Assignment completed",
+        data: assignment,
+      });
+    } catch (error) {
+      console.error("Submit feedback error:", error);
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to complete assignment",
       });
     }
   };
