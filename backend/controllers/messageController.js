@@ -43,6 +43,15 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const buildPublicFileUrl = (req, relativePath) => {
+  if (!relativePath) return relativePath;
+  if (relativePath.startsWith('http')) return relativePath;
+  const baseUrl =
+    process.env.BACKEND_PUBLIC_URL ||
+    `${req.protocol}://${req.get('host')}`;
+  return `${baseUrl}${relativePath}`;
+};
+
 export const upload = multer({
   storage,
   fileFilter,
@@ -244,13 +253,16 @@ class MessageController {
       }
 
       // Process file attachments
-      const attachments = files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        url: `/uploads/chat-files/${file.filename}`
-      }));
+      const attachments = files.map(file => {
+        const relativeUrl = `/uploads/chat-files/${file.filename}`;
+        return {
+          filename: file.filename,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          url: buildPublicFileUrl(req, relativeUrl)
+        };
+      });
 
       // Determine message type based on file types
       const hasImages = attachments.some(att => att.mimetype.startsWith('image/'));

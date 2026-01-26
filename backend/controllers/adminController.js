@@ -4,6 +4,8 @@ import UserModel from "../models/User.js";
 import AssignmentModel from "../models/Assignment.js";
 import TutorApplicationModel from "../models/TutorApplication.js";
 import MessageModel from "../models/Message.js";
+import ProposalModel from "../models/Proposal.js";
+import ChatModel from "../models/Chat.js";
 import AdminLogModel from "../models/AdminLog.js";
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
@@ -1029,18 +1031,58 @@ class AdminController {
         });
       }
 
-      const messages = assignment.chatId
-        ? await MessageModel.find({ chat: assignment.chatId })
-            .populate("sender", "name email profileImage")
-            .sort({ createdAt: 1 })
-            .lean()
-        : [];
+      let chatId = assignment.chatId ? assignment.chatId.toString() : null;
+
+      if (!chatId) {
+        const proposalChat = await ProposalModel.findOne({
+          assignment: id,
+          conversation: { $ne: null },
+        })
+          .sort({ createdAt: -1 })
+          .select("conversation")
+          .lean();
+        if (proposalChat?.conversation) {
+          chatId = proposalChat.conversation.toString();
+        }
+      }
+
+      let chat = null;
+      if (chatId) {
+        chat = await ChatModel.findOne({ _id: chatId, isActive: true })
+          .populate("participants.user", "name email profileImage roles")
+          .lean();
+      }
+
+      if (!chat) {
+        chat = await ChatModel.findOne({ assignment: id, isActive: true })
+          .sort({ lastActivity: -1 })
+          .populate("participants.user", "name email profileImage roles")
+          .lean();
+        if (chat?._id) {
+          chatId = chat._id.toString();
+        }
+      }
+
+      const [messages, proposals] = await Promise.all([
+        chatId
+          ? MessageModel.find({ chat: chatId, isDeleted: { $ne: true } })
+              .populate("sender", "name email profileImage")
+              .sort({ createdAt: 1 })
+              .lean()
+          : [],
+        ProposalModel.find({ assignment: id })
+          .populate("tutor", "name email profileImage")
+          .sort({ createdAt: -1 })
+          .lean(),
+      ]);
 
       return res.status(200).json({
         status: "success",
         data: {
           assignment,
+          chat,
           chatHistory: messages,
+          proposals,
         },
       });
     } catch (error) {

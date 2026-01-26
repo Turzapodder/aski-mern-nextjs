@@ -14,6 +14,41 @@ aws.config.update({
 
 const s3 = new aws.S3();
 
+const blockedExtensions = [
+    ".exe",
+    ".bat",
+    ".cmd",
+    ".sh",
+    ".msi",
+    ".com",
+    ".scr",
+    ".ps1",
+    ".vbs",
+    ".jar"
+];
+
+const blockedMimeTypes = [
+    "application/x-msdownload",
+    "application/x-msdos-program",
+    "application/x-dosexec",
+    "application/x-sh",
+    "application/x-bat",
+    "application/x-cmd",
+    "application/x-msi",
+    "application/x-executable"
+];
+
+const assignmentFileFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (blockedExtensions.includes(ext)) {
+        return cb(new Error("Invalid file type"), false);
+    }
+    if (blockedMimeTypes.includes(file.mimetype)) {
+        return cb(new Error("Invalid file type"), false);
+    }
+    cb(null, true);
+};
+
 // const fileFilter = (req, file, cb) => {
 //     const allowedMimes = [
 //         'image/jpeg',
@@ -64,5 +99,6 @@ export const uploadAssignment = multer({
             cb(null, `assignments/${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     }),
+    fileFilter: assignmentFileFilter,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });

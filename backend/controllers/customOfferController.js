@@ -282,8 +282,13 @@ class CustomOfferController {
         assignment.budget = offer.proposedBudget;
         assignment.estimatedCost = offer.proposedBudget;
         assignment.deadline = offer.proposedDeadline;
-        assignment.status = assignment.status === "pending" ? "assigned" : assignment.status;
+        if (["pending", "created", "proposal_received", "assigned"].includes(assignment.status)) {
+          assignment.status = "proposal_accepted";
+        }
         assignment.assignedTutor = assignment.assignedTutor || offer.tutor;
+        assignment.paymentStatus = "pending";
+        assignment.paymentAmount = offer.proposedBudget;
+        assignment.chatId = assignment.chatId || offer.conversation;
         await assignment.save(activeSession ? { session: activeSession } : undefined);
 
         await ProposalModel.updateOne(

@@ -44,8 +44,17 @@ router.delete('/:id', AssignmentController.deleteAssignment);
 // Assign tutor to assignment (admin/system use)
 router.patch('/:id/assign-tutor', AssignmentController.assignTutor);
 
+// Dummy payment (student)
+router.post('/:id/payment', AssignmentController.processPayment);
+
 // Submit work (by tutor)
 router.post('/:id/submit', uploadAssignment.array('submissionFiles', 10), AssignmentController.submitWork);
+
+// Request revision (student)
+router.post('/:id/request-revision', AssignmentController.requestRevision);
+
+// Submit feedback and complete assignment (student)
+router.post('/:id/feedback', AssignmentController.submitFeedback);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
