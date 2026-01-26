@@ -512,6 +512,10 @@ const startServer = async () => {
             user
           );
 
+          if (user.roles?.includes("admin")) {
+            return res.redirect(`${process.env.FRONTEND_HOST}/admin`);
+          }
+
           if (
             (user.roles?.includes("tutor") &&
               user.onboardingStatus === "pending") ||

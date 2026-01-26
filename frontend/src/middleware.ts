@@ -2,10 +2,39 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Array of paths that don't require authentication
-const publicPaths = ['/','/account/login', '/account/register', '/account/reset-password-link', '/account/verify-email'];
+const publicPaths = ['/', '/account/login', '/account/register', '/account/reset-password-link', '/account/verify-email'];
 
 // Array of paths that require authentication
 const protectedPaths = ['/user', '/assignment', '/admin'];
+
+const decodeJwtPayload = (token?: string) => {
+  if (!token) return null;
+  const segments = token.split('.');
+  if (segments.length < 2) return null;
+
+  const base64 = segments[1].replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+
+  try {
+    const buffer = (globalThis as any)?.Buffer;
+    const json =
+      typeof atob === 'function'
+        ? atob(padded)
+        : buffer
+        ? buffer.from(padded, 'base64').toString('utf-8')
+        : '';
+    return json ? JSON.parse(json) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getUserRoles = (request: NextRequest) => {
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
+  const payload = decodeJwtPayload(accessToken || refreshToken);
+  return Array.isArray(payload?.roles) ? payload.roles : [];
+};
 
 export async function middleware(request: NextRequest) {
   try {
@@ -15,12 +44,19 @@ export async function middleware(request: NextRequest) {
 
     // Check if user is authenticated (has both refreshToken and is_auth = true)
     const isAuthenticated = refreshToken && isAuth === 'true';
+    const roles = getUserRoles(request);
+    const isAdmin = roles.includes('admin');
+    const defaultAuthedPath = isAdmin ? '/admin' : '/user/dashboard';
 
     console.log('Middleware check:', { path, isAuthenticated, hasRefreshToken: !!refreshToken, isAuth });
 
     // If user is authenticated and trying to access auth pages, redirect to dashboard
     if (isAuthenticated && publicPaths.includes(path)) {
-      return NextResponse.redirect(new URL('/user/dashboard', request.url));
+      return NextResponse.redirect(new URL(defaultAuthedPath, request.url));
+    }
+
+    if (isAuthenticated && isAdmin && path === '/user/dashboard') {
+      return NextResponse.redirect(new URL('/admin', request.url));
     }
 
     // If user is not authenticated
@@ -50,7 +86,7 @@ export async function middleware(request: NextRequest) {
     if (isAuthenticated) {
       // If accessing root, redirect to dashboard
       if (path === '/') {
-        return NextResponse.redirect(new URL('/user/dashboard', request.url));
+        return NextResponse.redirect(new URL(defaultAuthedPath, request.url));
       }
       
       return NextResponse.next();
