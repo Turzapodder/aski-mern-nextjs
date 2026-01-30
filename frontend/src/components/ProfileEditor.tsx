@@ -12,6 +12,7 @@ import { AlertCircle, X } from "lucide-react";
 import ProfileSidebar from "./ProfileSidebar";
 import ProfileForm from "./ProfileForm";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AvailabilityValue, buildAvailabilityValue } from "@/lib/availability";
 
 interface ProfileEditorProps {
   userId: string;
@@ -38,12 +39,23 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
   const [activeTab, setActiveTab] = useState("personal");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityValue>({
+    days: [],
+    slotsByDay: {},
+  });
 
   // Sync profile data when loaded
   useEffect(() => {
     if (profileData?.user) {
       setProfile(profileData.user);
       setFormData(profileData.user);
+      const tutorProfile = profileData.user.tutorProfile || {};
+      setAvailability(
+        buildAvailabilityValue(
+          tutorProfile.availableDays || [],
+          tutorProfile.availableTimeSlots || []
+        )
+      );
     }
   }, [profileData]);
 
@@ -71,9 +83,48 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
     >
   ) => {
     const { name, value } = e.target;
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "about" && profile?.roles?.includes("tutor")) {
+        next.tutorProfile = {
+          ...(prev.tutorProfile || {}),
+          bio: value,
+        };
+      }
+
+      return next;
+    });
+  };
+
+  const updateTutorField = (
+    field: keyof NonNullable<ProfileUpdatePayload["tutorProfile"]>,
+    value: any
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      tutorProfile: {
+        ...(prev.tutorProfile || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleAvailabilityChange = (nextAvailability: AvailabilityValue) => {
+    setAvailability(nextAvailability);
+    setFormData((prev) => ({
+      ...prev,
+      tutorProfile: {
+        ...(prev.tutorProfile || {}),
+        availableDays: nextAvailability.days,
+        availableTimeSlots: nextAvailability.days.map((day) => ({
+          day,
+          slots: nextAvailability.slotsByDay[day] || [],
+        })),
+      },
     }));
   };
 
@@ -177,6 +228,8 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
     );
   }
 
+  const isTutor = profile?.roles?.includes("tutor");
+
   return (
     <div className='min-h-screen flex'>
       {/* Sidebar */}
@@ -211,6 +264,11 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
             isUpdating={isUpdating}
             isUploading={isUploading}
             success={success}
+            isTutor={isTutor}
+            tutorProfile={formData.tutorProfile}
+            onTutorFieldChange={updateTutorField}
+            availabilityValue={availability}
+            onAvailabilityChange={handleAvailabilityChange}
           />
         ) : (
           <div className="bg-white p-8 rounded-xl shadow-sm h-full flex items-center justify-center text-gray-500">

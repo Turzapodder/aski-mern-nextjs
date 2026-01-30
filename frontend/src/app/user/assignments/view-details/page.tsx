@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
 import SendProposalModal from "@/components/SendProposalModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 const AllAssignmentsPage = () => {
   const router = useRouter();
@@ -28,6 +31,8 @@ const AllAssignmentsPage = () => {
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
   const isTutor = currentUser?.roles?.includes('tutor');
+  const currency = currentUser?.wallet?.currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, currency);
 
   // Use RTK Query to fetch assignments
   const {
@@ -43,7 +48,12 @@ const AllAssignmentsPage = () => {
     search: searchTerm || undefined
   });
 
-  const assignments = assignmentsData?.data || [];
+  const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
+  const assignmentIds = useMemo(() => assignments.map((assignment) => assignment._id), [assignments]);
+  const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
+    assignmentIds.length > 0 ? { assignmentIds } : skipToken
+  );
+  const latestStatuses = latestStatusesData?.data || {};
 
   // Use assignments directly since API already handles filtering
   const getPriorityColor = (priority: string) => {
@@ -258,6 +268,11 @@ const AllAssignmentsPage = () => {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}>
                           {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
                         </span>
+                        {latestStatuses[assignment._id]?.status === "under_review" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700">
+                            Under review
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -297,7 +312,7 @@ const AllAssignmentsPage = () => {
                       {(assignment.budget ?? assignment.estimatedCost) > 0 && (
                         <div className="flex items-center space-x-1">
                           <DollarSign className="h-4 w-4" />
-                          <span>${assignment.budget ?? assignment.estimatedCost}</span>
+                          <span>{formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}</span>
                         </div>
                       )}
                     </div>
@@ -345,6 +360,7 @@ const AllAssignmentsPage = () => {
           isOpen={isProposalModalOpen}
           onClose={handleProposalModalClose}
           assignment={selectedAssignment}
+          currency={currency}
         />
       )}
     </div>

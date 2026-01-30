@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { Eye, MoreHorizontal, Trash2, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import { skipToken } from "@reduxjs/toolkit/query"
 
 import { adminApi } from "@/lib/adminApi"
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -78,8 +80,16 @@ export default function AdminAssignmentsPage() {
     () => adminApi.assignments.getAll(params)
   )
 
-  const assignments = data?.data ?? []
+  const assignments = useMemo(() => data?.data ?? [], [data?.data])
   const pagination = data?.pagination
+  const assignmentIds = useMemo(
+    () => assignments.map((assignment: AssignmentRow) => assignment._id),
+    [assignments]
+  )
+  const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
+    assignmentIds.length > 0 ? { assignmentIds } : skipToken
+  )
+  const latestStatuses = latestStatusesData?.data || {}
 
   const openDialog = (assignment: AssignmentRow, mode: "delete" | "force-cancel") => {
     setSelectedAssignment(assignment)
@@ -213,9 +223,16 @@ export default function AdminAssignmentsPage() {
                           {assignment.budget ?? assignment.estimatedCost ?? assignment.paymentAmount ?? 0}
                         </td>
                         <td className="py-3 pr-4">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
-                            {assignment.status}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
+                              {assignment.status}
+                            </span>
+                            {latestStatuses[assignment._id]?.status === "under_review" && (
+                              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                Under review
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 pr-4 text-gray-600">
                           {new Date(assignment.createdAt).toLocaleDateString()}
@@ -298,9 +315,16 @@ export default function AdminAssignmentsPage() {
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Status</p>
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(assignment.status)} shadow-sm`}>
-                          {assignment.status}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2 justify-end">
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(assignment.status)} shadow-sm`}>
+                            {assignment.status}
+                          </span>
+                          {latestStatuses[assignment._id]?.status === "under_review" && (
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                              Under review
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

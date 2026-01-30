@@ -7,6 +7,7 @@ import { useCreateAssignmentMutation } from '@/lib/services/assignments'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { Skeleton } from '@/components/ui/skeleton'
+import useCurrency from '@/lib/hooks/useCurrency'
 
 interface UploadProjectFormProps {
   onSubmit?: (formData: FormData) => void // Kept for backward compatibility or override
@@ -57,6 +58,7 @@ const UploadProjectForm = ({
   requestedTutorId,
   requestedTutorName,
 }: UploadProjectFormProps) => {
+  const { currency } = useCurrency()
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -643,7 +645,9 @@ const UploadProjectForm = ({
                 Budget (Optional)
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-semibold">
+                  {currency}
+                </span>
                 <input
                   type="number"
                   placeholder="0.00"
@@ -651,7 +655,7 @@ const UploadProjectForm = ({
                   step="0.01"
                   value={formData.budget || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, budget: parseFloat(e.target.value) }))}
-                  className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
                 />
               </div>
             </div>

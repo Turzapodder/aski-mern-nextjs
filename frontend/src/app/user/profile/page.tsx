@@ -32,7 +32,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen gray-bg overflow-auto">
+    <div className="min-h-screen gray-bg">
       <div className="w-full mx-auto">
         <ProfileEditor userId={userId} role={role} />
       </div>

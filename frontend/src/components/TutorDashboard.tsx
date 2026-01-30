@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { format } from "date-fns";
+import useCurrency from "@/lib/hooks/useCurrency";
 
 const TutorDashboard = ({ user }: { user: any }) => {
   // 1. Fetch Assignments
@@ -37,6 +38,7 @@ const TutorDashboard = ({ user }: { user: any }) => {
 
   const ongoingProjects = ongoingData?.data || [];
   const availableAssignments = availableData?.data || [];
+  const { format: formatAmount } = useCurrency();
 
   const activeBudgetTotal = ongoingProjects.reduce(
     (sum, assignment) => sum + (assignment.budget ?? assignment.estimatedCost ?? 0),
@@ -129,7 +131,9 @@ const TutorDashboard = ({ user }: { user: any }) => {
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-xs text-gray-400">Budget</p>
-          <p className="font-bold text-gray-900">${assignment.budget ?? assignment.estimatedCost}</p>
+          <p className="font-bold text-gray-900">
+            {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-400">Deadline</p>
@@ -183,7 +187,7 @@ const TutorDashboard = ({ user }: { user: any }) => {
             <StatCard
               title="Active Projects"
               value={`${ongoingProjects.length}`}
-              subtitle={`Active budget $${activeBudgetTotal.toFixed(2)}`}
+              subtitle={`Active budget ${formatAmount(activeBudgetTotal)}`}
               colorClass="bg-[#E3F2FD]"
               iconClass="bg-blue-500 text-blue-500"
               trend={ongoingProjects.length > 0 ? "Active now" : undefined}
@@ -255,7 +259,9 @@ const TutorDashboard = ({ user }: { user: any }) => {
                         <span className="text-sm font-medium text-gray-700">{assignment.subject}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-green-600">${assignment.budget ?? assignment.estimatedCost}</span>
+                        <span className="text-sm font-bold text-green-600">
+                          {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-500">

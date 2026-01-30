@@ -22,6 +22,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import assignmentRoutes from "./routes/assignmentRoutes.js";
 import proposalRoutes from "./routes/proposalRoutes.js";
+import submissionRoutes from "./routes/submissionRoutes.js";
 import tutorsRoutes from "./routes/tutorsRoutes.js";
 import sessionsRoutes from "./routes/sessionsRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
@@ -427,6 +428,7 @@ const startServer = async () => {
     app.use("/api/student", studentRoutes);
     app.use("/api/profile", profileRoutes);
     app.use("/api/assignments", assignmentRoutes);
+    app.use("/api/submissions", submissionRoutes);
     app.use("/api/proposals", proposalRoutes);
     app.use("/api/custom-offers", customOfferRoutes);
     app.use("/api/reports", reportRoutes);

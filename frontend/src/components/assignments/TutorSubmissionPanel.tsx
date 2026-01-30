@@ -1,7 +1,15 @@
 import React, { useMemo, useState } from "react";
-import { FileText, Link as LinkIcon, Plus, Trash2, UploadCloud } from "lucide-react";
+import {
+  FileText,
+  Link as LinkIcon,
+  Plus,
+  Trash2,
+  UploadCloud,
+  PencilLine,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Assignment, useSubmitAssignmentSolutionMutation } from "@/lib/services/assignments";
+import axios from "axios";
+import { Assignment } from "@/lib/services/assignments";
 
 const blockedExtensions = [
   ".exe",
@@ -48,10 +56,18 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
   assignment,
   onSubmitted,
 }) => {
+  const [submissionTitle, setSubmissionTitle] = useState("");
+  const [submissionDescription, setSubmissionDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<SubmissionLink[]>([]);
   const [notes, setNotes] = useState("");
-  const [submitAssignment, { isLoading }] = useSubmitAssignmentSolutionMutation();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:8000";
 
   const fileErrors = useMemo(() => {
     return files.reduce<string[]>((acc, file) => {
@@ -117,10 +133,17 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
   };
 
   const handleSubmit = async () => {
+    const trimmedTitle = submissionTitle.trim();
+    const trimmedDescription = submissionDescription.trim();
     const trimmedNotes = notes.trim();
     const validLinks = links
       .map((link) => ({ url: link.url.trim(), label: link.label?.trim() || undefined }))
       .filter((link) => link.url && isValidUrl(link.url));
+
+    if (!trimmedTitle || !trimmedDescription) {
+      toast.error("Please add a submission title and description.");
+      return;
+    }
 
     if (fileErrors.length > 0) {
       toast.error(fileErrors[0]);
@@ -133,6 +156,8 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
     }
 
     const formData = new FormData();
+    formData.append("submissionTitle", trimmedTitle);
+    formData.append("submissionDescription", trimmedDescription);
     files.forEach((file) => {
       formData.append("submissionFiles", file);
     });
@@ -144,35 +169,86 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
     }
 
     try {
-      const result = await submitAssignment({
-        id: assignment._id,
+      setIsUploading(true);
+      setUploadProgress(0);
+      const response = await axios.post(
+        `${apiBaseUrl}/api/assignments/${assignment._id}/submit`,
         formData,
-      }).unwrap();
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (event) => {
+            if (!event.total) return;
+            const percent = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percent);
+          },
+        }
+      );
+      const result = response.data;
       toast.success("Submission sent successfully.");
+      setSubmissionTitle("");
+      setSubmissionDescription("");
       setFiles([]);
       setLinks([]);
       setNotes("");
+      setUploadProgress(0);
       if (result?.data && onSubmitted) {
         onSubmitted(result.data);
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to submit work");
+      toast.error(
+        error?.response?.data?.message || error?.data?.message || "Unable to submit work"
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+      <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Submit your work</h2>
           <p className="text-sm text-gray-500">
-            Upload files, share links, and leave notes for the student.
+            Add a clear title, a short summary, and attach your delivery files.
           </p>
         </div>
-        <UploadCloud className="h-8 w-8 text-primary-400" />
+        <div className="rounded-xl bg-primary-50 p-3">
+          <UploadCloud className="h-6 w-6 text-primary-500" />
+        </div>
       </div>
 
       <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Submission title
+            </label>
+            <div className="relative">
+              <PencilLine className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                value={submissionTitle}
+                onChange={(event) => setSubmissionTitle(event.target.value)}
+                placeholder="Final report + solution files"
+                className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Short description
+            </label>
+            <input
+              value={submissionDescription}
+              onChange={(event) => setSubmissionDescription(event.target.value)}
+              placeholder="What you delivered and key highlights"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Files</label>
           <input
@@ -195,7 +271,12 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
               >
                 <div className="flex items-center gap-2 text-gray-700">
                   <FileText className="h-4 w-4 text-primary-500" />
-                  <span>{file.name}</span>
+                  <div>
+                    <div className="text-sm font-medium">{file.name}</div>
+                    <div className="text-[11px] text-gray-400">
+                      {(file.size / (1024 * 1024)).toFixed(1)} MB
+                    </div>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -272,13 +353,28 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
         </div>
       </div>
 
+      {isUploading && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>Uploading files...</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-primary-400 transition-all"
+              style={{ width: `${Math.max(uploadProgress, 5)}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={isLoading}
+        disabled={isUploading}
         className="mt-6 w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
       >
-        {isLoading ? "Submitting..." : "Submit work"}
+        {isUploading ? "Submitting..." : "Submit work"}
       </button>
     </div>
   );

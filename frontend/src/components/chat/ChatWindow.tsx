@@ -34,6 +34,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -59,6 +60,8 @@ const ChatWindow = () => {
   const currentUser = userData?.user;
   const isTutor = currentUser?.roles?.includes('tutor');
   const isStudent = currentUser?.roles?.includes('student') || currentUser?.roles?.includes('user');
+  const currency = currentUser?.wallet?.currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, currency);
 
   const [newMessage, setNewMessage] = useState('');
   const [offerModalOpen, setOfferModalOpen] = useState(false);
@@ -384,7 +387,7 @@ const ChatWindow = () => {
             <div className="flex items-center gap-6">
               <div>
                 <p className="text-xs text-gray-500">Budget</p>
-                <p className="font-semibold text-gray-900">${assignmentBudget ?? 0}</p>
+                <p className="font-semibold text-gray-900">{formatAmount(assignmentBudget ?? 0)}</p>
               </div>
               {assignmentDeadline && (
                 <div>
