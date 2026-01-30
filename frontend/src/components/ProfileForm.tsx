@@ -1,18 +1,25 @@
 import React from 'react';
 import { User, Lock } from 'lucide-react';
 import Image from 'next/image';
-import { ProfileUpdatePayload, UserProfile } from '@/lib/services/profile';
+import { ProfileUpdatePayload, TutorProfile, UserProfile } from '@/lib/services/profile';
 import { Skeleton } from '@/components/ui/skeleton';
+import TutorProfileFields from '@/components/TutorProfileFields';
+import { AvailabilityValue } from '@/lib/availability';
 
 interface ProfileFormProps {
   profile: UserProfile | null;
   formData: ProfileUpdatePayload;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isUpdating: boolean;
   isUploading: boolean;
   success: string | null;
+  isTutor?: boolean;
+  tutorProfile?: TutorProfile;
+  onTutorFieldChange?: (field: keyof TutorProfile, value: any) => void;
+  availabilityValue?: AvailabilityValue;
+  onAvailabilityChange?: (value: AvailabilityValue) => void;
 }
 
 const ProfileForm: React.FC<ProfileFormProps> = ({
@@ -23,8 +30,19 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   handleSubmit,
   isUpdating,
   isUploading,
-  success
+  success,
+  isTutor,
+  tutorProfile,
+  onTutorFieldChange,
+  availabilityValue,
+  onAvailabilityChange,
 }) => {
+  const updateTutorField = (field: keyof TutorProfile, value: any) => {
+    if (onTutorFieldChange) {
+      onTutorFieldChange(field, value);
+    }
+  };
+
   return (
     <div className="flex-1 bg-white p-8">
       <div className="flex justify-between items-center mb-8">
@@ -160,7 +178,37 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               placeholder="3100"
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">About</label>
+            <textarea
+              name="about"
+              value={formData.about || ''}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors"
+              placeholder="Write a short bio to introduce yourself."
+            />
+          </div>
         </div>
+
+        {isTutor && (
+          <div className="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Tutor profile</h3>
+            {availabilityValue && onAvailabilityChange ? (
+              <TutorProfileFields
+                values={tutorProfile || {}}
+                onChange={updateTutorField}
+                availabilityValue={availabilityValue}
+                onAvailabilityChange={onAvailabilityChange}
+                variant="profile"
+              />
+            ) : (
+              <p className="text-sm text-gray-500">
+                Availability settings are not available.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-12 p-6 bg-gray-50 rounded-2xl">
           <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Account</h3>

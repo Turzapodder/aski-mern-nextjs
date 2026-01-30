@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 interface AvailabilitySlot {
   day: string;
@@ -16,6 +17,8 @@ interface AvailabilitySlot {
 export default function TutorProfilePage() {
   const { data, isLoading } = useGetUserQuery();
   const user = data?.user;
+  const currency = user?.wallet?.currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, currency);
 
   const availability = useMemo<AvailabilitySlot[]>(() => {
     const days = user?.tutorProfile?.availableDays || [];
@@ -101,13 +104,15 @@ export default function TutorProfilePage() {
             {typeof tutorProfile.hourlyRate === "number" && tutorProfile.hourlyRate > 0 ? (
               <>
                 <div className="text-sm text-gray-500">Hourly rate</div>
-                <div className="text-2xl font-bold text-gray-900">${tutorProfile.hourlyRate}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatAmount(tutorProfile.hourlyRate ?? 0)}
+                </div>
               </>
             ) : (
               <div className="text-sm text-gray-500">Hourly rate not set</div>
             )}
             <Link
-              href="/user/profile"
+              href="/user/settings"
               className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Edit profile

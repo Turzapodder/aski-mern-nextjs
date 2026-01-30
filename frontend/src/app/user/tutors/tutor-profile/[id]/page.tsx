@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import ReportModal from '@/components/ReportModal'
 import { useGetUserQuery } from '@/lib/services/auth'
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency'
 
 interface PublicTutor {
     _id: string
@@ -50,6 +51,8 @@ const TutorProfilePage = () => {
     const [reportOpen, setReportOpen] = useState(false)
     const { data: viewerData } = useGetUserQuery()
     const viewer = viewerData?.user
+    const currency = viewer?.wallet?.currency || DEFAULT_CURRENCY
+    const formatAmount = (value?: number) => formatCurrency(value, currency)
     const reporterType = viewer?.roles?.includes('tutor') ? 'tutor' : 'user'
     const canReportTutor = Boolean(viewer) && reporterType === 'user'
     const canRequestProposal = !viewer || !viewer.roles?.includes('tutor')
@@ -269,7 +272,7 @@ const TutorProfilePage = () => {
                                     <div className="flex items-center gap-2">
                                         {isOwner && (
                                             <button
-                                                onClick={() => router.push('/user/profile')}
+                                                onClick={() => router.push('/user/settings')}
                                                 className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 flex items-center gap-1"
                                             >
                                                 <Edit className="h-3.5 w-3.5" />
@@ -425,7 +428,9 @@ const TutorProfilePage = () => {
                             <div className="text-right">
                                 {typeof tutorData.price === 'number' && tutorData.price > 0 ? (
                                     <>
-                                        <span className="text-3xl font-bold text-gray-900">${tutorData.price}</span>
+                                        <span className="text-3xl font-bold text-gray-900">
+                                            {formatAmount(tutorData.price)}
+                                        </span>
                                         <span className="text-sm text-gray-500">/hr</span>
                                     </>
                                 ) : (

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Link as LinkIcon, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -6,14 +6,28 @@ import {
   useRequestRevisionMutation,
   useSubmitFeedbackMutation,
 } from "@/lib/services/assignments";
+import { useMarkSubmissionUnderReviewMutation } from "@/lib/services/submissions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CompletionFeedbackComponentProps {
   assignment: Assignment;
+  submissionStatus?: "submitted" | "under_review" | "completed" | "revision_requested";
   onCompleted?: (assignment: Assignment) => void;
 }
 
 const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = ({
   assignment,
+  submissionStatus,
   onCompleted,
 }) => {
   const [rating, setRating] = useState<number | undefined>(
@@ -25,6 +39,8 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
     useSubmitFeedbackMutation();
   const [requestRevision, { isLoading: revisionLoading }] =
     useRequestRevisionMutation();
+  const [markUnderReview] = useMarkSubmissionUnderReviewMutation();
+  const hasMarkedRef = useRef(false);
 
   const latestSubmission = useMemo(() => {
     if (assignment.submissionDetails?.submissionFiles?.length ||
@@ -41,8 +57,11 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
   const submissionFiles = latestSubmission?.submissionFiles ?? [];
   const submissionLinks = latestSubmission?.submissionLinks ?? [];
   const submissionNotes = latestSubmission?.submissionNotes;
+  const submissionTitle = latestSubmission?.title;
+  const submissionDescription = latestSubmission?.description;
   const isSubmitted = assignment.status === "submitted";
   const isCompleted = assignment.status === "completed";
+  const completedRating = assignment.feedback?.rating ?? 0;
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.REACT_APP_API_URL ||
@@ -53,7 +72,17 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
     return `${apiBaseUrl}${url}`;
   };
 
+  useEffect(() => {
+    if (!isSubmitted || hasMarkedRef.current) return;
+    hasMarkedRef.current = true;
+    markUnderReview({ assignmentId: assignment._id }).catch(() => null);
+  }, [assignment._id, isSubmitted, markUnderReview]);
+
   const handleSubmitFeedback = async () => {
+    if (!rating) {
+      toast.error("Please select a star rating to complete the assignment.");
+      return;
+    }
     try {
       const result = await submitFeedback({
         id: assignment._id,
@@ -88,7 +117,14 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Submission review</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Submission review</h2>
+        {submissionStatus === "under_review" && (
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+            Under review
+          </span>
+        )}
+      </div>
 
       {!latestSubmission && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
@@ -98,6 +134,17 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
 
       {latestSubmission && (
         <div className="space-y-4">
+          {(submissionTitle || submissionDescription) && (
+            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+              {submissionTitle && (
+                <p className="text-sm font-semibold text-gray-900">{submissionTitle}</p>
+              )}
+              {submissionDescription && (
+                <p className="mt-1 text-sm text-gray-600">{submissionDescription}</p>
+              )}
+            </div>
+          )}
+
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Files</p>
             {submissionFiles.length === 0 && (
@@ -199,6 +246,11 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                 </button>
               ))}
             </div>
+            {!rating && (
+              <p className="mt-2 text-xs text-amber-600">
+                Star rating is required to accept and complete this assignment.
+              </p>
+            )}
           </div>
 
           <div>
@@ -225,30 +277,81 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
               />
             </div>
-            <button
-              type="button"
-              onClick={handleRequestRevision}
-              disabled={revisionLoading}
-              className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
-            >
-              {revisionLoading ? "Requesting..." : "Request revision"}
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  disabled={revisionLoading}
+                  className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+                >
+                  {revisionLoading ? "Requesting..." : "Request revision"}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Request revisions?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Let your tutor know what needs to be updated. This will reopen the submission step.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleRequestRevision}>
+                    Confirm request
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSubmitFeedback}
-            disabled={feedbackLoading}
-            className="w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
-          >
-            {feedbackLoading ? "Submitting..." : "Approve & complete"}
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                disabled={feedbackLoading || !rating}
+                className="w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
+              >
+                {feedbackLoading ? "Submitting..." : "Approve & complete"}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Complete this assignment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will release payment to the tutor and mark the assignment as completed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSubmitFeedback}>
+                  Confirm completion
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 
       {isCompleted && (
         <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          This assignment is completed. Thank you for your feedback.
+          <div className="font-semibold">Assignment completed</div>
+          {assignment.feedback?.rating && (
+            <div className="mt-2 flex items-center gap-1 text-amber-500">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <Star
+                  key={`completed-${value}`}
+                  className={`h-4 w-4 ${
+                    completedRating >= value ? "fill-current" : "text-amber-200"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+          {assignment.feedback?.feedbackDate && (
+            <div className="mt-1 text-xs text-emerald-700/80">
+              Completed on {new Date(assignment.feedback.feedbackDate).toLocaleString()}
+            </div>
+          )}
         </div>
       )}
     </div>

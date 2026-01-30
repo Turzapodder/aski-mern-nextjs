@@ -9,6 +9,10 @@ import userRefreshTokenModel from "../models/UserRefreshToken.js";
 import transporter from "../config/emailConfig.js";
 import jwt from "jsonwebtoken";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
+import {
+    buildAvailabilityPayload,
+    validateAvailability,
+} from "../utils/tutorAvailability.js";
 
 const loadPlatformSettings = async () => {
     try {
@@ -16,6 +20,29 @@ const loadPlatformSettings = async () => {
     } catch (error) {
         return null;
     }
+};
+
+const normalizeStringList = (value) => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => (typeof item === "string" ? item.trim() : ""))
+            .filter(Boolean);
+    }
+
+    if (typeof value === "string") {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+};
+
+const parseOptionalNumber = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
 };
 
 class UserController {
@@ -345,7 +372,15 @@ class UserController {
                 expertiseSubjects, 
                 skills,
                 qualification,
-                professionalTitle
+                professionalTitle,
+                currentInstitution,
+                teachingMode,
+                achievements,
+                availableDays,
+                availableTimeSlots,
+                city,
+                country,
+                languages,
             } = req.body;
 
             const user = await UserModel.findById(userId);
@@ -355,30 +390,85 @@ class UserController {
             }
 
             // Update basic info
-            if (name) user.name = name;
-            if (bio) user.about = bio; // Updating root 'about'
+            if (name !== undefined) {
+                const trimmedName = String(name).trim();
+                if (trimmedName) {
+                    user.name = trimmedName;
+                }
+            }
+            if (bio !== undefined) user.about = String(bio).trim(); // Updating root 'about'
+            if (city !== undefined) user.city = String(city).trim();
+            if (country !== undefined) user.country = String(country).trim();
+            if (languages !== undefined) {
+                user.languages = normalizeStringList(languages);
+            }
 
             // Update Tutor Profile specific fields if user is a tutor
             if (user.roles.includes('tutor')) {
-                if (bio) user.tutorProfile.bio = bio;
-                if (hourlyRate) user.tutorProfile.hourlyRate = Number(hourlyRate);
-                if (experienceYears) user.tutorProfile.experienceYears = Number(experienceYears);
+                if (!user.tutorProfile) {
+                    user.tutorProfile = {};
+                }
+
+                if (bio !== undefined) user.tutorProfile.bio = String(bio).trim();
+
+                const parsedRate = parseOptionalNumber(hourlyRate);
+                if (parsedRate !== undefined) {
+                    user.tutorProfile.hourlyRate = parsedRate;
+                }
+
+                const parsedExperience = parseOptionalNumber(experienceYears);
+                if (parsedExperience !== undefined) {
+                    user.tutorProfile.experienceYears = parsedExperience;
+                }
                 
-                if (expertiseSubjects) {
-                    // Handle comma-separated string or array
-                    user.tutorProfile.expertiseSubjects = Array.isArray(expertiseSubjects) 
-                        ? expertiseSubjects 
-                        : expertiseSubjects.split(',').map(s => s.trim()).filter(Boolean);
+                if (expertiseSubjects !== undefined) {
+                    user.tutorProfile.expertiseSubjects = normalizeStringList(expertiseSubjects);
                 }
 
-                if (skills) {
-                    user.tutorProfile.skills = Array.isArray(skills) 
-                        ? skills 
-                        : skills.split(',').map(s => s.trim()).filter(Boolean);
+                if (skills !== undefined) {
+                    user.tutorProfile.skills = normalizeStringList(skills);
                 }
 
-                if (qualification) user.tutorProfile.qualification = qualification;
-                if (professionalTitle) user.tutorProfile.professionalTitle = professionalTitle;
+                if (qualification !== undefined) user.tutorProfile.qualification = String(qualification).trim();
+                if (professionalTitle !== undefined) user.tutorProfile.professionalTitle = String(professionalTitle).trim();
+                if (currentInstitution !== undefined) user.tutorProfile.currentInstitution = String(currentInstitution).trim();
+                if (teachingMode !== undefined) {
+                    const normalizedMode =
+                        typeof teachingMode === "string"
+                            ? teachingMode.trim()
+                            : teachingMode;
+                    user.tutorProfile.teachingMode = normalizedMode || undefined;
+                }
+                if (achievements !== undefined) user.tutorProfile.achievements = String(achievements).trim();
+
+                if (availableDays !== undefined || availableTimeSlots !== undefined) {
+                    const currentDays = Array.isArray(user.tutorProfile.availableDays)
+                        ? user.tutorProfile.availableDays
+                        : [];
+                    const currentSlots = Array.isArray(user.tutorProfile.availableTimeSlots)
+                        ? user.tutorProfile.availableTimeSlots
+                        : [];
+
+                    const availabilityPayload = buildAvailabilityPayload(
+                        availableDays !== undefined ? availableDays : currentDays,
+                        availableTimeSlots !== undefined ? availableTimeSlots : currentSlots
+                    );
+
+                    const validationError = validateAvailability(
+                        availabilityPayload.availableDays,
+                        availabilityPayload.availableTimeSlots
+                    );
+
+                    if (validationError) {
+                        return res.status(400).json({
+                            status: "failed",
+                            message: validationError,
+                        });
+                    }
+
+                    user.tutorProfile.availableDays = availabilityPayload.availableDays;
+                    user.tutorProfile.availableTimeSlots = availabilityPayload.availableTimeSlots;
+                }
             }
 
             await user.save();
@@ -392,7 +482,10 @@ class UserController {
                     email: user.email,
                     roles: user.roles,
                     tutorProfile: user.tutorProfile,
-                    about: user.about
+                    about: user.about,
+                    city: user.city,
+                    country: user.country,
+                    languages: user.languages,
                 }
             });
 

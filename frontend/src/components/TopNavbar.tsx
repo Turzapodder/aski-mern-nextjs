@@ -16,6 +16,8 @@ import type { AppDispatch } from "@/lib/store";
 import { useSocket } from "@/lib/hooks/useSocket";
 import { toast } from "sonner";
 import Link from "next/link";
+import { assignmentsApi } from "@/lib/services/assignments";
+import { submissionsApi } from "@/lib/services/submissions";
 
 interface TopNavbarProps {
   userName?: string;
@@ -89,6 +91,22 @@ const TopNavbar = ({
           }
         )
       );
+
+      const assignmentId =
+        incoming?.data?.assignmentId ||
+        incoming?.assignmentId ||
+        incoming?.assignment?._id ||
+        incoming?.assignment;
+
+      if (assignmentId) {
+        dispatch(
+          assignmentsApi.util.invalidateTags([
+            { type: "Assignment", id: assignmentId },
+            "Assignments",
+          ])
+        );
+        dispatch(submissionsApi.util.invalidateTags(["Submissions"]));
+      }
     },
   });
 

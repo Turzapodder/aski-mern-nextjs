@@ -2,6 +2,7 @@ import React from 'react';
 import { CreditCard, Shield } from 'lucide-react';
 import { Assignment, useProcessPaymentMutation } from '@/lib/services/assignments';
 import { toast } from 'sonner';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 interface PaymentMethod {
   id: string;
@@ -12,9 +13,16 @@ interface PaymentMethod {
 interface PaymentComponentProps {
   assignment: Assignment;
   onPaymentComplete?: (assignment: Assignment) => void;
+  currency?: string;
 }
 
-const PaymentComponent: React.FC<PaymentComponentProps> = ({ assignment, onPaymentComplete }) => {
+const PaymentComponent: React.FC<PaymentComponentProps> = ({
+  assignment,
+  onPaymentComplete,
+  currency,
+}) => {
+  const activeCurrency = currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
   const [selectedMethod, setSelectedMethod] = React.useState<string>('credit_card');
   const [cardNumber, setCardNumber] = React.useState('');
   const [cardName, setCardName] = React.useState('');
@@ -193,15 +201,15 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({ assignment, onPayme
         <div className="pt-4 border-t border-gray-200 mt-6">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Assignment Fee:</span>
-            <span className="font-medium">${paymentAmount.toFixed(2)}</span>
+            <span className="font-medium">{formatAmount(paymentAmount)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Service Fee:</span>
-            <span className="font-medium">$0.00</span>
+            <span className="font-medium">{formatAmount(0)}</span>
           </div>
           <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-gray-200">
             <span>Total:</span>
-            <span>${paymentAmount.toFixed(2)}</span>
+            <span>{formatAmount(paymentAmount)}</span>
           </div>
         </div>
 

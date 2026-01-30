@@ -21,6 +21,7 @@
     "setup:logs": "mkdir -p logs && touch logs/app.log logs/error.log",
     "seed": "node scripts/seed.mjs",
     "seed:reset": "node scripts/seed.mjs --reset",
+    "backfill:submissions": "node scripts/backfill-submissions.mjs",
     "health": "curl http://localhost:5000/health",
     "monitor": "node scripts/monitor.js",
     "cluster": "node cluster.js"

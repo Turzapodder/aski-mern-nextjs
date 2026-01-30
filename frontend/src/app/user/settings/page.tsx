@@ -1,34 +1,123 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Bell, Shield, Moon, Sun, Monitor, Save } from "lucide-react";
 import { useGetUserQuery, useUpdateUserMutation } from "@/lib/services/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import TutorProfileFields from "@/components/TutorProfileFields";
+import { buildAvailabilityValue } from "@/lib/availability";
+
+const parseCommaList = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const parseNumericInput = (value: any) => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+type SettingsState = {
+  name: string;
+  email: string;
+  bio: string;
+  timezone: string;
+  city: string;
+  country: string;
+  languages: string;
+  professionalTitle: string;
+  qualification: string;
+  hourlyRate: number | undefined;
+  experienceYears: number | undefined;
+  expertiseSubjects: string[];
+  skills: string[];
+  currentInstitution: string;
+  teachingMode: "" | "Online" | "Offline" | "Hybrid";
+  achievements: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  messageNotifications: boolean;
+  sessionReminders: boolean;
+  weeklyReports: boolean;
+  profileVisibility: string;
+  showOnlineStatus: boolean;
+  allowDirectMessages: boolean;
+  theme: string;
+  language: string;
+  autoAcceptSessions: boolean;
+  maxSessionsPerDay: number;
+  bufferTimeBetweenSessions: number;
+};
+
+const SettingSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+    {children}
+  </div>
+);
+
+const ToggleSwitch = ({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: (value: boolean) => void;
+}) => (
+  <button
+    type="button"
+    onClick={() => onChange(!enabled)}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+      enabled ? "bg-primary-300" : "bg-gray-300"
+    }`}
+  >
+    <span
+      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+        enabled ? "translate-x-6" : "translate-x-1"
+      }`}
+    />
+  </button>
+);
 
 const SettingsPage = () => {
   const { data: userData, isLoading, refetch } = useGetUserQuery();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const user = userData?.user;
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const lastScrollTopRef = useRef(0);
 
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
 
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SettingsState>({
     // Profile Settings
     name: "",
     email: "",
     bio: "",
     timezone: "UTC-5",
+    city: "",
+    country: "",
+    languages: "",
 
     // Tutor Profile Settings
     professionalTitle: "",
     qualification: "",
     hourlyRate: 0,
     experienceYears: 0,
-    expertiseSubjects: "",
-    skills: "",
+    expertiseSubjects: [] as string[],
+    skills: [] as string[],
+    currentInstitution: "",
+    teachingMode: "",
+    achievements: "",
 
     // Notification Settings
     emailNotifications: true,
@@ -52,22 +141,63 @@ const SettingsPage = () => {
     bufferTimeBetweenSessions: 15,
   });
 
+  const [availability, setAvailability] = useState<{
+    days: string[];
+    slotsByDay: Record<string, string[]>;
+  }>({
+    days: [],
+    slotsByDay: {},
+  });
+
+  useEffect(() => {
+    const container = document.querySelector("main");
+    if (!container) return;
+    scrollContainerRef.current = container as HTMLElement;
+    const handleScroll = () => {
+      lastScrollTopRef.current = container.scrollTop;
+    };
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    if (container.scrollTop !== lastScrollTopRef.current) {
+      container.scrollTop = lastScrollTopRef.current;
+    }
+  }, [settings, availability]);
+
   useEffect(() => {
     if (!user) return;
+    const tutorProfile = user.tutorProfile || {};
+    const availableDays = tutorProfile.availableDays || [];
+    const availableTimeSlots = tutorProfile.availableTimeSlots || [];
+
     setSettings((prev) => ({
       ...prev,
       name: user.name || "",
       email: user.email || "",
       bio: user.roles?.includes("tutor")
-        ? user.tutorProfile?.bio || user.about || ""
+        ? tutorProfile?.bio || user.about || ""
         : user.about || "",
-      professionalTitle: user.tutorProfile?.professionalTitle || "",
-      qualification: user.tutorProfile?.qualification || "",
-      hourlyRate: user.tutorProfile?.hourlyRate || 0,
-      experienceYears: user.tutorProfile?.experienceYears || 0,
-      expertiseSubjects: user.tutorProfile?.expertiseSubjects?.join(", ") || "",
-      skills: user.tutorProfile?.skills?.join(", ") || "",
+      city: user.city || "",
+      country: user.country || "",
+      languages: user.languages?.join(", ") || "",
+      professionalTitle: tutorProfile?.professionalTitle || "",
+      qualification: tutorProfile?.qualification || "",
+      hourlyRate: tutorProfile?.hourlyRate ?? 0,
+      experienceYears: tutorProfile?.experienceYears ?? 0,
+      expertiseSubjects: tutorProfile?.expertiseSubjects || [],
+      skills: tutorProfile?.skills || [],
+      currentInstitution: tutorProfile?.currentInstitution || "",
+      teachingMode: tutorProfile?.teachingMode || "",
+      achievements: tutorProfile?.achievements || "",
     }));
+
+    setAvailability(buildAvailabilityValue(availableDays, availableTimeSlots));
   }, [user]);
 
   const handleSettingChange = (key: string, value: any) => {
@@ -77,16 +207,44 @@ const SettingsPage = () => {
   const handleSave = async () => {
     setMessage(null);
     try {
-      const res = await updateUser({
+      const expertiseSubjects = settings.expertiseSubjects
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const skills = settings.skills.map((item) => item.trim()).filter(Boolean);
+      const languages = parseCommaList(settings.languages);
+      const hourlyRate = parseNumericInput(settings.hourlyRate);
+      const experienceYears = parseNumericInput(settings.experienceYears);
+      const teachingMode = settings.teachingMode || undefined;
+
+      const availableTimeSlots = availability.days.map((day) => ({
+        day,
+        slots: availability.slotsByDay[day] || [],
+      }));
+
+      const payload: Record<string, any> = {
         name: settings.name,
         bio: settings.bio,
+        city: settings.city,
+        country: settings.country,
+        languages,
         professionalTitle: settings.professionalTitle,
         qualification: settings.qualification,
-        hourlyRate: settings.hourlyRate,
-        experienceYears: settings.experienceYears,
-        expertiseSubjects: settings.expertiseSubjects,
-        skills: settings.skills,
-      }).unwrap();
+        currentInstitution: settings.currentInstitution,
+        achievements: settings.achievements,
+        expertiseSubjects,
+        skills,
+      };
+
+      if (hourlyRate !== undefined) payload.hourlyRate = hourlyRate;
+      if (experienceYears !== undefined) payload.experienceYears = experienceYears;
+      if (teachingMode !== undefined) payload.teachingMode = teachingMode;
+
+      if (user?.roles?.includes("tutor")) {
+        payload.availableDays = availability.days;
+        payload.availableTimeSlots = availableTimeSlots;
+      }
+
+      const res = await updateUser(payload).unwrap();
 
       if (res.status === "success") {
         setMessage({ type: "success", text: "Profile updated successfully!" });
@@ -105,40 +263,6 @@ const SettingsPage = () => {
       });
     }
   };
-
-  const SettingSection = ({
-    title,
-    children,
-  }: {
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-      {children}
-    </div>
-  );
-
-  const ToggleSwitch = ({
-    enabled,
-    onChange,
-  }: {
-    enabled: boolean;
-    onChange: (value: boolean) => void;
-  }) => (
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        enabled ? "bg-primary-300" : "bg-gray-300"
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
 
   if (isLoading) {
     return (
@@ -174,6 +298,7 @@ const SettingsPage = () => {
           </p>
         </div>
         <button
+          type="button"
           onClick={handleSave}
           disabled={isUpdating}
           className="bg-primary-300 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 disabled:opacity-50"
@@ -219,8 +344,47 @@ const SettingsPage = () => {
             <input
               type="email"
               value={settings.email}
-              onChange={(e) => handleSettingChange("email", e.target.value)}
+              disabled
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Email is set at registration and can&apos;t be changed.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Country
+            </label>
+            <input
+              type="text"
+              value={settings.country}
+              onChange={(e) => handleSettingChange("country", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Bangladesh"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              City
+            </label>
+            <input
+              type="text"
+              value={settings.city}
+              onChange={(e) => handleSettingChange("city", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Sylhet"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Languages (comma separated)
+            </label>
+            <input
+              type="text"
+              value={settings.languages}
+              onChange={(e) => handleSettingChange("languages", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="English, Bangla"
             />
           </div>
           <div className="md:col-span-2">
@@ -255,91 +419,24 @@ const SettingsPage = () => {
       </SettingSection>
 
       {user?.roles?.includes("tutor") && (
-        <SettingSection title="Professional Profile">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Professional Title
-              </label>
-              <input
-                type="text"
-                value={settings.professionalTitle}
-                onChange={(e) =>
-                  handleSettingChange("professionalTitle", e.target.value)
-                }
-                placeholder="e.g. Senior Mathematics Tutor"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Qualification
-              </label>
-              <input
-                type="text"
-                value={settings.qualification}
-                onChange={(e) =>
-                  handleSettingChange("qualification", e.target.value)
-                }
-                placeholder="e.g. PhD in Economics"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hourly Rate ($)
-              </label>
-              <input
-                type="number"
-                value={settings.hourlyRate}
-                onChange={(e) =>
-                  handleSettingChange("hourlyRate", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Years of Experience
-              </label>
-              <input
-                type="number"
-                value={settings.experienceYears}
-                onChange={(e) =>
-                  handleSettingChange("experienceYears", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Expertise Subjects (comma separated)
-              </label>
-              <input
-                type="text"
-                value={settings.expertiseSubjects}
-                onChange={(e) =>
-                  handleSettingChange("expertiseSubjects", e.target.value)
-                }
-                placeholder="Math, Physics, Chemistry"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Skills (comma separated)
-              </label>
-              <input
-                type="text"
-                value={settings.skills}
-                onChange={(e) =>
-                  handleSettingChange("skills", e.target.value)
-                }
-                placeholder="Communication, Problem Solving, React"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-          </div>
+        <SettingSection title="Tutor Profile">
+          <TutorProfileFields
+            variant="settings"
+            values={{
+              professionalTitle: settings.professionalTitle,
+              qualification: settings.qualification,
+              currentInstitution: settings.currentInstitution,
+              teachingMode: settings.teachingMode || undefined,
+              hourlyRate: settings.hourlyRate,
+              experienceYears: settings.experienceYears,
+              expertiseSubjects: settings.expertiseSubjects,
+              skills: settings.skills,
+              achievements: settings.achievements,
+            }}
+            onChange={(field, value) => handleSettingChange(field, value)}
+            availabilityValue={availability}
+            onAvailabilityChange={setAvailability}
+          />
         </SettingSection>
       )}
 

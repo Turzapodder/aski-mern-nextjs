@@ -18,14 +18,18 @@ import {
   useRejectProposalMutation
 } from "@/lib/services/proposals";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 interface ProposalsListProps {
   assignmentId: string;
   isStudent: boolean;
+  currency?: string;
 }
 
-const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
+const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps) => {
   const router = useRouter();
+  const activeCurrency = currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
 
   const {
     data: proposalsData,
@@ -167,7 +171,7 @@ const ProposalsList = ({ assignmentId, isStudent }: ProposalsListProps) => {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-gray-900">
-                    ${proposal.proposedPrice}
+                    {formatAmount(proposal.proposedPrice)}
                   </div>
                   <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
                     {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}

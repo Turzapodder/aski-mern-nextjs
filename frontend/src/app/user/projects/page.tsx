@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Calendar, ArrowUpRight, AlertCircle, Clock } from "lucide-react";
 import { useGetAssignmentsQuery } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 const statusStyles: Record<string, string> = {
   proposal_accepted: "bg-indigo-100 text-indigo-800",
@@ -23,6 +26,8 @@ export default function ProjectsPage() {
   const { data: userData, isLoading: userLoading } = useGetUserQuery();
   const user = userData?.user;
   const isTutor = user?.roles?.includes("tutor");
+  const currency = user?.wallet?.currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, currency);
 
   const { data: assignmentsData, isLoading, error } = useGetAssignmentsQuery({
     status: "proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue",
@@ -37,6 +42,15 @@ export default function ProjectsPage() {
     if (!isTutor) return [];
     return assignments.filter((assignment) => assignment.assignedTutor?._id === user?._id);
   }, [assignments, isTutor, user?._id]);
+
+  const assignmentIds = useMemo(
+    () => activeAssignments.map((assignment) => assignment._id),
+    [activeAssignments]
+  );
+  const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
+    assignmentIds.length > 0 ? { assignmentIds } : skipToken
+  );
+  const latestStatuses = latestStatusesData?.data || {};
 
   if (userLoading) {
     return (
@@ -97,6 +111,7 @@ export default function ProjectsPage() {
           {activeAssignments.map((assignment) => {
             const statusLabel = assignment.status || "assigned";
             const statusClass = statusStyles[statusLabel] || "bg-gray-100 text-gray-700";
+            const isUnderReview = latestStatuses[assignment._id]?.status === "under_review";
 
             return (
               <div
@@ -109,6 +124,11 @@ export default function ProjectsPage() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}`}>
                       {statusLabel}
                     </span>
+                    {isUnderReview && (
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                        Under review
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-500">{assignment.subject}</div>
                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
@@ -117,7 +137,7 @@ export default function ProjectsPage() {
                       Due {new Date(assignment.deadline).toLocaleDateString()}
                     </span>
                     <span className="flex items-center gap-1">
-                      Budget ${assignment.budget ?? assignment.estimatedCost ?? 0}
+                      Budget {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
                     </span>
                   </div>
                 </div>
