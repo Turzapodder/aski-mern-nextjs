@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Star, CheckCircle, ShieldCheck, MessageSquare, MonitorPlay, Clock, Calendar as CalendarIcon, Award, Zap, User, GraduationCap, MapPin, Edit, Copy } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useGetUserQuery } from '@/lib/services/auth'
+import useCurrency from '@/lib/hooks/useCurrency'
 
 interface PublicTutor {
     _id: string
@@ -39,6 +40,7 @@ interface PublicTutor {
 }
 
 const TutorProfileContent = () => {
+    const { format: formatAmount } = useCurrency()
     const params = useParams<{ id: string }>()
     const router = useRouter()
     const { data: userData } = useGetUserQuery()
@@ -263,7 +265,7 @@ const TutorProfileContent = () => {
                                         {isOwner ? (
                                             <>
                                                 <button
-                                                    onClick={() => router.push('/user/profile')}
+                                                    onClick={() => router.push('/user/settings')}
                                                     className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                                                 >
                                                     <Edit size={16} />
@@ -420,7 +422,9 @@ const TutorProfileContent = () => {
                             <div className="text-right">
                                 {typeof tutorData.price === 'number' && tutorData.price > 0 ? (
                                     <>
-                                        <span className="text-3xl font-bold text-gray-900">${tutorData.price}</span>
+                                        <span className="text-3xl font-bold text-gray-900">
+                                            {formatAmount(tutorData.price)}
+                                        </span>
                                         <span className="text-sm text-gray-500">/hr</span>
                                     </>
                                 ) : (

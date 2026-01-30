@@ -53,6 +53,9 @@ export interface Assignment {
     uploadedAt: string;
   }>;
   submissionDetails?: {
+    submissionId?: string;
+    title?: string;
+    description?: string;
     submittedAt?: string;
     submissionFiles?: Array<{
       filename: string;
@@ -70,6 +73,9 @@ export interface Assignment {
     submissionNotes?: string;
   };
   submissionHistory?: Array<{
+    submissionId?: string;
+    title?: string;
+    description?: string;
     submittedAt?: string;
     submissionFiles?: Array<{
       filename: string;

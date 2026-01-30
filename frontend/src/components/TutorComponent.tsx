@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Search, Filter, Bookmark, ChevronDown, CheckCircle, Flame, Star, BookOpen, User, GraduationCap, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { Skeleton } from '@/components/ui/skeleton'
+import useCurrency from '@/lib/hooks/useCurrency'
 
 interface Tutor {
   id: string
@@ -42,6 +43,7 @@ interface Teacher {
 }
 
 const TutorComponent = () => {
+  const { format: formatAmount } = useCurrency()
   const [isTeacherAccountActive, setIsTeacherAccountActive] = useState(false)
   const [tutors, setTutors] = useState<Tutor[]>([])
   const [loading, setLoading] = useState(true)
@@ -230,11 +232,23 @@ const TutorComponent = () => {
         <div className="flex items-center justify-between mt-auto">
           <div className="flex items-baseline gap-1">
             {isDark && <Flame className="w-5 h-5 text-orange-500 fill-orange-500" />}
-            <span className="text-xl font-bold">${teacher.price}</span>
-            {teacher.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">${teacher.originalPrice}/hr</span>
+            {teacher.price > 0 ? (
+              <>
+                <span className="text-xl font-bold">{formatAmount(teacher.price)}</span>
+                {teacher.originalPrice && (
+                  <span className="text-sm text-gray-500 line-through">
+                    {formatAmount(teacher.originalPrice)}/hr
+                  </span>
+                )}
+                {!teacher.originalPrice && (
+                  <span className="text-xs text-gray-500 top-0">/hr</span>
+                )}
+              </>
+            ) : (
+              <span className="text-sm font-semibold text-gray-500">
+                Contact for pricing
+              </span>
             )}
-            {!teacher.originalPrice && <span className="text-xs text-gray-500 top-0">/hr</span>}
           </div>
           <a href={`/user/tutors/tutor-profile/${teacher.id}`} className={`px-5 py-2 rounded-[10px] text-sm font-semibold transition-colors ${isDark
             ? 'bg-white text-black hover:bg-gray-100'

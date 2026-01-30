@@ -8,12 +8,14 @@ import { Assignment } from '@/lib/services/assignments';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '@/lib/store';
 import { chatApi } from '@/lib/services/chat';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 
 interface SendProposalModalProps {
   isOpen: boolean;
   onClose: () => void;
   assignment: Assignment;
+  currency?: string;
 }
 
 interface ProposalFormData {
@@ -27,8 +29,11 @@ interface ProposalFormData {
 const SendProposalModal: React.FC<SendProposalModalProps> = ({
   isOpen,
   onClose,
-  assignment
+  assignment,
+  currency
 }) => {
+  const activeCurrency = currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
   const [createProposal, { isLoading }] = useCreateProposalMutation();
   const dispatch = useDispatch<AppDispatch>();
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -173,7 +178,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                 <span className="flex items-center">
                   <DollarSign className="w-4 h-4 mr-1" />
-                  Budget: ${assignment.budget ?? assignment.estimatedCost}
+                  Budget: {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
                 </span>
                 <span className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
@@ -226,7 +231,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Proposed Price ($) *
+                Proposed Price ({activeCurrency}) *
               </label>
               <input
                 type="number"

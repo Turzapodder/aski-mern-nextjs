@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
+import { skipToken } from "@reduxjs/toolkit/query"
 import useSWR from "swr"
 import { FileText, User } from "lucide-react"
 import { toast } from "sonner"
 
 import { adminApi } from "@/lib/adminApi"
+import { useGetSubmissionsQuery } from "@/lib/services/submissions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,6 +52,9 @@ export default function AdminAssignmentDetailsPage() {
   const { data, error, isLoading, mutate } = useSWR(
     assignmentId ? ["admin-assignment", assignmentId] : null,
     () => adminApi.assignments.getById(assignmentId)
+  )
+  const { data: submissionsData, isLoading: submissionsLoading } = useGetSubmissionsQuery(
+    assignmentId ? { assignmentId } : skipToken
   )
 
   const payload = data?.data as AssignmentDetails | undefined
@@ -146,6 +151,7 @@ export default function AdminAssignmentDetailsPage() {
   const submissionLinks = assignment.submissionDetails?.submissionLinks || []
   const submissionNotes = assignment.submissionDetails?.submissionNotes
   const submissionHistory = assignment.submissionHistory || []
+  const submissions = submissionsData?.data ?? []
   const chatParticipants = Array.isArray(chat?.participants) ? chat?.participants : []
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -376,6 +382,51 @@ export default function AdminAssignmentDetailsPage() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">Submission records</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {submissionsLoading && <Skeleton className="h-24 w-full" />}
+              {!submissionsLoading && submissions.length === 0 && (
+                <p className="text-sm text-gray-500">No submission records yet.</p>
+              )}
+              {submissions.map((submission) => (
+                <div
+                  key={submission._id}
+                  className="rounded-lg border border-gray-100 bg-white p-3 text-sm text-gray-700"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-gray-900">{submission.title}</p>
+                      <p className="text-xs text-gray-500">
+                        Submitted {formatDate(submission.submittedAt || submission.createdAt)}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs capitalize text-gray-600">
+                      {submission.status?.replace("_", " ")}
+                    </span>
+                  </div>
+                  {submission.description && (
+                    <p className="mt-2 text-sm text-gray-600">{submission.description}</p>
+                  )}
+                  <div className="mt-2 text-xs text-gray-500">
+                    Files: {submission.submissionFiles?.length || 0} • Links:{" "}
+                    {submission.submissionLinks?.length || 0}
+                  </div>
+                  {submission.review?.stars && (
+                    <div className="mt-2 text-xs text-amber-600">
+                      Rating: {submission.review.stars}/5
+                      {submission.review.feedback && (
+                        <span className="ml-2 text-gray-500">• {submission.review.feedback}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </CardContent>
           </Card>
 

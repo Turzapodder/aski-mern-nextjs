@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send, DollarSign } from 'lucide-react';
+import useCurrency from '@/lib/hooks/useCurrency';
 
 interface ProposalsComponentProps {
   proposal: string;
@@ -18,6 +19,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
   submitProposal,
   onCancel
 }) => {
+  const { currency } = useCurrency();
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -29,7 +31,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
         {/* Budget */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your Budget <span className="text-red-500">*</span>
+            Your Budget ({currency}) <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -39,7 +41,7 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
               type="number"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              placeholder="Enter your budget (USD)"
+              placeholder={`Enter your budget (${currency})`}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-300"
               required
             />

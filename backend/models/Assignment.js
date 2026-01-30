@@ -100,6 +100,18 @@ const assignmentSchema = new mongoose.Schema({
   
   // Submission details
   submissionDetails: {
+    submissionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Submission'
+    },
+    title: {
+      type: String,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
     submittedAt: Date,
     submissionFiles: [{
       filename: String,
@@ -122,6 +134,18 @@ const assignmentSchema = new mongoose.Schema({
 
   submissionHistory: [
     {
+      submissionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Submission'
+      },
+      title: {
+        type: String,
+        trim: true
+      },
+      description: {
+        type: String,
+        trim: true
+      },
       submittedAt: Date,
       submissionFiles: [{
         filename: String,

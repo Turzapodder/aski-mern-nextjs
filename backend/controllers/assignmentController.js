@@ -1,4 +1,5 @@
 import AssignmentModel from '../models/Assignment.js';
+import SubmissionModel from '../models/Submission.js';
 import UserModel from '../models/User.js';
 import ProposalModel from '../models/Proposal.js';
 import NotificationModel from '../models/Notification.js';
@@ -663,7 +664,14 @@ class AssignmentController {
   static submitWork = async (req, res) => {
     try {
       const { id } = req.params;
-      const { submissionNotes, submissionLinks } = req.body;
+      const {
+        submissionNotes,
+        submissionLinks,
+        submissionTitle,
+        submissionDescription,
+        title,
+        description,
+      } = req.body;
       const tutorId = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -690,10 +698,34 @@ class AssignmentController {
         });
       }
 
+      const allowedSubmissionStatuses = [
+        "in_progress",
+        "submission_pending",
+        "revision_requested",
+        "assigned",
+        "proposal_accepted",
+        "overdue",
+      ];
+      if (!allowedSubmissionStatuses.includes(assignment.status)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Submission is not allowed in the current assignment status",
+        });
+      }
+
       if (assignment.paymentStatus !== 'paid') {
         return res.status(403).json({
           status: 'failed',
           message: 'Payment must be completed before submitting work'
+        });
+      }
+
+      const sanitizedTitle = sanitizeText(submissionTitle || title);
+      const sanitizedDescription = sanitizeText(submissionDescription || description);
+      if (!sanitizedTitle || !sanitizedDescription) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Submission title and description are required",
         });
       }
 
@@ -731,8 +763,25 @@ class AssignmentController {
         ? assignment.submissionHistory.length
         : 0;
 
+      const submissionRecord = await SubmissionModel.create({
+        assignment: assignment._id,
+        student: assignment.student,
+        tutor: assignment.assignedTutor,
+        title: sanitizedTitle,
+        description: sanitizedDescription,
+        submissionFiles,
+        submissionLinks: normalizedLinks,
+        submissionNotes: sanitizedNotes || undefined,
+        revisionIndex,
+        submittedAt: new Date(),
+        status: "submitted",
+      });
+
       // Update assignment with submission
       assignment.submissionDetails = {
+        submissionId: submissionRecord._id,
+        title: sanitizedTitle,
+        description: sanitizedDescription,
         submittedAt: new Date(),
         submissionFiles,
         submissionLinks: normalizedLinks,
@@ -742,6 +791,9 @@ class AssignmentController {
         ? [
             ...assignment.submissionHistory,
             {
+              submissionId: submissionRecord._id,
+              title: sanitizedTitle,
+              description: sanitizedDescription,
               submittedAt: new Date(),
               submissionFiles,
               submissionLinks: normalizedLinks,
@@ -751,6 +803,9 @@ class AssignmentController {
           ]
         : [
             {
+              submissionId: submissionRecord._id,
+              title: sanitizedTitle,
+              description: sanitizedDescription,
               submittedAt: new Date(),
               submissionFiles,
               submissionLinks: normalizedLinks,
@@ -958,6 +1013,14 @@ class AssignmentController {
           ]
         : [{ note: noteValue, requestedAt: new Date(), requestedBy: userId }];
 
+      const latestSubmission = await SubmissionModel.findOne({ assignment: id })
+        .sort({ createdAt: -1, submittedAt: -1 })
+        .exec();
+      if (latestSubmission) {
+        latestSubmission.status = "revision_requested";
+        await latestSubmission.save();
+      }
+
       await assignment.save();
 
       if (assignment.assignedTutor) {
@@ -1030,17 +1093,37 @@ class AssignmentController {
         });
       }
 
-      const ratingValue = rating !== undefined ? parseNumber(rating, 0) : 0;
-      if (ratingValue && (ratingValue < 1 || ratingValue > 5)) {
+      const ratingValue = parseNumber(rating, 0);
+      if (!ratingValue) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Rating is required to complete the assignment",
+        });
+      }
+      if (ratingValue < 1 || ratingValue > 5) {
         return res.status(400).json({
           status: "failed",
           message: "Rating must be between 1 and 5",
         });
       }
 
+      const feedbackComments = sanitizeText(comments);
+      const latestSubmission = await SubmissionModel.findOne({ assignment: id })
+        .sort({ createdAt: -1, submittedAt: -1 })
+        .exec();
+      if (latestSubmission) {
+        latestSubmission.status = "completed";
+        latestSubmission.review = {
+          stars: ratingValue,
+          feedback: feedbackComments || undefined,
+          reviewedAt: new Date(),
+        };
+        await latestSubmission.save();
+      }
+
       assignment.feedback = {
-        rating: ratingValue || undefined,
-        comments: sanitizeText(comments) || undefined,
+        rating: ratingValue,
+        comments: feedbackComments || undefined,
         feedbackDate: new Date(),
       };
       assignment.status = "completed";

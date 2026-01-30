@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   CheckCircle,
   ChevronUp,
@@ -12,6 +12,8 @@ import {
 import Image from "next/image";
 import UploadProjectForm from "./UploadProjectForm";
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -74,7 +76,13 @@ const TopStats = ({ assignments }: { assignments: Assignment[] }) => {
   );
 };
 
-const TaskItem = ({ task }: { task: Assignment }) => {
+const TaskItem = ({
+  task,
+  submissionStatus,
+}: {
+  task: Assignment;
+  submissionStatus?: "submitted" | "under_review" | "completed" | "revision_requested";
+}) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -151,14 +159,21 @@ const TaskItem = ({ task }: { task: Assignment }) => {
 
           {/* Status Badge */}
           <div className="col-span-1 flex items-center justify-start md:justify-end">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize
               ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
                 ['pending', 'draft', 'created', 'proposal_received', 'proposal_accepted'].includes(task.status) ? 'bg-orange-100 text-orange-800' :
                   task.status === 'overdue' ? 'bg-red-100 text-red-800' :
                     'bg-blue-100 text-blue-800'
               }`}>
-              {task.status.replace('_', ' ')}
-            </span>
+                {task.status.replace('_', ' ')}
+              </span>
+              {submissionStatus === "under_review" && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700">
+                  Under review
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <Link href={`/user/assignments/view-details/${task._id}`} className="p-1 hover:bg-gray-100 rounded">
@@ -173,12 +188,14 @@ const ProjectSection = ({
   title,
   assignments,
   bgColor,
-  shadow
+  shadow,
+  latestStatuses,
 }: {
   title: string;
   assignments: Assignment[];
   bgColor: string;
   shadow: string;
+  latestStatuses: Record<string, { status: string }>;
 }) => {
   const router = useRouter();
 
@@ -220,7 +237,11 @@ const ProjectSection = ({
 
       <div className="space-y-3">
         {displayAssignments.map((assignment) => (
-          <TaskItem key={assignment._id} task={assignment} />
+          <TaskItem
+            key={assignment._id}
+            task={assignment}
+            submissionStatus={latestStatuses[assignment._id]?.status as any}
+          />
         ))}
       </div>
     </div>
@@ -229,7 +250,12 @@ const ProjectSection = ({
 
 const DashboardComponent = () => {
   const { data: assignmentsData, isLoading } = useGetAssignmentsQuery({});
-  const assignments = assignmentsData?.data || [];
+  const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
+  const assignmentIds = useMemo(() => assignments.map((assignment) => assignment._id), [assignments]);
+  const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
+    assignmentIds.length > 0 ? { assignmentIds } : skipToken
+  );
+  const latestStatuses = latestStatusesData?.data || {};
 
   const ongoingAssignments = assignments.filter(a => ['assigned', 'submitted', 'in_progress', 'submission_pending', 'revision_requested'].includes(a.status));
   const completedAssignments = assignments.filter(a => a.status === 'completed');
@@ -260,17 +286,20 @@ const DashboardComponent = () => {
           assignments={ongoingAssignments}
           bgColor="bg-white"
           shadow="shadow-lg"
+          latestStatuses={latestStatuses}
         /><ProjectSection
           title="Pending Projects"
           assignments={pendingAssignments}
           bgColor="bg-gray-100"
           shadow="shadow-2xs"
+          latestStatuses={latestStatuses}
         />
         <ProjectSection
           title="Completed Projects"
           assignments={completedAssignments}
           bgColor="bg-gray-100"
           shadow="shadow-2xs"
+          latestStatuses={latestStatuses}
         />
 
       </div>

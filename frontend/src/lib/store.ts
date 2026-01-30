@@ -6,6 +6,7 @@ import { tutorApi } from './services/tutor'
 import { studentApi } from './services/student'
 import { profileApi } from './services/profile'
 import { assignmentsApi } from './services/assignments'
+import { submissionsApi } from './services/submissions'
 import { proposalsApi } from './services/proposals'
 import { customOffersApi } from './services/customOffers'
 import { reportsApi } from './services/reports'
@@ -19,6 +20,7 @@ export const store = configureStore({
     [studentApi.reducerPath]: studentApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
     [assignmentsApi.reducerPath]: assignmentsApi.reducer,
+    [submissionsApi.reducerPath]: submissionsApi.reducer,
     [proposalsApi.reducerPath]: proposalsApi.reducer,
     [customOffersApi.reducerPath]: customOffersApi.reducer,
     [reportsApi.reducerPath]: reportsApi.reducer,
@@ -32,6 +34,7 @@ export const store = configureStore({
       studentApi.middleware,
       profileApi.middleware,
       assignmentsApi.middleware,
+      submissionsApi.middleware,
       proposalsApi.middleware,
       customOffersApi.middleware,
       reportsApi.middleware,

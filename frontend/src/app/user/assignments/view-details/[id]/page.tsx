@@ -16,16 +16,20 @@ import {
   AlertCircle,
   User as UserIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { skipToken } from "@reduxjs/toolkit/query";
 import SendProposalModal from "@/components/SendProposalModal";
 import ProposalsList from "@/components/ProposalsList";
 import PaymentComponent from "@/components/PaymentComponent";
 import CompletionFeedbackComponent from "@/components/CompletionFeedbackComponent";
 import TutorSubmissionPanel from "@/components/assignments/TutorSubmissionPanel";
+import SubmissionReviewSummary from "@/components/assignments/SubmissionReviewSummary";
 import ReportModal from "@/components/ReportModal";
 import { Assignment, useGetAssignmentByIdQuery } from "@/lib/services/assignments";
 import { useGetUserQuery } from "@/lib/services/auth";
+import { useGetSubmissionsQuery } from "@/lib/services/submissions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 const getWorkflowStep = (assignment?: Assignment) => {
   if (!assignment) return "details";
@@ -62,6 +66,7 @@ const AssignmentDetails = () => {
   const [showProposal, setShowProposal] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportStudentOpen, setReportStudentOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
   const {
     data: assignmentData,
@@ -71,13 +76,23 @@ const AssignmentDetails = () => {
   } = useGetAssignmentByIdQuery(id || "", {
     skip: !id,
   });
+  const { data: submissionsData } = useGetSubmissionsQuery(
+    id ? { assignmentId: id, limit: 1 } : skipToken
+  );
 
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
   const isTutorRole = currentUser?.roles?.includes("tutor");
+  const currency = currentUser?.wallet?.currency || DEFAULT_CURRENCY;
+  const formatAmount = (value?: number) => formatCurrency(value, currency);
   const handleSendProposal = () => {
     setShowProposal(true);
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRequestedTutorProfile = () => {
     if (!assignment?.requestedTutor?._id) return;
@@ -125,6 +140,7 @@ const AssignmentDetails = () => {
   }
 
   const assignment = assignmentData?.data;
+  const latestSubmissionStatus = submissionsData?.data?.[0]?.status;
 
   if (!assignment) {
     return (
@@ -188,25 +204,64 @@ const AssignmentDetails = () => {
   ];
 
   const currentStep = getWorkflowStep(assignment);
+  const isAssignmentCompleted = assignment.status === "completed";
   const currentStepIndex = Math.max(
     0,
     workflowSteps.findIndex((step) => step.id === currentStep)
   );
   const progressWidth = `${(currentStepIndex / (workflowSteps.length - 1)) * 100}%`;
 
-  const formatDeadline = (deadline: string) => {
+  const formatDeadline = (deadline: string, showCountdown: boolean) => {
     const date = new Date(deadline);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 0) {
-      return `Due in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
-    } else if (diffDays === 0) {
-      return "Due today";
+    if (Number.isNaN(date.getTime())) {
+      return "Deadline unavailable";
     }
-    return `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}`;
+    if (!showCountdown) {
+      return `Deadline scheduled: ${date.toLocaleDateString()}`;
+    }
+    const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
+
+    const formatParts = (totalSeconds: number) => {
+      const absSeconds = Math.max(0, totalSeconds);
+      const days = Math.floor(absSeconds / 86400);
+      const hours = Math.floor((absSeconds % 86400) / 3600);
+      const minutes = Math.floor((absSeconds % 3600) / 60);
+      const seconds = absSeconds % 60;
+      const parts = [];
+      if (days > 0) {
+        parts.push(`${days}d`);
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0) parts.push(`${minutes}m`);
+        return parts.join(" ");
+      }
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+      parts.push(`${seconds}s`);
+      return parts.join(" ");
+    };
+
+    if (diffSeconds > 0) {
+      return `Time remaining: ${formatParts(diffSeconds)}`;
+    }
+    if (diffSeconds === 0) {
+      return "Due now";
+    }
+    return `Overdue by ${formatParts(Math.abs(diffSeconds))}`;
   };
+
+  const timerActiveStatuses = [
+    "proposal_accepted",
+    "in_progress",
+    "submission_pending",
+    "revision_requested",
+    "assigned",
+    "submitted",
+    "completed",
+    "overdue",
+    "disputed",
+    "resolved",
+  ];
+  const showDeadlineCountdown = timerActiveStatuses.includes(assignment.status);
 
   return (
     <div className="w-full mx-auto px-4 py-6 sm:px-6">
@@ -218,10 +273,15 @@ const AssignmentDetails = () => {
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   {assignment.title}
                 </h1>
+                {assignment.status === "completed" && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Assignment completed
+                  </span>
+                )}
                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                   <div className="flex items-center space-x-1">
                     <Clock size={16} />
-                    <span>{formatDeadline(assignment.deadline)}</span>
+                    <span>{formatDeadline(assignment.deadline, showDeadlineCountdown)}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <MapPin size={16} />
@@ -262,19 +322,25 @@ const AssignmentDetails = () => {
 
                     <div className="relative z-10 flex justify-between">
                       {workflowSteps.map((step, index) => {
-                        const isComplete = index < currentStepIndex;
-                        const isCurrent = index === currentStepIndex;
+                        const isComplete = isAssignmentCompleted
+                          ? true
+                          : index < currentStepIndex;
+                        const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
                         const StepIcon = step.icon;
                         const circleClass = isComplete
                           ? "bg-primary-500 text-white"
                           : isCurrent
                           ? "bg-white border-2 border-primary-500 text-primary-500"
                           : "bg-white border border-gray-200 text-gray-400";
-                        const labelClass = isCurrent ? "text-gray-900" : "text-gray-700";
-                        const statusClass = isComplete || isCurrent
-                          ? "text-primary-300 font-medium"
-                          : "text-gray-400";
-                        const statusText = isComplete
+                        const labelClass =
+                          isAssignmentCompleted || isCurrent ? "text-gray-900" : "text-gray-700";
+                        const statusClass =
+                          isAssignmentCompleted || isComplete || isCurrent
+                            ? "text-primary-300 font-medium"
+                            : "text-gray-400";
+                        const statusText = isAssignmentCompleted
+                          ? "Completed"
+                          : isComplete
                           ? "Completed"
                           : isCurrent
                           ? "In Progress"
@@ -318,7 +384,7 @@ const AssignmentDetails = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-900">
-                    ${assignment.budget ?? assignment.estimatedCost}
+                    {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
                   </div>
                   <div className="text-sm text-gray-600">Estimated Cost</div>
                 </div>
@@ -344,6 +410,11 @@ const AssignmentDetails = () => {
                 <span className="font-medium">Status:</span>{" "}
                 <span className="capitalize">{assignment.status}</span>
               </div>
+              {latestSubmissionStatus === "under_review" && (
+                <div className="text-sm text-amber-700 mt-1">
+                  <span className="font-medium">Review status:</span> Under review
+                </div>
+              )}
               <div className="text-sm text-gray-600 mt-1">
                 <span className="font-medium">Created:</span>{" "}
                 {new Date(assignment.createdAt).toLocaleDateString()}
@@ -418,6 +489,7 @@ const AssignmentDetails = () => {
               onPaymentComplete={() => {
                 refetch();
               }}
+              currency={currency}
             />
           )}
 
@@ -425,7 +497,7 @@ const AssignmentDetails = () => {
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
               <p className="text-sm text-gray-600">
-                Paid amount: ${assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0}
+                Paid amount: {formatAmount(assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0)}
               </p>
             </div>
           )}
@@ -440,7 +512,7 @@ const AssignmentDetails = () => {
           )}
 
           {isAssignmentTutor && assignment.paymentStatus === "paid" && canTutorSubmitWork && (
-            <TutorSubmissionPanel assignment={assignment} />
+            <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
           )}
 
           {isAssignmentTutor && assignment.status === "submitted" && (
@@ -451,6 +523,14 @@ const AssignmentDetails = () => {
               </p>
             </div>
           )}
+
+          {isAssignmentTutor &&
+            ["submitted", "completed", "revision_requested"].includes(assignment.status) && (
+              <SubmissionReviewSummary
+                assignment={assignment}
+                submissionStatus={latestSubmissionStatus}
+              />
+            )}
 
           {isAssignmentStudent &&
             assignment.assignedTutor &&
@@ -467,7 +547,10 @@ const AssignmentDetails = () => {
             )}
 
           {showCompletionFeedback && (
-            <CompletionFeedbackComponent assignment={assignment} />
+            <CompletionFeedbackComponent
+              assignment={assignment}
+              submissionStatus={latestSubmissionStatus}
+            />
           )}
 
           {showProposal && isTutorRole && assignment && (
@@ -475,6 +558,7 @@ const AssignmentDetails = () => {
               isOpen={showProposal}
               onClose={() => setShowProposal(false)}
               assignment={assignment}
+              currency={currency}
             />
           )}
 
@@ -483,6 +567,7 @@ const AssignmentDetails = () => {
               <ProposalsList
                 assignmentId={assignment._id}
                 isStudent={true}
+                currency={currency}
               />
             </div>
           )}
@@ -493,7 +578,7 @@ const AssignmentDetails = () => {
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-2">Budget:</div>
               <div className="text-2xl font-bold text-gray-900 mb-1">
-                ${assignment.budget ?? assignment.estimatedCost}
+                {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
               </div>
               <div className="text-sm text-gray-500 mb-4 capitalize">
                 {assignment.priority} priority
