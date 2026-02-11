@@ -42,7 +42,7 @@ const Navbar = () => {
                 About Us
               </Link>
               
-              <Link href="/account/login" className="text-gray-700 hover:text-gray-900 font-medium">
+              <Link href="/account/login?role=user" className="text-gray-700 hover:text-gray-900 font-medium">
                 Login
               </Link>
             </div>

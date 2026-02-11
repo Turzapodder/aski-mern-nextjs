@@ -9,6 +9,10 @@ import ChatModel from "../models/Chat.js";
 import AdminLogModel from "../models/AdminLog.js";
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
+import {
+  normalizePaymentStatus,
+  refundUddoktaPayment,
+} from "../utils/uddoktaPay.js";
 
 const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
 const dashboardCache = {
@@ -48,6 +52,8 @@ const parseNumber = (value, fallback) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const sanitizeText = (value) => (typeof value === "string" ? value.trim() : "");
 
 class AdminController {
   static getDashboardStats = async (req, res) => {
@@ -1234,6 +1240,7 @@ class AdminController {
       }
 
       let updatedAssignment;
+      let gatewayRefundResult = null;
 
       await session.withTransaction(async () => {
         const assignment = await AssignmentModel.findById(id).session(session);
@@ -1245,6 +1252,35 @@ class AdminController {
           assignment.paymentAmount ?? assignment.estimatedCost ?? 0,
           0
         );
+
+        const gatewayTransactionId = sanitizeText(assignment.paymentGateway?.transactionId);
+        const gatewayPaymentMethod = sanitizeText(assignment.paymentGateway?.paymentMethod);
+        const shouldRequestGatewayRefund =
+          escrowAmount > 0 &&
+          assignment.paymentStatus === "paid" &&
+          gatewayTransactionId &&
+          gatewayPaymentMethod;
+
+        if (shouldRequestGatewayRefund && !gatewayRefundResult) {
+          gatewayRefundResult = await refundUddoktaPayment({
+            transaction_id: gatewayTransactionId,
+            payment_method: gatewayPaymentMethod,
+            amount: Number(escrowAmount.toFixed(2)),
+            product_name: assignment.title || "Assignment payment",
+            reason: sanitizeText(reason) || "Force cancel by admin",
+          });
+
+          const refundSucceeded =
+            gatewayRefundResult?.status === true ||
+            normalizePaymentStatus(gatewayRefundResult?.status) === "completed";
+
+          if (!refundSucceeded) {
+            throw new Error(
+              sanitizeText(gatewayRefundResult?.message) ||
+                "Gateway refund request failed"
+            );
+          }
+        }
 
         if (escrowAmount > 0) {
           await UserModel.updateOne(
@@ -1266,7 +1302,15 @@ class AdminController {
                 amount: escrowAmount,
                 status: "completed",
                 relatedTo: { model: "Assignment", id: assignment._id },
-                metadata: { reason: "Force cancel" },
+                metadata: {
+                  reason: "Force cancel",
+                  gatewayRefund: gatewayRefundResult
+                    ? {
+                        status: gatewayRefundResult.status,
+                        message: gatewayRefundResult.message,
+                      }
+                    : null,
+                },
               },
             ],
             { session }
@@ -1275,6 +1319,24 @@ class AdminController {
 
         assignment.status = "cancelled";
         assignment.paymentStatus = "refunded";
+        assignment.paymentGateway = {
+          ...(assignment.paymentGateway || {}),
+          status: "refunded",
+          refundedAt: new Date(),
+          refundReference:
+            sanitizeText(gatewayRefundResult?.refund_id) ||
+            sanitizeText(gatewayRefundResult?.transaction_id) ||
+            assignment.paymentGateway?.refundReference,
+          metadata: {
+            ...(assignment.paymentGateway?.metadata || {}),
+            forceCancelRefund: gatewayRefundResult
+              ? {
+                  status: gatewayRefundResult.status,
+                  message: gatewayRefundResult.message,
+                }
+              : null,
+          },
+        };
         updatedAssignment = await assignment.save({ session });
 
         await AdminLogModel.create(
@@ -1286,6 +1348,12 @@ class AdminController {
               targetType: "Assignment",
               metadata: {
                 reason: reason || "No reason provided",
+                gatewayRefund: gatewayRefundResult
+                  ? {
+                      status: gatewayRefundResult.status,
+                      message: gatewayRefundResult.message,
+                    }
+                  : null,
               },
             },
           ],
@@ -1479,6 +1547,9 @@ class AdminController {
   static processWithdrawal = async (req, res) => {
     try {
       const { id } = req.params;
+      const payoutReference = sanitizeText(req.body?.payoutReference);
+      const payoutGateway = sanitizeText(req.body?.gateway) || "bank_transfer";
+      const adminNote = sanitizeText(req.body?.note);
 
       const user = await UserModel.findOne({
         "wallet.withdrawalHistory.transactionId": id,
@@ -1519,6 +1590,10 @@ class AdminController {
           $set: {
             "wallet.withdrawalHistory.$.status": "COMPLETED",
             "wallet.withdrawalHistory.$.completedAt": new Date(),
+            "wallet.withdrawalHistory.$.payoutReference":
+              payoutReference || entry.transactionId,
+            "wallet.withdrawalHistory.$.processedBy": req.user._id,
+            "wallet.withdrawalHistory.$.notes": adminNote || undefined,
           },
         },
         { new: true }
@@ -1542,7 +1617,12 @@ class AdminController {
           {
             $set: {
               status: "completed",
+              gatewayId: payoutReference || existingTransaction.gatewayId,
               "metadata.processedBy": req.user._id,
+              "metadata.payoutReference":
+                payoutReference || existingTransaction.metadata?.payoutReference,
+              "metadata.gateway": payoutGateway,
+              "metadata.note": adminNote || existingTransaction.metadata?.note,
             },
           }
         );
@@ -1552,10 +1632,13 @@ class AdminController {
           type: "withdrawal",
           amount: entry.amount || 0,
           status: "completed",
-          gatewayId: entry.transactionId,
+          gatewayId: payoutReference || entry.transactionId,
           relatedTo: { model: "User", id: user._id },
           metadata: {
             processedBy: req.user._id,
+            payoutReference: payoutReference || entry.transactionId,
+            gateway: payoutGateway,
+            note: adminNote || "",
           },
         });
       }
@@ -1568,6 +1651,8 @@ class AdminController {
         metadata: {
           transactionId: entry.transactionId,
           amount: entry.amount,
+          payoutReference: payoutReference || entry.transactionId,
+          gateway: payoutGateway,
         },
       });
 
@@ -1656,9 +1741,13 @@ class AdminController {
             .lean()
         : [];
 
-      const escrowAmount = parseNumber(
-        assignment.paymentAmount ?? assignment.estimatedCost ?? 0,
-        0
+      const paymentCompleted = assignment.paymentStatus === "paid";
+      const escrowAmount = paymentCompleted
+        ? parseNumber(assignment.paymentAmount ?? assignment.estimatedCost ?? 0, 0)
+        : 0;
+      const hasGatewayRefundData = Boolean(
+        sanitizeText(assignment.paymentGateway?.transactionId) &&
+          sanitizeText(assignment.paymentGateway?.paymentMethod)
       );
 
       return res.status(200).json({
@@ -1671,6 +1760,8 @@ class AdminController {
             submissions: assignment.submissionDetails?.submissionFiles || [],
           },
           escrowAmount,
+          financiallyActionable: paymentCompleted && escrowAmount > 0,
+          hasGatewayRefundData,
         },
       });
     } catch (error) {
@@ -1703,6 +1794,7 @@ class AdminController {
       }
 
       let responsePayload;
+      let gatewayRefundResult = null;
 
       await session.withTransaction(async () => {
         const assignment = await AssignmentModel.findOne({
@@ -1714,10 +1806,57 @@ class AdminController {
           throw new Error("Dispute not found or already resolved");
         }
 
-        const escrowAmount = parseNumber(
+        const recordedEscrowAmount = parseNumber(
           assignment.paymentAmount ?? assignment.estimatedCost ?? 0,
           0
         );
+        const hasCompletedPayment = assignment.paymentStatus === "paid";
+        const escrowAmount = hasCompletedPayment ? recordedEscrowAmount : 0;
+
+        if (!hasCompletedPayment) {
+          assignment.status = "resolved";
+          await assignment.save({ session });
+
+          const actionMap = {
+            refund: "RESOLVE_DISPUTE_REFUND",
+            release: "RESOLVE_DISPUTE_RELEASE",
+            split: "RESOLVE_DISPUTE_SPLIT",
+          };
+
+          await AdminLogModel.create(
+            [
+              {
+                adminId: req.user._id,
+                actionType: actionMap[resolution],
+                targetId: assignment._id,
+                targetType: "Assignment",
+                metadata: {
+                  resolution,
+                  escrowAmount: 0,
+                  studentAmount: 0,
+                  tutorAmount: 0,
+                  platformFee: 0,
+                  reason: reason || "",
+                  noFinancialTransfer: true,
+                  note: "Dispute resolved without payout/refund because payment is not completed",
+                },
+              },
+            ],
+            { session }
+          );
+
+          responsePayload = {
+            assignmentId: assignment._id,
+            resolution,
+            escrowAmount: 0,
+            studentAmount: 0,
+            tutorAmount: 0,
+            platformFee: 0,
+            noFinancialTransfer: true,
+          };
+
+          return;
+        }
 
         if (escrowAmount <= 0) {
           throw new Error("Escrow amount is not available");
@@ -1746,7 +1885,10 @@ class AdminController {
           settings?.platformFeeRate,
           parseNumber(process.env.PLATFORM_FEE_RATE, 0)
         );
-        const minTransactionFee = parseNumber(settings?.minTransactionFee, 0);
+        const minTransactionFee = parseNumber(
+          settings?.minTransactionFee,
+          parseNumber(process.env.MIN_TRANSACTION_FEE, 0)
+        );
         let platformFee = 0;
         let studentAmount = 0;
         let tutorAmount = 0;
@@ -1773,6 +1915,38 @@ class AdminController {
             platformFee = Math.max(platformFee, minTransactionFee);
           }
           tutorNet = Math.max(0, tutorAmount - platformFee);
+        }
+
+        const gatewayTransactionId = sanitizeText(
+          assignment.paymentGateway?.transactionId
+        );
+        const gatewayPaymentMethod = sanitizeText(
+          assignment.paymentGateway?.paymentMethod
+        );
+        const shouldRequestGatewayRefund =
+          studentAmount > 0 && gatewayTransactionId && gatewayPaymentMethod;
+
+        if (shouldRequestGatewayRefund && !gatewayRefundResult) {
+          gatewayRefundResult = await refundUddoktaPayment({
+            transaction_id: gatewayTransactionId,
+            payment_method: gatewayPaymentMethod,
+            amount: Number(studentAmount.toFixed(2)),
+            product_name: assignment.title || "Assignment payment",
+            reason:
+              sanitizeText(reason) ||
+              `Dispute resolution (${resolution}) by admin`,
+          });
+
+          const refundSucceeded =
+            gatewayRefundResult?.status === true ||
+            normalizePaymentStatus(gatewayRefundResult?.status) === "completed";
+
+          if (!refundSucceeded) {
+            throw new Error(
+              sanitizeText(gatewayRefundResult?.message) ||
+                "Gateway refund request failed"
+            );
+          }
         }
 
         const studentUpdates = {
@@ -1809,6 +1983,12 @@ class AdminController {
             relatedTo: { model: "Assignment", id: assignment._id },
             metadata: {
               resolution,
+              gatewayRefund: gatewayRefundResult
+                ? {
+                    status: gatewayRefundResult.status,
+                    message: gatewayRefundResult.message,
+                  }
+                : null,
             },
           });
         }
@@ -1844,6 +2024,29 @@ class AdminController {
 
         assignment.status = "resolved";
         assignment.paymentStatus = resolution === "refund" ? "refunded" : "paid";
+        assignment.paymentGateway = {
+          ...(assignment.paymentGateway || {}),
+          status:
+            resolution === "refund"
+              ? "refunded"
+              : assignment.paymentGateway?.status || "completed",
+          refundedAt: gatewayRefundResult ? new Date() : assignment.paymentGateway?.refundedAt,
+          refundReference:
+            sanitizeText(gatewayRefundResult?.refund_id) ||
+            sanitizeText(gatewayRefundResult?.transaction_id) ||
+            assignment.paymentGateway?.refundReference,
+          metadata: {
+            ...(assignment.paymentGateway?.metadata || {}),
+            disputeResolutionRefund: gatewayRefundResult
+              ? {
+                  status: gatewayRefundResult.status,
+                  message: gatewayRefundResult.message,
+                  resolution,
+                  amount: studentAmount,
+                }
+              : null,
+          },
+        };
         await assignment.save({ session });
 
         const actionMap = {
@@ -1866,6 +2069,12 @@ class AdminController {
                 tutorAmount: tutorNet,
                 platformFee,
                 reason: reason || "",
+                gatewayRefund: gatewayRefundResult
+                  ? {
+                      status: gatewayRefundResult.status,
+                      message: gatewayRefundResult.message,
+                    }
+                  : null,
               },
             },
           ],
@@ -1879,6 +2088,12 @@ class AdminController {
           studentAmount,
           tutorAmount: tutorNet,
           platformFee,
+          gatewayRefund: gatewayRefundResult
+            ? {
+                status: gatewayRefundResult.status,
+                message: gatewayRefundResult.message,
+              }
+            : null,
         };
       });
 
@@ -1893,7 +2108,17 @@ class AdminController {
           ? error.message
           : error.message || "Unable to resolve dispute";
       const statusCode =
-        message === "Dispute not found or already resolved" ? 404 : 500;
+        message === "Dispute not found or already resolved"
+          ? 404
+          : [
+              "Escrow amount is not available",
+              "Insufficient escrow balance",
+              "Invalid split percentage",
+            ].includes(message)
+          ? 400
+          : message.toLowerCase().includes("gateway refund")
+          ? 502
+          : 500;
       return res.status(statusCode).json({
         status: "failed",
         message,

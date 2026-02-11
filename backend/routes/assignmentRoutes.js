@@ -9,6 +9,12 @@ const router = express.Router();
 
 // Local multer configuration removed in favor of S3
 
+// Public payment routes (gateway callbacks/webhooks)
+router.get('/payment/callback', AssignmentController.handlePaymentCallback);
+router.get('/payment/cancel', AssignmentController.handlePaymentCancel);
+router.post('/payment/webhook', AssignmentController.handlePaymentWebhook);
+router.get('/payment/verify', AssignmentController.verifyPayment);
+
 // Apply authentication middleware to all routes
 router.use(AccessTokenAutoRefresh);
 router.use(checkUserAuth);
@@ -44,7 +50,7 @@ router.delete('/:id', AssignmentController.deleteAssignment);
 // Assign tutor to assignment (admin/system use)
 router.patch('/:id/assign-tutor', AssignmentController.assignTutor);
 
-// Dummy payment (student)
+// Initialize payment checkout (student)
 router.post('/:id/payment', AssignmentController.processPayment);
 
 // Submit work (by tutor)

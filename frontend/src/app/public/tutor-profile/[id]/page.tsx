@@ -12,7 +12,7 @@ const PublicTutorProfilePage = () => {
                     <div className="flex items-center gap-2">
                         <Image src="/assets/main-logo.svg" alt="Aski" width={120} height={32} className="h-8 w-auto" />
                     </div>
-                    <a href="/login" className="text-sm font-medium text-purple-600 hover:text-purple-700">
+                    <a href="/account/login?role=user" className="text-sm font-medium text-purple-600 hover:text-purple-700">
                         Sign In
                     </a>
                 </div>

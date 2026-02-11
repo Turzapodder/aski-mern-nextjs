@@ -13,7 +13,14 @@ declare module "axios" {
 }
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
+  baseURL: (() => {
+    const rawBase =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.REACT_APP_API_URL ||
+      "http://localhost:8000";
+    const trimmed = rawBase.replace(/\/+$/, "");
+    return /\/api$/i.test(trimmed) ? trimmed : `${trimmed}/api`;
+  })(),
   withCredentials: true,
 });
 
@@ -35,7 +42,7 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         console.error("Token refresh failed, redirecting to login");
-        window.location.href = "/login";
+        window.location.href = "/account/login?role=user";
         return Promise.reject(refreshError);
       }
     }

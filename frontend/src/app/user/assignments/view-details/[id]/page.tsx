@@ -1,5 +1,5 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   MapPin,
   Clock,
@@ -30,6 +30,7 @@ import { useGetUserQuery } from "@/lib/services/auth";
 import { useGetSubmissionsQuery } from "@/lib/services/submissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+import { toast } from "sonner";
 
 const getWorkflowStep = (assignment?: Assignment) => {
   if (!assignment) return "details";
@@ -62,6 +63,8 @@ const getWorkflowStep = (assignment?: Assignment) => {
 const AssignmentDetails = () => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paymentStateFromUrl = searchParams.get("payment");
   const id = params.id as string;
   const [showProposal, setShowProposal] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -93,6 +96,31 @@ const AssignmentDetails = () => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!paymentStateFromUrl) return;
+
+    if (paymentStateFromUrl === "completed" || paymentStateFromUrl === "success") {
+      toast.success("Payment confirmed");
+      refetch();
+      return;
+    }
+
+    if (paymentStateFromUrl === "pending") {
+      toast.info("Payment is pending confirmation");
+      refetch();
+      return;
+    }
+
+    if (paymentStateFromUrl === "cancelled") {
+      toast.warning("Payment was cancelled");
+      return;
+    }
+
+    if (paymentStateFromUrl === "failed") {
+      toast.error("Payment verification failed");
+    }
+  }, [paymentStateFromUrl, refetch]);
 
   const handleRequestedTutorProfile = () => {
     if (!assignment?.requestedTutor?._id) return;

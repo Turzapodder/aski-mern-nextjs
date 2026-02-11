@@ -9,10 +9,26 @@ const parseNumber = (value, fallback) => {
 const sanitizeText = (value) =>
   typeof value === "string" ? value.trim() : "";
 
+const getDefaultSettingsFromEnv = () => {
+  const defaults = {};
+
+  const platformFeeRate = parseNumber(process.env.PLATFORM_FEE_RATE, NaN);
+  if (Number.isFinite(platformFeeRate) && platformFeeRate >= 0 && platformFeeRate <= 1) {
+    defaults.platformFeeRate = platformFeeRate;
+  }
+
+  const minTransactionFee = parseNumber(process.env.MIN_TRANSACTION_FEE, NaN);
+  if (Number.isFinite(minTransactionFee) && minTransactionFee >= 0) {
+    defaults.minTransactionFee = minTransactionFee;
+  }
+
+  return defaults;
+};
+
 const ensureSettings = async () => {
   const existing = await PlatformSettingsModel.findOne().lean();
   if (existing) return existing;
-  const created = await PlatformSettingsModel.create({});
+  const created = await PlatformSettingsModel.create(getDefaultSettingsFromEnv());
   return created.toObject();
 };
 

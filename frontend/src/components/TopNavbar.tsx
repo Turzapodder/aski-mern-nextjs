@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { assignmentsApi } from "@/lib/services/assignments";
 import { submissionsApi } from "@/lib/services/submissions";
+import { proposalsApi } from "@/lib/services/proposals";
 
 interface TopNavbarProps {
   userName?: string;
@@ -105,8 +106,31 @@ const TopNavbar = ({
             "Assignments",
           ])
         );
+        dispatch(
+          proposalsApi.util.invalidateTags([
+            { type: "Proposals", id: `assignment-${assignmentId}` },
+            "Proposals",
+          ])
+        );
         dispatch(submissionsApi.util.invalidateTags(["Submissions"]));
       }
+    },
+    onChatUpdated: (payload) => {
+      if (!payload) return;
+      const assignmentId = payload.assignmentId;
+      if (!assignmentId) return;
+      dispatch(
+        assignmentsApi.util.invalidateTags([
+          { type: "Assignment", id: assignmentId },
+          "Assignments",
+        ])
+      );
+      dispatch(
+        proposalsApi.util.invalidateTags([
+          { type: "Proposals", id: `assignment-${assignmentId}` },
+          "Proposals",
+        ])
+      );
     },
   });
 

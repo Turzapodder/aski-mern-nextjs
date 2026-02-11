@@ -22,7 +22,7 @@ const ResetPasswordConfirm = () => {
 
   const handleRedirect = () => {
     setTimeout(() => {
-      router.push("/account/login");
+      router.push("/account/login?role=user");
     }, 1200);
   };
 
@@ -153,7 +153,7 @@ const ResetPasswordConfirm = () => {
 
         <div className="mt-8 text-center">
           <Link
-            href="/account/login"
+            href="/account/login?role=user"
             className="text-sm text-gray-600 hover:text-black"
           >
             Back to log in

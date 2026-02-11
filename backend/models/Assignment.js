@@ -200,6 +200,43 @@ const assignmentSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
+  paymentGateway: {
+    provider: {
+      type: String,
+      trim: true,
+    },
+    invoiceId: {
+      type: String,
+      trim: true,
+    },
+    transactionId: {
+      type: String,
+      trim: true,
+    },
+    paymentMethod: {
+      type: String,
+      trim: true,
+    },
+    checkoutUrl: {
+      type: String,
+      trim: true,
+    },
+    status: {
+      type: String,
+      trim: true,
+    },
+    initiatedAt: Date,
+    verifiedAt: Date,
+    refundedAt: Date,
+    refundReference: {
+      type: String,
+      trim: true,
+    },
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+  },
   
   // Metadata
   isActive: {

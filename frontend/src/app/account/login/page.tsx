@@ -1,125 +1,202 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
 import Link from "next/link";
-import { useFormik } from 'formik';
+import { useFormik } from "formik";
 import { loginSchema } from "@/validation/schemas";
-import { useRouter, useSearchParams } from 'next/navigation'
-import React, { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useLoginUserMutation } from "@/lib/services/auth";
-import { useConvertFormToAssignmentMutation } from '@/lib/services/student'
+import { useConvertFormToAssignmentMutation } from "@/lib/services/student";
+
+type LoginRole = "user" | "tutor" | "admin";
 
 const initialValues = {
   email: "",
   password: ""
-}
+};
+
+const normalizeRole = (value: string | null): LoginRole | null => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "user" || normalized === "student") return "user";
+  if (normalized === "tutor") return "tutor";
+  if (normalized === "admin") return "admin";
+  return null;
+};
 
 const Login = () => {
-  const [serverErrorMessage, setServerErrorMessage] = useState('')
-  const [serverSuccessMessage, setServerSuccessMessage] = useState('')
+  const [serverErrorMessage, setServerErrorMessage] = useState("");
+  const [serverSuccessMessage, setServerSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loginUser] = useLoginUserMutation()
-  const [pendingSessionId, setPendingSessionId] = useState<string>('')
-  const [convertForm] = useConvertFormToAssignmentMutation()
+  const [loginUser] = useLoginUserMutation();
+  const [pendingSessionId, setPendingSessionId] = useState<string>("");
+  const [convertForm] = useConvertFormToAssignmentMutation();
 
-  // Check for pending form data
+  const loginRole = useMemo<LoginRole | null>(
+    () => normalizeRole(searchParams.get("role")),
+    [searchParams]
+  );
+  const redirect = searchParams.get("redirect");
+  const authError = searchParams.get("error");
+  const authErrorMessage = useMemo(() => {
+    if (!authError) return "";
+    if (authError === "role_mismatch") {
+      return "This account cannot use this login entrypoint.";
+    }
+    if (authError === "oauth_failed") {
+      return "Google login failed. Please try again.";
+    }
+    if (authError === "callback_failed") {
+      return "Google login callback failed. Please try again.";
+    }
+    if (authError === "oauth_init_failed") {
+      return "Unable to start Google login.";
+    }
+    return "";
+  }, [authError]);
+  const isRoleMissing = !loginRole;
+
   useEffect(() => {
-    const storedSessionId = localStorage.getItem('pendingFormSessionId')
-    if (storedSessionId) {
-      setPendingSessionId(storedSessionId)
+    if (isRoleMissing) {
+      setServerErrorMessage(
+        "Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin."
+      );
+      return;
     }
-  }, [])
+    if (authErrorMessage) {
+      setServerErrorMessage(authErrorMessage);
+      return;
+    }
+    setServerErrorMessage("");
+  }, [isRoleMissing, authErrorMessage]);
 
-  // Handle form conversion after successful login
-  const handleFormConversion = async () => {
-    if (pendingSessionId) {
-      try {
-        await convertForm({ sessionId: pendingSessionId }).unwrap()
-        localStorage.removeItem('pendingFormSessionId')
-        console.log('Form converted successfully')
-      } catch (error) {
-        console.error('Failed to convert form:', error)
-      }
+  useEffect(() => {
+    if (loginRole === "admin") return;
+    const storedSessionId = localStorage.getItem("pendingFormSessionId");
+    if (storedSessionId) {
+      setPendingSessionId(storedSessionId);
     }
-  }
+  }, [loginRole]);
+
+  const handleFormConversion = async () => {
+    if (!pendingSessionId || loginRole === "admin") return;
+    try {
+      await convertForm({ sessionId: pendingSessionId }).unwrap();
+      localStorage.removeItem("pendingFormSessionId");
+    } catch (error) {
+      console.error("Failed to convert form:", error);
+    }
+  };
 
   const { values, errors, handleChange, handleSubmit } = useFormik({
     initialValues,
     validationSchema: loginSchema,
-    onSubmit: async (values, action) => {
+    onSubmit: async (formValues, action) => {
+      if (!loginRole) {
+        setServerErrorMessage(
+          "Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin."
+        );
+        return;
+      }
+
       setLoading(true);
       try {
-        const response: any = await loginUser(values)
-        if (response.data && response.data.status === "success") {
-          setServerSuccessMessage(response.data.message)
-          setServerErrorMessage('')
-          action.resetForm()
+        const response: any = await loginUser({
+          ...formValues,
+          role: loginRole,
+        });
 
-          // Convert pending form if exists
-          await handleFormConversion()
+        if (response.data && response.data.status === "success") {
+          setServerSuccessMessage(response.data.message);
+          setServerErrorMessage("");
+          action.resetForm();
+
+          await handleFormConversion();
 
           setTimeout(() => {
-            const redirect = searchParams.get('redirect');
             const user = response.data.user;
-            const isAdmin = user?.roles?.includes('admin');
-            const isTutor = user?.roles?.includes('tutor');
+            const isAdmin = user?.roles?.includes("admin");
+            const isTutor = user?.roles?.includes("tutor");
             const onboardingStatus = user?.onboardingStatus;
 
             if (isAdmin) {
-              router.push('/admin');
-            } else if (isTutor && onboardingStatus && onboardingStatus !== 'completed' && onboardingStatus !== 'approved') {
-              router.push('/account/tutor-onboarding');
-            } else if (redirect === 'whatsapp') {
-              window.location.href = 'https://wa.me/';
-            } else {
-              router.push('/user/dashboard');
+              router.push("/admin");
+              return;
             }
-          }, 1000)
-          setLoading(false);
+
+            if (
+              isTutor &&
+              onboardingStatus &&
+              onboardingStatus !== "completed" &&
+              onboardingStatus !== "approved"
+            ) {
+              router.push("/account/tutor-onboarding");
+              return;
+            }
+
+            if (redirect === "whatsapp") {
+              window.location.href = "https://wa.me/";
+              return;
+            }
+
+            router.push("/user/dashboard");
+          }, 1000);
+          return;
         }
-        if (response.error && response.error.data.status === "failed") {
-          setServerErrorMessage(response.error.data.message)
-          setServerSuccessMessage('')
-          setLoading(false);
+
+        if (response.error && response.error.data?.status === "failed") {
+          setServerErrorMessage(response.error.data.message);
+          setServerSuccessMessage("");
         }
       } catch (error: any) {
-        // console.log(error);
+        setServerErrorMessage(error?.message || "Unable to login");
+        setServerSuccessMessage("");
+      } finally {
         setLoading(false);
       }
-    }
-  })
+    },
+  });
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
+    if (!loginRole) return;
     window.open(
-      `http://localhost:8000/auth/google`,
+      `http://localhost:8000/auth/google?role=${loginRole}`,
       "_self"
     );
-  }
+  };
 
+  const heading =
+    loginRole === "admin"
+      ? "Sign in to admin account"
+      : loginRole === "tutor"
+      ? "Sign in to tutor account"
+      : "Sign in to your account";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-6xl w-full mx-auto bg-white rounded-3xl shadow-lg overflow-hidden">
         <div className="flex flex-col lg:flex-row">
-          {/* Left Section - Login Form */}
           <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-between">
-            <div className="flex  gap-3 items-center mt-5 mb-20 ">
+            <div className="flex gap-3 items-center mt-5 mb-20 ">
               <img
                 src="/assets/main-logo.svg"
                 alt="logo"
-                className={`min-w-[30px] min-h-[30px] w-[120px] object-contain`}
+                className="min-w-[30px] min-h-[30px] w-[120px] object-contain"
               />
             </div>
             <div className="mb-8">
-              <h2 className="text-xl font-medium mb-4">ACCOUNT</h2>
-              <h1 className="text-3xl font-bold mb-3">Sign in to your account</h1>
+              <h2 className="text-xl font-medium mb-4 uppercase">
+                {loginRole ? `${loginRole} account` : "account"}
+              </h2>
+              <h1 className="text-3xl font-bold mb-3">{heading}</h1>
               <p className="text-black text-lg font-regular">Enter your credentials here</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
                   Email address
                 </label>
                 <input
@@ -135,7 +212,7 @@ const Login = () => {
               </div>
 
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
                   Password
                 </label>
                 <input
@@ -152,7 +229,7 @@ const Login = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isRoleMissing}
                 className="w-full bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-black hover:text-white transition-colors disabled:bg-gray-400"
               >
                 Submit
@@ -165,8 +242,10 @@ const Login = () => {
               </div>
 
               <button
+                type="button"
                 onClick={handleGoogleLogin}
-                className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition duration-200"
+                disabled={isRoleMissing}
+                className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition duration-200 disabled:opacity-60"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
                   <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
@@ -174,32 +253,33 @@ const Login = () => {
                   <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
                   <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
                 </svg>
-                Register with Google
+                Continue with Google
               </button>
             </form>
-            <div className="mt-6">
-              <p className="text-center text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
-                <Link href="/account/register" className="text-black hover:text-indigo-700 font-semibold">
-                  Sign up
-                </Link>
-              </p>
-            </div>
+            {loginRole !== "admin" && (
+              <div className="mt-6">
+                <p className="text-center text-sm text-gray-600">
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    href={loginRole === "tutor" ? "/account/register?role=tutor" : "/account/register"}
+                    className="text-black hover:text-indigo-700 font-semibold"
+                  >
+                    Sign up
+                  </Link>
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Right Section - Statistics Display */}
-          <div className="hidden lg:block w-1/2  relative overflow-hidden">
+          <div className="hidden lg:block w-1/2 relative overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-full h-full">
-                {/* Background Image Container */}
                 <div className="relative w-full h-[100%] rounded-3xl overflow-hidden mb-6">
                   <img
                     src="/assets/login.png"
                     alt="Dashboard Preview"
                     className="w-full h-full object-cover"
                   />
-
-                  {/* Chris Meadow Card - Absolute Position */}
                   <div className="absolute bottom-6 left-6 right-6">
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-accent-500 flex items-center justify-center text-white font-bold">A</div>
@@ -216,25 +296,24 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Success/Error Messages */}
       {serverSuccessMessage && (
         <div className="fixed bottom-4 right-4 bg-primary-100 border border-primary-400 text-primary-700 px-4 py-3 rounded">
           {serverSuccessMessage}
         </div>
       )}
       {serverErrorMessage && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-lg">
           {serverErrorMessage}
         </div>
       )}
     </div>
   );
-}
+};
 
 const LoginPage = () => (
   <Suspense fallback={<div className="min-h-screen bg-white" />}>
     <Login />
   </Suspense>
-)
+);
 
-export default LoginPage
+export default LoginPage;

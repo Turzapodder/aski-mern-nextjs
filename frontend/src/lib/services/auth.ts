@@ -15,6 +15,14 @@ interface User {
   tc?: boolean;
 }
 
+type LoginRole = 'user' | 'tutor' | 'admin';
+
+interface LoginPayload {
+  email: string;
+  password: string;
+  role: LoginRole;
+}
+
 interface PasswordReset {
   id: string;
   token: string;
@@ -80,7 +88,7 @@ export const authApi = createApi({
         }
       })
     }),
-    loginUser: builder.mutation<AuthResponse, Pick<User, 'email' | 'password'>>({
+    loginUser: builder.mutation<AuthResponse, LoginPayload>({
       query: (user) => ({
         url: `login`,
         method: 'POST',

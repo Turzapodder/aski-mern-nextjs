@@ -30,10 +30,16 @@ export default function AdminWithdrawalsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [checked, setChecked] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [payoutReference, setPayoutReference] = useState("")
+  const [gateway, setGateway] = useState("bank_transfer")
+  const [note, setNote] = useState("")
 
   const openConfirm = (row: WithdrawalRow) => {
     setSelected(row)
     setChecked(false)
+    setPayoutReference("")
+    setGateway("bank_transfer")
+    setNote("")
     setConfirmOpen(true)
   }
 
@@ -41,7 +47,11 @@ export default function AdminWithdrawalsPage() {
     if (!selected?.withdrawal?.transactionId) return
     setIsSubmitting(true)
     try {
-      await adminApi.finance.processWithdrawal(selected.withdrawal.transactionId)
+      await adminApi.finance.processWithdrawal(selected.withdrawal.transactionId, {
+        payoutReference: payoutReference.trim(),
+        gateway,
+        note: note.trim(),
+      })
       toast.success("Withdrawal processed")
       setConfirmOpen(false)
       mutate()
@@ -271,6 +281,44 @@ export default function AdminWithdrawalsPage() {
                 />
                 I have completed the bank transfer
               </label>
+              <div>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Payout reference (optional)
+                </p>
+                <input
+                  type="text"
+                  value={payoutReference}
+                  onChange={(event) => setPayoutReference(event.target.value)}
+                  placeholder="Bank Txn ID / UTR / Ref no."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Gateway
+                </p>
+                <select
+                  value={gateway}
+                  onChange={(event) => setGateway(event.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="mobile_banking">Mobile Banking</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Internal note (optional)
+                </p>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="Bank/account verification notes"
+                />
+              </div>
             </div>
           )}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">

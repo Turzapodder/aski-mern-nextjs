@@ -71,7 +71,7 @@ export default function LandingBackupPage() {
 
                         <div className="flex items-center gap-4">
                             <Link
-                                href="/account/login"
+                                href="/account/login?role=user"
                                 className="text-gray-900 hover:text-blue-600 font-medium text-sm transition-colors"
                             >
                                 Log In

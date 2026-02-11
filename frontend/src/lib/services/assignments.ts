@@ -105,6 +105,19 @@ export interface Assignment {
   };
   paymentStatus: 'pending' | 'paid' | 'refunded' | 'disputed';
   paymentAmount?: number;
+  paymentGateway?: {
+    provider?: string;
+    invoiceId?: string;
+    transactionId?: string;
+    paymentMethod?: string;
+    checkoutUrl?: string;
+    status?: string;
+    initiatedAt?: string;
+    verifiedAt?: string;
+    refundedAt?: string;
+    refundReference?: string;
+    metadata?: Record<string, unknown>;
+  };
   isActive: boolean;
   tags?: string[];
   viewCount: number;
@@ -133,6 +146,17 @@ export interface AssignmentResponse {
   data: Assignment;
 }
 
+export interface PaymentCheckoutResponse {
+  status: string;
+  message: string;
+  data: {
+    assignmentId: string;
+    paymentStatus: string;
+    checkoutUrl: string;
+    invoiceId?: string;
+  };
+}
+
 export interface CreateAssignmentRequest {
   title: string;
   description: string;
@@ -156,16 +180,22 @@ export interface AssignmentFilters {
 }
 
 // Define the assignments API
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:8000'
+const resolveApiRoot = () => {
+  const rawBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    'http://localhost:8000';
+  const normalizedBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+  return /\/api$/i.test(normalizedBaseUrl)
+    ? normalizedBaseUrl
+    : `${normalizedBaseUrl}/api`;
+};
 
 export const assignmentsApi = createApi({
   reducerPath: 'assignmentsApi',
   tagTypes: ['Assignment', 'Assignments'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${apiBaseUrl}/api/assignments`,
+    baseUrl: `${resolveApiRoot()}/assignments`,
     credentials: 'include',
   }),
   endpoints: (builder) => ({
@@ -271,8 +301,8 @@ export const assignmentsApi = createApi({
       ],
     }),
 
-    // Dummy payment for assignment
-    processPayment: builder.mutation<AssignmentResponse, { id: string; amount?: number; method?: string }>({
+    // Initialize gateway payment for assignment
+    processPayment: builder.mutation<PaymentCheckoutResponse, { id: string; amount?: number; method?: string }>({
       query: ({ id, amount, method }) => ({
         url: `/${id}/payment`,
         method: 'POST',

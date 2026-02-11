@@ -5,6 +5,42 @@ import ChatModel from '../models/Chat.js';
 import NotificationModel from '../models/Notification.js';
 import mongoose from 'mongoose';
 
+const emitProposalRealtimeUpdate = async ({
+  req,
+  userId,
+  type,
+  title,
+  message,
+  assignmentId,
+  proposalId,
+  conversationId,
+}) => {
+  if (!userId) return;
+
+  const notification = await NotificationModel.create({
+    user: userId,
+    type,
+    title,
+    message,
+    link: assignmentId ? `/user/assignments/view-details/${assignmentId}` : undefined,
+    data: {
+      assignmentId,
+      proposalId,
+      conversationId,
+    },
+  });
+
+  const socketManager = req.app.get("socketManager");
+  if (socketManager) {
+    socketManager.emitToUser(String(userId), "notification", { notification });
+    socketManager.emitToUser(String(userId), "chat_updated", {
+      assignmentId,
+      proposalId,
+      chatId: conversationId,
+    });
+  }
+};
+
 class ProposalController {
   static ensureProposalConversation = async (proposal, assignment) => {
     if (proposal.conversation) {
@@ -576,6 +612,20 @@ class ProposalController {
         { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' }
       ]);
+      const conversationId =
+        typeof proposal.conversation === "string"
+          ? proposal.conversation
+          : proposal.conversation?._id?.toString();
+      await emitProposalRealtimeUpdate({
+        req,
+        userId: proposal.tutor?._id || proposal.tutor,
+        type: "proposal_accepted",
+        title: "Proposal accepted",
+        message: `${req.user?.name || "A student"} accepted your proposal for "${proposal.assignment?.title || "an assignment"}".`,
+        assignmentId: proposal.assignment?._id || proposal.assignment,
+        proposalId: proposal._id,
+        conversationId,
+      });
 
       res.status(200).json({
         status: 'success',
@@ -636,6 +686,20 @@ class ProposalController {
         { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },
         { path: 'assignment', select: 'title subject deadline' }
       ]);
+      const conversationId =
+        typeof proposal.conversation === "string"
+          ? proposal.conversation
+          : proposal.conversation?._id?.toString();
+      await emitProposalRealtimeUpdate({
+        req,
+        userId: proposal.tutor?._id || proposal.tutor,
+        type: "proposal_rejected",
+        title: "Proposal update",
+        message: `${req.user?.name || "A student"} rejected your proposal for "${proposal.assignment?.title || "an assignment"}".`,
+        assignmentId: proposal.assignment?._id || proposal.assignment,
+        proposalId: proposal._id,
+        conversationId,
+      });
 
       res.status(200).json({
         status: 'success',
@@ -684,6 +748,24 @@ class ProposalController {
 
       proposal.status = 'withdrawn';
       await proposal.save();
+      await proposal.populate([
+        { path: 'student', select: 'name email' },
+        { path: 'assignment', select: 'title subject deadline' }
+      ]);
+      const conversationId =
+        typeof proposal.conversation === "string"
+          ? proposal.conversation
+          : proposal.conversation?._id?.toString();
+      await emitProposalRealtimeUpdate({
+        req,
+        userId: proposal.student?._id || proposal.student,
+        type: "proposal_withdrawn",
+        title: "Proposal withdrawn",
+        message: `${req.user?.name || "A tutor"} withdrew a proposal for "${proposal.assignment?.title || "an assignment"}".`,
+        assignmentId: proposal.assignment?._id || proposal.assignment,
+        proposalId: proposal._id,
+        conversationId,
+      });
 
       res.status(200).json({
         status: 'success',

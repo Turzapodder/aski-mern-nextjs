@@ -16,8 +16,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   useEffect(() => {
     if (userData?.user) {
       const user = userData.user;
-      if (user.roles.includes('tutor') && user.onboardingStatus !== 'completed') {
-        router.push('/account/tutor-onboarding');
+      if (user.roles.includes('admin')) {
+        router.replace('/admin');
+        return;
+      }
+      if (
+        user.roles.includes('tutor') &&
+        user.onboardingStatus !== 'completed' &&
+        user.onboardingStatus !== 'approved'
+      ) {
+        router.replace('/account/tutor-onboarding');
       }
     }
   }, [userData, router]);

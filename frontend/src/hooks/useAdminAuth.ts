@@ -14,7 +14,7 @@ const useAdminAuth = () => {
   useEffect(() => {
     if (isChecking) return
     if (!user || !isAdmin || isError) {
-      router.replace("/")
+      router.replace("/account/login?role=admin")
     }
   }, [isChecking, isAdmin, isError, router, user])
 
