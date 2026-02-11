@@ -4,7 +4,9 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/*.test.mjs",
+    "test:all": "node --env-file=.env --test tests/*.test.mjs",
+    "test:payment-concurrency": "node --env-file=.env --test tests/paymentConcurrency.test.mjs",
     "build": "node scripts/build.js",
     "start": "node app.js",
     "dev": "nodemon app.js --ignore uploads/",

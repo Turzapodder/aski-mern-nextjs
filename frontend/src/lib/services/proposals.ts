@@ -121,12 +121,23 @@ export interface ProposalStats {
   successRate: number;
 }
 
+const resolveApiRoot = () => {
+  const rawBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    'http://localhost:8000';
+  const normalizedBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+  return /\/api$/i.test(normalizedBaseUrl)
+    ? normalizedBaseUrl
+    : `${normalizedBaseUrl}/api`;
+};
+
 // Create the proposals API
 export const proposalsApi = createApi({
   reducerPath: 'proposalsApi',
   tagTypes: ['Proposal', 'Proposals'],
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000/api/proposals',
+    baseUrl: `${resolveApiRoot()}/proposals`,
     credentials: 'include',
   }),
   endpoints: (builder) => ({

@@ -6,6 +6,15 @@ import NotificationModel from '../models/Notification.js';
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
 import mongoose from 'mongoose';
+import {
+  createUddoktaCheckout,
+  extractInvoiceIdFromValue,
+  isSuccessfulCheckoutResponse,
+  isUddoktaConfigured,
+  isValidUddoktaWebhookRequest,
+  normalizePaymentStatus,
+  verifyUddoktaPayment,
+} from "../utils/uddoktaPay.js";
 
 const parseNumber = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -13,6 +22,28 @@ const parseNumber = (value, fallback = 0) => {
 };
 
 const sanitizeText = (value) => (typeof value === "string" ? value.trim() : "");
+
+const isLocalHostValue = (value = "") =>
+  /(^https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?/i.test(sanitizeText(value));
+
+const getConfiguredPaymentCurrency = (preferredCurrency) => {
+  const envCurrency = sanitizeText(
+    process.env.UDDOKTAPAY_CURRENCY || process.env.PAYMENT_CURRENCY
+  );
+  const requested = sanitizeText(preferredCurrency);
+  const candidate = (envCurrency || requested || "BDT").toUpperCase();
+  return /^[A-Z]{3}$/.test(candidate) ? candidate : "BDT";
+};
+
+const getDefaultPlatformFeeRate = () => {
+  const parsed = parseNumber(process.env.PLATFORM_FEE_RATE, NaN);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : 0;
+};
+
+const getDefaultMinTransactionFee = () => {
+  const parsed = parseNumber(process.env.MIN_TRANSACTION_FEE, NaN);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+};
 
 const isValidUrl = (value) => {
   if (!value) return false;
@@ -52,6 +83,339 @@ const normalizeSubmissionLinks = (raw) => {
       label: entry.label || "",
       addedAt: new Date(),
     }));
+};
+
+const getFrontendBaseUrl = () => {
+  const value = sanitizeText(process.env.FRONTEND_HOST || "");
+  if (!value) return "http://localhost:3000";
+  return value.replace(/\/+$/, "");
+};
+
+const getBackendBaseUrl = (req) => {
+  const configured = sanitizeText(process.env.BACKEND_PUBLIC_URL || process.env.BACKEND_HOST || "");
+  const forwardedProto = sanitizeText(req.headers["x-forwarded-proto"]);
+  const protocol = forwardedProto || req.protocol || "http";
+  const host = sanitizeText(req.get("host"));
+  const inferred = host ? `${protocol}://${host}` : "";
+
+  // If env is left at localhost but request comes from a public host, use request host.
+  if (configured) {
+    if (isLocalHostValue(configured) && inferred && !isLocalHostValue(inferred)) {
+      return inferred.replace(/\/+$/, "");
+    }
+    return configured.replace(/\/+$/, "");
+  }
+
+  return inferred ? inferred.replace(/\/+$/, "") : "http://localhost:8000";
+};
+
+const buildAssignmentRedirectUrl = ({ assignmentId, paymentState, invoiceId }) => {
+  const frontendBaseUrl = getFrontendBaseUrl();
+  const path = assignmentId
+    ? `/user/assignments/view-details/${assignmentId}`
+    : "/user/assignments";
+  const url = new URL(`${frontendBaseUrl}${path}`);
+  if (paymentState) {
+    url.searchParams.set("payment", paymentState);
+  }
+  if (invoiceId) {
+    url.searchParams.set("invoice_id", invoiceId);
+  }
+  return url.toString();
+};
+
+const sanitizePaymentSnapshot = (verifyData = {}) => ({
+  status: sanitizeText(verifyData.status),
+  amount: parseNumber(verifyData.amount, 0),
+  fee: parseNumber(verifyData.fee, 0),
+  chargedAmount: parseNumber(verifyData.charged_amount, 0),
+  transactionId: sanitizeText(verifyData.transaction_id),
+  paymentMethod: sanitizeText(verifyData.payment_method),
+  senderNumber: sanitizeText(verifyData.sender_number),
+  date: sanitizeText(verifyData.date),
+});
+
+const findAssignmentIdByInvoiceId = async (invoiceId) => {
+  if (!invoiceId) return "";
+
+  const assignmentByGateway = await AssignmentModel.findOne(
+    { "paymentGateway.invoiceId": invoiceId },
+    { _id: 1 }
+  ).lean();
+
+  if (assignmentByGateway?._id) {
+    return String(assignmentByGateway._id);
+  }
+
+  const paymentTransaction = await TransactionModel.findOne({
+    type: "escrow_hold",
+    $or: [{ gatewayId: invoiceId }, { "metadata.invoiceId": invoiceId }],
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (
+    paymentTransaction?.relatedTo?.model === "Assignment" &&
+    paymentTransaction?.relatedTo?.id
+  ) {
+    return String(paymentTransaction.relatedTo.id);
+  }
+
+  return "";
+};
+
+const emitPaymentNotification = async ({ assignment, app }) => {
+  if (!assignment?.assignedTutor) return;
+
+  const student = await UserModel.findById(assignment.student).select("name").lean();
+  const actorName = student?.name || "A student";
+
+  const notification = await NotificationModel.create({
+    user: assignment.assignedTutor,
+    type: "payment_received",
+    title: "Payment confirmed",
+    message: `${actorName} completed payment for "${assignment.title}".`,
+    link: `/user/assignments/view-details/${assignment._id}`,
+    data: {
+      assignmentId: assignment._id,
+    },
+  });
+
+  const socketManager = app?.get?.("socketManager");
+  if (socketManager) {
+    socketManager.emitToUser(String(assignment.assignedTutor), "notification", {
+      notification,
+    });
+  }
+};
+
+const verifyAndApplyAssignmentPayment = async ({
+  invoiceId,
+  source,
+  app,
+  deps = {},
+}) => {
+  const cleanInvoiceId = sanitizeText(invoiceId);
+  if (!cleanInvoiceId) {
+    throw new Error("Invoice ID is required");
+  }
+
+  const verifyPaymentFn = deps.verifyPaymentFn || verifyUddoktaPayment;
+  const AssignmentRepo = deps.AssignmentModel || AssignmentModel;
+  const UserRepo = deps.UserModel || UserModel;
+  const TransactionRepo = deps.TransactionModel || TransactionModel;
+  const mongooseRepo = deps.mongoose || mongoose;
+  const findAssignmentIdByInvoiceIdFn =
+    deps.findAssignmentIdByInvoiceIdFn || findAssignmentIdByInvoiceId;
+  const emitPaymentNotificationFn =
+    deps.emitPaymentNotificationFn || emitPaymentNotification;
+
+  const verifyData = await verifyPaymentFn(cleanInvoiceId);
+  const paymentState = normalizePaymentStatus(verifyData?.status);
+  const metadata =
+    verifyData?.metadata && typeof verifyData.metadata === "object"
+      ? verifyData.metadata
+      : {};
+
+  let assignmentId = sanitizeText(metadata.assignmentId || metadata.assignment_id);
+  if (!assignmentId || !mongoose.Types.ObjectId.isValid(assignmentId)) {
+    assignmentId = await findAssignmentIdByInvoiceIdFn(cleanInvoiceId);
+  }
+
+  if (!assignmentId || !mongoose.Types.ObjectId.isValid(assignmentId)) {
+    throw new Error("Unable to map invoice to assignment");
+  }
+
+  const session = await mongooseRepo.startSession();
+  let result = null;
+
+  try {
+    await session.withTransaction(async () => {
+      const currentAssignment = await AssignmentRepo.findById(assignmentId).session(session);
+      if (!currentAssignment) {
+        throw new Error("Assignment not found");
+      }
+
+      const verifySnapshot = sanitizePaymentSnapshot(verifyData);
+      const amount = parseNumber(
+        verifySnapshot.amount,
+        currentAssignment.paymentAmount ??
+          currentAssignment.budget ??
+          currentAssignment.estimatedCost ??
+          0
+      );
+      const isCompleted = paymentState === "completed";
+      const existingGateway = currentAssignment.paymentGateway || {};
+      const gatewayUpdate = {
+        ...existingGateway,
+        provider: "uddoktapay",
+        invoiceId: cleanInvoiceId,
+        transactionId: verifySnapshot.transactionId || existingGateway.transactionId,
+        paymentMethod: verifySnapshot.paymentMethod || existingGateway.paymentMethod,
+        status: paymentState,
+        initiatedAt: existingGateway.initiatedAt || new Date(),
+        verifiedAt: new Date(),
+        metadata: {
+          ...(existingGateway.metadata || {}),
+          source,
+          latest: verifySnapshot,
+        },
+      };
+      const completionEligibleStatuses = [
+        "proposal_accepted",
+        "assigned",
+        "pending",
+        "created",
+        "proposal_received",
+      ];
+
+      let assignmentAfterUpdate = currentAssignment;
+      let didTransitionToPaid = false;
+
+      if (isCompleted && amount > 0) {
+        const shouldMoveToInProgress = completionEligibleStatuses.includes(
+          currentAssignment.status
+        );
+        const transitionUpdate = {
+          paymentAmount: amount,
+          paymentStatus: "paid",
+          paymentGateway: gatewayUpdate,
+          ...(shouldMoveToInProgress ? { status: "in_progress" } : {}),
+        };
+
+        // Atomic guard: only one concurrent request can move paymentStatus -> paid.
+        const transitionedAssignment = await AssignmentRepo.findOneAndUpdate(
+          { _id: currentAssignment._id, paymentStatus: { $ne: "paid" } },
+          { $set: transitionUpdate },
+          { new: true, session }
+        );
+
+        if (transitionedAssignment) {
+          assignmentAfterUpdate = transitionedAssignment;
+          didTransitionToPaid = true;
+        } else {
+          await AssignmentRepo.updateOne(
+            { _id: currentAssignment._id },
+            { $set: { paymentGateway: gatewayUpdate } },
+            { session }
+          );
+          assignmentAfterUpdate = await AssignmentRepo.findById(
+            currentAssignment._id
+          ).session(session);
+        }
+      } else {
+        await AssignmentRepo.updateOne(
+          { _id: currentAssignment._id },
+          { $set: { paymentGateway: gatewayUpdate } },
+          { session }
+        );
+        assignmentAfterUpdate = await AssignmentRepo.findById(
+          currentAssignment._id
+        ).session(session);
+      }
+
+      if (!assignmentAfterUpdate) {
+        throw new Error("Assignment state update failed");
+      }
+
+      if (didTransitionToPaid) {
+        const walletUpdate = await UserRepo.updateOne(
+          { _id: assignmentAfterUpdate.student },
+          { $inc: { "wallet.escrowBalance": amount } },
+          { session }
+        );
+        if (!walletUpdate?.matchedCount) {
+          throw new Error("Student wallet update failed");
+        }
+      }
+
+      const transactionFilter = {
+        type: "escrow_hold",
+        "relatedTo.model": "Assignment",
+        "relatedTo.id": assignmentAfterUpdate._id,
+      };
+
+      let escrowTransaction = await TransactionRepo.findOne({
+        ...transactionFilter,
+        $or: [{ gatewayId: cleanInvoiceId }, { "metadata.invoiceId": cleanInvoiceId }],
+      }).session(session);
+
+      if (!escrowTransaction) {
+        escrowTransaction = await TransactionRepo.findOne({
+          ...transactionFilter,
+        })
+          .sort({ createdAt: -1 })
+          .session(session);
+      }
+
+      const transactionStatus = isCompleted
+        ? "completed"
+        : paymentState === "failed"
+        ? "failed"
+        : paymentState === "cancelled"
+        ? "cancelled"
+        : "pending";
+
+      if (escrowTransaction) {
+        escrowTransaction.gatewayId = cleanInvoiceId;
+        escrowTransaction.status = transactionStatus;
+        if (amount > 0) {
+          escrowTransaction.amount = amount;
+        }
+        escrowTransaction.metadata = {
+          ...(escrowTransaction.metadata || {}),
+          provider: "uddoktapay",
+          invoiceId: cleanInvoiceId,
+          paymentMethod: verifySnapshot.paymentMethod || escrowTransaction.metadata?.paymentMethod,
+          providerTransactionId:
+            verifySnapshot.transactionId || escrowTransaction.metadata?.providerTransactionId,
+          verificationStatus: sanitizeText(verifyData?.status),
+          verificationSource: source,
+        };
+        await escrowTransaction.save({ session });
+      } else if (didTransitionToPaid && amount > 0) {
+        await TransactionRepo.create(
+          [
+            {
+              userId: assignmentAfterUpdate.student,
+              type: "escrow_hold",
+              amount,
+              status: transactionStatus,
+              gatewayId: cleanInvoiceId,
+              relatedTo: { model: "Assignment", id: assignmentAfterUpdate._id },
+              metadata: {
+                provider: "uddoktapay",
+                invoiceId: cleanInvoiceId,
+                paymentMethod: verifySnapshot.paymentMethod,
+                providerTransactionId: verifySnapshot.transactionId,
+                verificationStatus: sanitizeText(verifyData?.status),
+                verificationSource: source,
+              },
+            },
+          ],
+          { session }
+        );
+      }
+
+      result = {
+        assignmentId: String(assignmentAfterUpdate._id),
+        paymentState,
+        isCompleted,
+        didTransitionToPaid,
+        wasAlreadyPaid:
+          !didTransitionToPaid && assignmentAfterUpdate.paymentStatus === "paid",
+        assignment: assignmentAfterUpdate.toObject(),
+      };
+    });
+  } finally {
+    session.endSession();
+  }
+
+  if (result?.didTransitionToPaid) {
+    await emitPaymentNotificationFn({ assignment: result.assignment, app });
+  }
+
+  return result;
 };
 
 class AssignmentController {
@@ -851,9 +1215,16 @@ class AssignmentController {
     }
   };
 
-  // Dummy payment processing (by student)
+  // Initialize UddoktaPay checkout (by student)
   static processPayment = async (req, res) => {
     try {
+      if (!isUddoktaConfigured()) {
+        return res.status(500).json({
+          status: "failed",
+          message: "Payment gateway is not configured",
+        });
+      }
+
       const { id } = req.params;
       const { amount, method } = req.body || {};
       const userId = req.user._id;
@@ -898,6 +1269,9 @@ class AssignmentController {
         amount,
         assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
       );
+      const checkoutCurrency = getConfiguredPaymentCurrency(
+        req.user?.wallet?.currency
+      );
       if (!paymentAmount || paymentAmount <= 0) {
         return res.status(400).json({
           status: "failed",
@@ -905,58 +1279,297 @@ class AssignmentController {
         });
       }
 
-      assignment.paymentAmount = paymentAmount;
-      assignment.paymentStatus = "paid";
-      if (["proposal_accepted", "assigned", "pending", "created", "proposal_received"].includes(assignment.status)) {
-        assignment.status = "in_progress";
+      const backendBaseUrl = getBackendBaseUrl(req);
+      const callbackUrl = new URL(`${backendBaseUrl}/api/assignments/payment/callback`);
+      callbackUrl.searchParams.set("assignment_id", String(assignment._id));
+
+      const cancelUrl = new URL(`${backendBaseUrl}/api/assignments/payment/cancel`);
+      cancelUrl.searchParams.set("assignment_id", String(assignment._id));
+
+      const webhookUrl = new URL(`${backendBaseUrl}/api/assignments/payment/webhook`);
+
+      const checkoutPayload = {
+        full_name: req.user?.name || "Student",
+        email: req.user?.email || "",
+        amount: Number(paymentAmount.toFixed(2)),
+        currency: checkoutCurrency,
+        metadata: {
+          assignmentId: String(assignment._id),
+          studentId: String(assignment.student),
+          method: sanitizeText(method) || "uddoktapay",
+          currency: checkoutCurrency,
+        },
+        redirect_url: callbackUrl.toString(),
+        cancel_url: cancelUrl.toString(),
+        webhook_url: webhookUrl.toString(),
+        return_type: "GET",
+      };
+
+      const checkout = await createUddoktaCheckout(checkoutPayload);
+      const checkoutUrl = sanitizeText(checkout?.payment_url);
+
+      if (!isSuccessfulCheckoutResponse(checkout) || !checkoutUrl) {
+        return res.status(502).json({
+          status: "failed",
+          message: checkout?.message || "Unable to initialize payment",
+        });
       }
 
+      const invoiceId =
+        extractInvoiceIdFromValue(checkout?.invoice_id) ||
+        extractInvoiceIdFromValue(checkout?.data) ||
+        extractInvoiceIdFromValue(checkoutUrl);
+
+      assignment.paymentAmount = paymentAmount;
+      assignment.paymentStatus = "pending";
+      assignment.paymentGateway = {
+        ...(assignment.paymentGateway || {}),
+        provider: "uddoktapay",
+        invoiceId: invoiceId || assignment.paymentGateway?.invoiceId,
+        checkoutUrl,
+        status: "pending",
+        initiatedAt: new Date(),
+        metadata: {
+          ...(assignment.paymentGateway?.metadata || {}),
+          initSource: "assignment_payment",
+          currency: checkoutCurrency,
+        },
+      };
       await assignment.save();
 
-      await UserModel.updateOne(
-        { _id: userId },
-        { $inc: { "wallet.escrowBalance": paymentAmount } }
-      );
-
-      await TransactionModel.create({
-        userId,
+      const existingPendingTransaction = await TransactionModel.findOne({
         type: "escrow_hold",
-        amount: paymentAmount,
-        status: "completed",
-        relatedTo: { model: "Assignment", id: assignment._id },
-        metadata: {
-          method: sanitizeText(method) || "dummy",
-        },
+        "relatedTo.model": "Assignment",
+        "relatedTo.id": assignment._id,
+        status: "pending",
       });
 
-      const notification = await NotificationModel.create({
-        user: assignment.assignedTutor,
-        type: "payment_received",
-        title: "Payment confirmed",
-        message: `${req.user?.name || "A student"} completed payment for "${assignment.title}".`,
-        link: `/user/assignments/view-details/${assignment._id}`,
-        data: {
-          assignmentId: assignment._id,
-        },
-      });
-
-      const socketManager = req.app.get("socketManager");
-      if (socketManager) {
-        socketManager.emitToUser(String(assignment.assignedTutor), "notification", {
-          notification,
+      if (existingPendingTransaction) {
+        existingPendingTransaction.amount = paymentAmount;
+        existingPendingTransaction.gatewayId =
+          invoiceId || existingPendingTransaction.gatewayId;
+        existingPendingTransaction.metadata = {
+          ...(existingPendingTransaction.metadata || {}),
+          provider: "uddoktapay",
+          invoiceId,
+          paymentMethod: sanitizeText(method) || "uddoktapay",
+          currency: checkoutCurrency,
+          checkoutUrl,
+        };
+        await existingPendingTransaction.save();
+      } else {
+        await TransactionModel.create({
+          userId,
+          type: "escrow_hold",
+          amount: paymentAmount,
+          status: "pending",
+          gatewayId: invoiceId || undefined,
+          relatedTo: { model: "Assignment", id: assignment._id },
+          metadata: {
+            provider: "uddoktapay",
+            invoiceId,
+            paymentMethod: sanitizeText(method) || "uddoktapay",
+            currency: checkoutCurrency,
+            checkoutUrl,
+          },
         });
       }
 
       return res.status(200).json({
         status: "success",
-        message: "Payment completed",
-        data: assignment,
+        message: "Payment checkout initialized",
+        data: {
+          assignmentId: assignment._id,
+          paymentStatus: assignment.paymentStatus,
+          checkoutUrl,
+          invoiceId,
+          currency: checkoutCurrency,
+        },
       });
     } catch (error) {
       console.error("Payment error:", error);
       return res.status(500).json({
         status: "failed",
-        message: "Unable to process payment",
+        message: error?.message || "Unable to process payment",
+      });
+    }
+  };
+
+  // Verify payment by invoice ID and apply state changes
+  static verifyPayment = async (req, res) => {
+    try {
+      const invoiceId =
+        sanitizeText(req.query?.invoice_id) ||
+        sanitizeText(req.body?.invoice_id) ||
+        sanitizeText(req.query?.invoiceId) ||
+        sanitizeText(req.body?.invoiceId);
+
+      if (!invoiceId) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invoice ID is required",
+        });
+      }
+
+      const result = await verifyAndApplyAssignmentPayment({
+        invoiceId,
+        source: "manual_verify",
+        app: req.app,
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Payment verification completed",
+        data: {
+          assignmentId: result.assignmentId,
+          paymentState: result.paymentState,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: error?.message || "Unable to verify payment",
+      });
+    }
+  };
+
+  // Gateway redirect after customer payment
+  static handlePaymentCallback = async (req, res) => {
+    const invoiceId =
+      extractInvoiceIdFromValue(req.query?.invoice_id) ||
+      extractInvoiceIdFromValue(req.query?.invoiceId) ||
+      extractInvoiceIdFromValue(req.query);
+    const fallbackAssignmentId = sanitizeText(req.query?.assignment_id);
+
+    let assignmentId = fallbackAssignmentId;
+    let paymentState = "failed";
+
+    try {
+      if (!invoiceId) {
+        throw new Error("Invoice ID is missing in callback");
+      }
+
+      const result = await verifyAndApplyAssignmentPayment({
+        invoiceId,
+        source: "gateway_redirect",
+        app: req.app,
+      });
+
+      assignmentId = result.assignmentId || assignmentId;
+      paymentState = result.paymentState || "failed";
+    } catch (error) {
+      paymentState = "failed";
+    }
+
+    return res.redirect(
+      buildAssignmentRedirectUrl({
+        assignmentId,
+        paymentState,
+        invoiceId,
+      })
+    );
+  };
+
+  // Gateway cancel redirect
+  static handlePaymentCancel = async (req, res) => {
+    const invoiceId =
+      extractInvoiceIdFromValue(req.query?.invoice_id) ||
+      extractInvoiceIdFromValue(req.query?.invoiceId) ||
+      "";
+
+    let assignmentId = sanitizeText(req.query?.assignment_id);
+
+    if (!assignmentId && invoiceId) {
+      assignmentId = await findAssignmentIdByInvoiceId(invoiceId);
+    }
+
+    if (invoiceId) {
+      const assignment = assignmentId
+        ? await AssignmentModel.findById(assignmentId)
+        : null;
+
+      if (assignment) {
+        assignment.paymentGateway = {
+          ...(assignment.paymentGateway || {}),
+          provider: "uddoktapay",
+          invoiceId: invoiceId || assignment.paymentGateway?.invoiceId,
+          status: "cancelled",
+          verifiedAt: new Date(),
+          metadata: {
+            ...(assignment.paymentGateway?.metadata || {}),
+            cancelSource: "gateway_redirect",
+          },
+        };
+        await assignment.save();
+      }
+
+      await TransactionModel.updateMany(
+        {
+          type: "escrow_hold",
+          "relatedTo.model": "Assignment",
+          ...(assignmentId ? { "relatedTo.id": assignmentId } : {}),
+          $or: [{ gatewayId: invoiceId }, { "metadata.invoiceId": invoiceId }],
+          status: "pending",
+        },
+        {
+          $set: {
+            status: "cancelled",
+            "metadata.cancelledAt": new Date().toISOString(),
+            "metadata.cancellationSource": "gateway_redirect",
+          },
+        }
+      );
+    }
+
+    return res.redirect(
+      buildAssignmentRedirectUrl({
+        assignmentId,
+        paymentState: "cancelled",
+        invoiceId,
+      })
+    );
+  };
+
+  // Gateway webhook
+  static handlePaymentWebhook = async (req, res) => {
+    try {
+      if (!isValidUddoktaWebhookRequest(req)) {
+        return res.status(401).json({
+          status: "failed",
+          message: "Invalid webhook signature",
+        });
+      }
+
+      const invoiceId =
+        extractInvoiceIdFromValue(req.body?.invoice_id) ||
+        extractInvoiceIdFromValue(req.body?.invoiceId) ||
+        extractInvoiceIdFromValue(req.body);
+
+      if (!invoiceId) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invoice ID is required",
+        });
+      }
+
+      const result = await verifyAndApplyAssignmentPayment({
+        invoiceId,
+        source: "gateway_webhook",
+        app: req.app,
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Webhook processed",
+        data: {
+          assignmentId: result.assignmentId,
+          paymentState: result.paymentState,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: error?.message || "Unable to process webhook",
       });
     }
   };
@@ -1144,8 +1757,14 @@ class AssignmentController {
         ]);
 
         if (student && tutor) {
-          const platformFeeRate = parseNumber(settings?.platformFeeRate, 0);
-          const minTransactionFee = parseNumber(settings?.minTransactionFee, 0);
+          const platformFeeRate = parseNumber(
+            settings?.platformFeeRate,
+            getDefaultPlatformFeeRate()
+          );
+          const minTransactionFee = parseNumber(
+            settings?.minTransactionFee,
+            getDefaultMinTransactionFee()
+          );
           let platformFee = Math.max(0, amount * platformFeeRate);
           if (platformFee > 0 && minTransactionFee > 0) {
             platformFee = Math.max(platformFee, minTransactionFee);
@@ -1275,4 +1894,5 @@ class AssignmentController {
   };
 }
 
+export { verifyAndApplyAssignmentPayment as __verifyAndApplyAssignmentPaymentForTest };
 export default AssignmentController;

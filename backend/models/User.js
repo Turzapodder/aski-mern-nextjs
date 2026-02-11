@@ -127,6 +127,12 @@ const userSchema = new mongoose.Schema(
           requestedAt: { type: Date },
           completedAt: { type: Date },
           transactionId: { type: String, trim: true },
+          payoutReference: { type: String, trim: true },
+          processedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "user",
+          },
+          notes: { type: String, trim: true },
         },
       ],
     },

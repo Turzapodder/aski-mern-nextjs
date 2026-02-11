@@ -4,7 +4,7 @@ import Image from "next/image"
 import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import Link from 'next/link'
-import { CopyMinus, Menu, X, LogOut } from 'lucide-react'
+import { CopyMinus, Menu, LogOut } from 'lucide-react'
 
 interface SidebarItem {
   name: string
@@ -56,7 +56,6 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
   // Check if user is a tutor/admin
   const roles = userData?.user?.roles || []
   const isTutor = roles.includes('tutor')
-  const isAdmin = roles.includes('admin')
 
   const mainMenuItems = isTutor
     ? [
@@ -82,20 +81,6 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
       items: mainMenuItems,
     },
   ]
-
-  if (isAdmin) {
-    sidebarSections.push({
-      title: 'ADMIN',
-      items: [
-        {
-          name: 'Admin Panel',
-          icon: '/assets/icons/dashboard.png',
-          href: '/admin',
-          active: activeItem === 'admin' || window.location.pathname.startsWith('/admin'),
-        },
-      ],
-    })
-  }
 
   return (
     <aside

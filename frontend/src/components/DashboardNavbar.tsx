@@ -34,7 +34,7 @@ const DashboardNavbar = () => {
   const handleLogout = async () => {
     try {
       await logoutUser({}).unwrap()
-      router.push('/login')
+      router.push('/account/login?role=user')
     } catch (error) {
       console.error('Logout failed:', error)
     }

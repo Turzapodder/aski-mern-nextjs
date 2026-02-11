@@ -22,6 +22,8 @@ type DisputeDetails = {
     submissions?: Record<string, any>[]
   }
   escrowAmount?: number
+  financiallyActionable?: boolean
+  hasGatewayRefundData?: boolean
 }
 
 const formatDate = (value?: string) => {
@@ -52,6 +54,8 @@ export default function AdminDisputeDetailsPage() {
   const attachments = payload?.files?.attachments ?? []
   const submissions = payload?.files?.submissions ?? []
   const escrowAmount = payload?.escrowAmount || 0
+  const financiallyActionable = Boolean(payload?.financiallyActionable)
+  const hasGatewayRefundData = Boolean(payload?.hasGatewayRefundData)
   const platformFeeRate = settingsResponse?.data?.platformFeeRate || 0
   const minFee = settingsResponse?.data?.minTransactionFee || 0
   const apiBaseUrl =
@@ -95,12 +99,16 @@ export default function AdminDisputeDetailsPage() {
     if (!assignment?._id) return
     setIsSubmitting(true)
     try {
-      await adminApi.disputes.resolve(assignment._id, {
+      const response = await adminApi.disputes.resolve(assignment._id, {
         resolutionType,
         studentPercent: resolutionType === "split" ? studentPercent : undefined,
         reason: note,
       })
-      toast.success("Dispute resolved")
+      if ((response?.data as any)?.noFinancialTransfer) {
+        toast.success("Dispute resolved (no payout/refund because payment is not completed)")
+      } else {
+        toast.success("Dispute resolved")
+      }
       setModalOpen(false)
       mutate()
     } catch (submitError: any) {
@@ -147,6 +155,11 @@ export default function AdminDisputeDetailsPage() {
             <div>
               <p className="text-xs text-gray-500">Escrow amount</p>
               <p className="text-sm font-medium text-gray-900">{escrowAmount}</p>
+              {!financiallyActionable && (
+                <p className="mt-1 text-xs text-amber-700">
+                  Payment is not completed for this dispute. Resolution will close the case only.
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs text-gray-500">Student</p>
@@ -241,6 +254,16 @@ export default function AdminDisputeDetailsPage() {
             <CardTitle className="text-base font-semibold">Resolution</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!financiallyActionable && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                Unpaid dispute: this action resolves the case without payout/refund transfer.
+              </div>
+            )}
+            {financiallyActionable && !hasGatewayRefundData && (
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
+                No gateway refund metadata found. Wallet transfer will still be processed internally.
+              </div>
+            )}
             <div className="space-y-2 text-sm text-gray-700">
               <label className="flex items-center gap-2">
                 <input

@@ -15,6 +15,13 @@ const initialValues = {
 const VerifyEmail = () => {
   const searchParams = useSearchParams()
   const urlEmail = searchParams.get('email')
+  const urlRole = (() => {
+    const role = (searchParams.get("role") || "").toLowerCase();
+    if (role === "tutor") return "tutor";
+    if (role === "admin") return "admin";
+    return "user";
+  })();
+  const loginHref = `/account/login?role=${urlRole}`;
   const [serverErrorMessage, setServerErrorMessage] = useState('')
   const [serverSuccessMessage, setServerSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false);
@@ -32,7 +39,7 @@ const VerifyEmail = () => {
           setServerErrorMessage('')
           action.resetForm()
           setLoading(false);
-          router.push('/account/login')
+          router.push(loginHref)
         }
         if (response.error && response.error.data.status === "failed") {
           setServerErrorMessage(response.error.data.message)
@@ -139,7 +146,7 @@ const VerifyEmail = () => {
 
         <div className="mt-8 text-center">
           <Link 
-            href="/account/login" 
+            href={loginHref} 
             className="text-sm text-gray-600 hover:text-black flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">

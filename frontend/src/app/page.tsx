@@ -15,7 +15,7 @@ const LandingPage = () => {
     if (isAuth === 'true') {
       window.open('https://wa.me/', '_blank');
     } else {
-      router.push('/account/login?redirect=whatsapp');
+      router.push('/account/login?role=user&redirect=whatsapp');
     }
   };
 
@@ -58,7 +58,7 @@ const LandingPage = () => {
 
           {/* CTA Buttons */}
           <div className='flex items-center space-x-4'>
-            <a href='/account/login' rel='noopener noreferrer'>
+            <a href='/account/login?role=user' rel='noopener noreferrer'>
               <span className='text-gray-900 font-medium'>Sign In</span>
             </a>
             <Link

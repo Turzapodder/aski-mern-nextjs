@@ -13,6 +13,11 @@ import {
     buildAvailabilityPayload,
     validateAvailability,
 } from "../utils/tutorAvailability.js";
+import {
+    canUserUseLoginRole,
+    getRoleMismatchMessage,
+    normalizeLoginRole,
+} from "../utils/authRole.js";
 
 const loadPlatformSettings = async () => {
     try {
@@ -169,9 +174,18 @@ class UserController {
     // User Login
     static userLogin = async (req, res) => {
         try {
-            const { email, password } = req.body;
+            const { email, password, role } = req.body;
+            const requestedRole = normalizeLoginRole(role || req.query?.role);
+
             if (!email || !password) {
                 return res.status(400).json({ status: "failed", message: "All field are required" });
+            }
+
+            if (!requestedRole) {
+                return res.status(400).json({
+                    status: "failed",
+                    message: "Login role is required (user, tutor, or admin)",
+                });
             }
 
             // Find user by emai;
@@ -201,6 +215,13 @@ class UserController {
                 return res.status(401).json({ status: "failed", message: "Invalid email or password" });
             }
 
+            if (!canUserUseLoginRole(user.roles, requestedRole)) {
+                return res.status(403).json({
+                    status: "failed",
+                    message: getRoleMismatchMessage(requestedRole),
+                });
+            }
+
             // Generate TOKEN
             const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } = await generateTokens(user);
 
@@ -219,6 +240,7 @@ class UserController {
                 },
                 status: "success",
                 message: "Login Successful",
+                login_role: requestedRole,
                 access_token: accessToken,
                 refresh_token: refreshToken,
                 access_token_exp: accessTokenExp,

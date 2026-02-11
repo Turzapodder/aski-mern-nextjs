@@ -36,6 +36,10 @@ import setTokensCookies from "./utils/setTokensCookies.js";
 import "./config/google-strategy.js";
 import logger from "./utils/logger.js";
 import {
+  canUserUseLoginRole,
+  normalizeLoginRole,
+} from "./utils/authRole.js";
+import {
   errorHandler,
   notFoundHandler,
 } from "./middlewares/errorMiddleware.js";
@@ -441,7 +445,7 @@ const startServer = async () => {
     // Google OAuth routes with enhanced error handling and logging
     app.get("/auth/google", (req, res, next) => {
       try {
-        const role = req.query.role || "";
+        const role = normalizeLoginRole(req.query.role || "");
         const userIp = req.ip;
 
         logger.info(
@@ -453,14 +457,14 @@ const startServer = async () => {
         const authOptions = {
           session: false,
           scope: ["profile", "email"],
-          state: role,
+          state: role || "user",
         };
 
         passport.authenticate("google", authOptions)(req, res, next);
       } catch (error) {
         logger.error("Google OAuth initiation error:", error);
         res.redirect(
-          `${process.env.FRONTEND_HOST}/account/login?error=oauth_init_failed`
+          `${process.env.FRONTEND_HOST}/account/login?role=user&error=oauth_init_failed`
         );
       }
     });
@@ -470,7 +474,7 @@ const startServer = async () => {
       (req, res, next) => {
         passport.authenticate("google", {
           session: false,
-          failureRedirect: `${process.env.FRONTEND_HOST}/account/login?error=oauth_failed`,
+          failureRedirect: `${process.env.FRONTEND_HOST}/account/login?role=user&error=oauth_failed`,
         })(req, res, next);
       },
       (req, res) => {
@@ -478,9 +482,11 @@ const startServer = async () => {
           if (!req.user) {
             logger.error("Google OAuth callback: No user data received");
             return res.redirect(
-              `${process.env.FRONTEND_HOST}/account/login?error=no_user_data`
+              `${process.env.FRONTEND_HOST}/account/login?role=user&error=no_user_data`
             );
           }
+
+          const requestedRole = normalizeLoginRole(req.query.state || "");
 
           const {
             user,
@@ -498,6 +504,15 @@ const startServer = async () => {
               user?.email || "unknown"
             }, IP: ${userIp}, New Tutor: ${isNewTutor}`
           );
+
+          if (requestedRole && !canUserUseLoginRole(user.roles, requestedRole)) {
+            logger.warn(
+              `Google OAuth role mismatch for ${user?.email || "unknown"} (requested: ${requestedRole})`
+            );
+            return res.redirect(
+              `${process.env.FRONTEND_HOST}/account/login?role=${requestedRole}&error=role_mismatch`
+            );
+          }
 
           // Check if response headers have already been sent
           if (res.headersSent) {
@@ -533,7 +548,7 @@ const startServer = async () => {
           logger.error("Google OAuth callback error:", error);
           if (!res.headersSent) {
             res.redirect(
-              `${process.env.FRONTEND_HOST}/account/login?error=callback_failed`
+              `${process.env.FRONTEND_HOST}/account/login?role=user&error=callback_failed`
             );
           }
         }

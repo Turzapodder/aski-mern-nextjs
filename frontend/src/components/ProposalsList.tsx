@@ -12,6 +12,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSocket } from "@/lib/hooks/useSocket";
 import {
   useGetProposalsByAssignmentQuery,
   useAcceptProposalMutation,
@@ -36,12 +37,32 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
     isLoading,
     error,
     refetch
-  } = useGetProposalsByAssignmentQuery(assignmentId);
+  } = useGetProposalsByAssignmentQuery(assignmentId, {
+    pollingInterval: 15000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   const [acceptProposal] = useAcceptProposalMutation();
   const [rejectProposal] = useRejectProposalMutation();
 
   const proposals = useMemo(() => proposalsData?.data?.proposals || [], [proposalsData]);
+
+  useSocket({
+    onNotification: (payload) => {
+      const incoming = payload?.notification || payload;
+      const incomingAssignmentId =
+        incoming?.data?.assignmentId || incoming?.assignmentId;
+      if (incomingAssignmentId === assignmentId) {
+        refetch();
+      }
+    },
+    onChatUpdated: (payload) => {
+      if (payload?.assignmentId === assignmentId) {
+        refetch();
+      }
+    },
+  });
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {

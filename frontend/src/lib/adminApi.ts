@@ -91,6 +91,7 @@ export interface TransactionRecord {
   status: string
   gatewayId?: string
   createdAt: string
+  metadata?: Record<string, unknown>
 }
 
 export interface FinanceSummary {
@@ -327,10 +328,14 @@ export const adminApi = {
         method: "GET",
         params,
       }),
-    processWithdrawal: (id: string) =>
+    processWithdrawal: (
+      id: string,
+      payload?: { payoutReference?: string; gateway?: string; note?: string }
+    ) =>
       request<Record<string, unknown>>({
         url: `/v1/admin/withdrawals/${id}/process`,
         method: "POST",
+        data: payload || {},
       }),
   },
   disputes: {
