@@ -6,13 +6,18 @@ import { useGetUserQuery } from "@/lib/services/auth"
 import { useRouter, usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { setUserProfile } from "@/lib/features/auth/authSlice"
+import { setMobileMenuOpen } from "@/lib/features/ui/uiSlice"
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const { data: userData, isLoading } = useGetUserQuery();
   const router = useRouter();
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+
+  const sidebarCollapsed = useAppSelector((state) => !state.ui.isSidebarOpen)
+  const mobileSidebarOpen = useAppSelector((state) => state.ui.isMobileMenuOpen)
 
   // Derive active item from pathname
   const activeItem = pathname?.split('/').pop() || 'dashboard';
@@ -21,6 +26,10 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (userData?.user) {
       const user = userData.user;
+      
+      // Update the global state with the fetched user profile
+      dispatch(setUserProfile(user));
+
       if (user.roles.includes('admin')) {
         router.replace('/admin');
         return;
@@ -33,11 +42,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         router.replace('/account/tutor-onboarding');
       }
     }
-  }, [userData, router]);
-
-  const handleSidebarToggle = (isCollapsed: boolean) => {
-    setSidebarCollapsed(isCollapsed)
-  }
+  }, [userData, router, dispatch]);
 
   if (isLoading) {
     return (
@@ -81,7 +86,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
       {mobileSidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
+          onClick={() => dispatch(setMobileMenuOpen(false))}
         />
       )}
 
@@ -92,18 +97,14 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         md:relative md:translate-x-0
         ${sidebarCollapsed ? 'w-16' : 'w-64'}
       `}>
-        <CollapsibleSidebar
-          activeItem={activeItem}
-          onToggle={handleSidebarToggle}
-        // isMobile={false} // removed, not adding prop yet until sidebar updated
-        />
+        <CollapsibleSidebar activeItem={activeItem} />
       </div>
 
       {/* Main Content Area */}
       <div className='flex-1 flex flex-col min-w-0 overflow-hidden'>
         {/* Header */}
         <div className="flex items-center p-4 bg-white md:hidden border-b">
-          <button onClick={() => setMobileSidebarOpen(true)} className="p-2 mr-2 hover:bg-gray-100 rounded-md">
+          <button onClick={() => dispatch(setMobileMenuOpen(true))} className="p-2 mr-2 hover:bg-gray-100 rounded-md">
             <Menu size={20} />
           </button>
           <span className="font-semibold text-lg">Aski</span>

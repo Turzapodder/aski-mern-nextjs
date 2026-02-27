@@ -3,6 +3,7 @@ import StoreProvider from "./StoreProvider";
 import "./globals.css";
 import { Poppins, Orbitron, Dancing_Script, Space_Grotesk } from 'next/font/google'
 import { Toaster } from "@/components/ui/sonner"
+import GlobalModal from "@/components/GlobalModal"
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -44,6 +45,7 @@ export default function RootLayout({
         <StoreProvider>
           {children}
           <Toaster />
+          <GlobalModal />
         </StoreProvider>
       </body>
     </html>

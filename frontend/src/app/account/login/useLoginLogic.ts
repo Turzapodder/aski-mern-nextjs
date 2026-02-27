@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useLoginUserMutation } from "@/lib/services/auth";
 import { useConvertFormToAssignmentMutation } from "@/lib/services/student";
+import { useAppDispatch } from "@/lib/hooks";
+import { setCredentials } from "@/lib/features/auth/authSlice";
 
 export type LoginRole = "user" | "tutor" | "admin";
 
@@ -27,6 +29,7 @@ export const useLoginLogic = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
   const [loginUser] = useLoginUserMutation();
   const [pendingSessionId, setPendingSessionId] = useState<string>("");
   const [convertForm] = useConvertFormToAssignmentMutation();
@@ -109,6 +112,13 @@ export const useLoginLogic = () => {
           setServerSuccessMessage(response.data.message);
           setServerErrorMessage("");
           action.resetForm();
+
+          if (response.data.user) {
+            dispatch(setCredentials({ 
+              user: response.data.user, 
+              role: loginRole 
+            }));
+          }
 
           await handleFormConversion();
 

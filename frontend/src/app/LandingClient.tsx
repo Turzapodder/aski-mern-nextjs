@@ -5,9 +5,11 @@ import { Send, ArrowRight, Sparkles } from "lucide-react";
 import UploadProjectForm from "@/components/UploadProjectForm";
 import Link from "next/link";
 import { useLandingLogic } from "./useLandingLogic";
+import { useAppSelector } from "@/lib/hooks";
 
 export const LandingClient = () => {
   const { handleWhatsAppClick } = useLandingLogic();
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth);
 
   return (
     <div className='min-h-screen bg-white'>
@@ -48,22 +50,33 @@ export const LandingClient = () => {
 
           {/* CTA Buttons */}
           <div className='flex items-center space-x-4'>
-            <a href='/account/login?role=user' rel='noopener noreferrer'>
-              <span className='text-gray-900 font-medium'>Sign In</span>
-            </a>
-            <Link
-              href='/account/register'
-              className='flex items-center font-medium text-white space-x-2 px-10 py-2 bg-black border-2 shadow-xl rounded-xl transition-colors'
-            >
-              Join Us
-            </Link>
-            <Link
-              href='/account/register?role=tutor'
-              className='bg-primary-300 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center space-x-2'
-            >
-              <span>Register as Tutor</span>
-              <ArrowRight size={16} />
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href={userRole === 'admin' ? '/admin' : '/user/dashboard'}
+                className='flex items-center font-medium text-white space-x-2 px-10 py-2 bg-black border-2 shadow-xl rounded-xl transition-colors'
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <a href='/account/login?role=user' rel='noopener noreferrer'>
+                  <span className='text-gray-900 font-medium'>Sign In</span>
+                </a>
+                <Link
+                  href='/account/register'
+                  className='flex items-center font-medium text-white space-x-2 px-10 py-2 bg-black border-2 shadow-xl rounded-xl transition-colors'
+                >
+                  Join Us
+                </Link>
+                <Link
+                  href='/account/register?role=tutor'
+                  className='bg-primary-300 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center space-x-2'
+                >
+                  <span>Register as Tutor</span>
+                  <ArrowRight size={16} />
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </header>

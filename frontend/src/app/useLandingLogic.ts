@@ -1,12 +1,12 @@
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { useAppSelector } from "@/lib/hooks";
 
 export const useLandingLogic = () => {
   const router = useRouter();
+  const { isAuthenticated, userRole } = useAppSelector((state) => state.auth);
 
   const handleWhatsAppClick = () => {
-    const isAuth = Cookies.get('is_auth');
-    if (isAuth === 'true') {
+    if (isAuthenticated) {
       window.open('https://wa.me/', '_blank');
     } else {
       router.push('/account/login?role=user&redirect=whatsapp');

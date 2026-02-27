@@ -12,8 +12,13 @@ import { customOffersApi } from './services/customOffers'
 import { reportsApi } from './services/reports'
 import { notificationsApi } from './services/notifications'
 
+import authReducer from './features/auth/authSlice'
+import uiReducer from './features/ui/uiSlice'
+
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
+    ui: uiReducer,
     [authApi.reducerPath]: authApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,
     [tutorApi.reducerPath]: tutorApi.reducer,
