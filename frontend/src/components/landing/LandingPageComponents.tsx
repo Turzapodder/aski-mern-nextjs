@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
-import { Check } from 'lucide-react';
+import { LucideIcon, Check } from 'lucide-react';
 
 interface FeatureCardProps {
     icon: ReactNode;
@@ -28,7 +27,7 @@ interface PricingCardProps {
 }
 
 export const PricingCard = ({ title, price, period, features, isPopular = false, buttonText = "Get Started" }: PricingCardProps) => (
-    <div className={`p-8 rounded-[2rem] border ${isPopular ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-gray-100 bg-white'} relative flex flex-col h-full`}>
+    <div className={`p-8 rounded-[2rem] border ${isPopular ? 'border-blue-600 bg-blue-50/5 ring-4 ring-blue-600/10' : 'border-gray-100 bg-white'} relative flex flex-col h-full`}>
         <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
         <div className="mb-6">
             <span className="text-4xl font-bold text-gray-900">{price}</span>
@@ -46,7 +45,7 @@ export const PricingCard = ({ title, price, period, features, isPopular = false,
             ))}
         </div>
 
-        <button className={`w-full py-3 rounded-xl font-medium transition-colors ${isPopular ? 'bg-primary text-white hover:bg-primary/90' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>
+        <button className={`w-full py-3 rounded-xl font-medium transition-colors ${isPopular ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>
             {buttonText}
         </button>
     </div>
