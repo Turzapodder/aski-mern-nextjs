@@ -23,6 +23,9 @@ import useAdminAuth from "@/hooks/useAdminAuth"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useLogoutUserMutation } from "@/lib/services/auth"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { setMobileMenuOpen } from "@/lib/features/ui/uiSlice"
+import { logout as logoutAuthUser } from "@/lib/features/auth/authSlice"
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -48,7 +51,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter()
   const { user, isAdmin, isLoading } = useAdminAuth()
   const [logoutUser] = useLogoutUserMutation()
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
 
   useEffect(() => {
@@ -56,10 +58,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }, [pathname])
 
   const activePath = useMemo(() => pathname || "/admin", [pathname])
+  const dispatch = useAppDispatch()
+  const mobileOpen = useAppSelector((state) => state.ui.isMobileMenuOpen)
 
   const handleLogout = async () => {
     try {
       await logoutUser({})
+      dispatch(logoutAuthUser()) 
     } finally {
       router.push("/")
     }
@@ -67,7 +72,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
   const handleNavigate = () => {
     setIsNavigating(true)
-    setMobileOpen(false)
+    dispatch(setMobileMenuOpen(false))
   }
 
   if (isLoading) {
@@ -181,7 +186,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
             <div className="flex items-center justify-between px-4 py-3 md:px-6">
               <div className="flex items-center gap-3">
-                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <Sheet open={mobileOpen} onOpenChange={(val) => dispatch(setMobileMenuOpen(val))}>
                   <SheetTrigger asChild>
                     <button
                       className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"

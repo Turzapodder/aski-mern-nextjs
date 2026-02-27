@@ -11,8 +11,8 @@ import {
   useMarkNotificationReadMutation,
 } from "@/lib/services/notifications";
 import { notificationsApi } from "@/lib/services/notifications";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "@/lib/store";
+import { useAppDispatch } from "@/lib/hooks";
+import { openModal } from "@/lib/features/ui/uiSlice";
 import { useSocket } from "@/lib/hooks/useSocket";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -39,9 +39,8 @@ const TopNavbar = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showPostModal, setShowPostModal] = useState(false);
   const { data: userData } = useGetUserQuery();
   const [logoutUser] = useLogoutUserMutation();
 
@@ -192,7 +191,7 @@ const TopNavbar = ({
         <div className='flex items-center space-x-3'>
           <div>
             <button
-              onClick={() => setShowPostModal(true)}
+              onClick={() => dispatch(openModal({ type: 'POST_ASSIGNMENT' }))}
               className='bg-primary-600 text-white h-[46px] px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors flex items-center text-sm font-medium'
             >
               <Plus size={16} className='mr-1' /> Post Question
@@ -390,11 +389,6 @@ const TopNavbar = ({
           onClick={() => setShowNotifications(false)}
         ></div>
       )}
-      <PostAssignmentModal
-        isOpen={showPostModal}
-        onClose={() => setShowPostModal(false)}
-        onSubmit={handlePostAssignment}
-      />
     </header>
   );
 };

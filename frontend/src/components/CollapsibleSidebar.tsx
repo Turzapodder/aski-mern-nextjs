@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import Link from 'next/link'
 import { CopyMinus, Menu, LogOut } from 'lucide-react'
+import { useAppDispatch, useAppSelector } from '@/lib/hooks'
+import { toggleSidebar } from '@/lib/features/ui/uiSlice'
 
 interface SidebarItem {
   name: string
@@ -27,12 +29,15 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
   const [logoutUser] = useLogoutUserMutation()
   const { data: userData } = useGetUserQuery()
   const router = useRouter()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const dispatch = useAppDispatch()
+  
+  // Notice that in UI slice it's 'isSidebarOpen', so 'isCollapsed' is '!isSidebarOpen'
+  const isSidebarOpen = useAppSelector(state => state.ui.isSidebarOpen)
+  const isCollapsed = !isSidebarOpen
 
   const handleToggle = () => {
-    const newCollapsedState = !isCollapsed
-    setIsCollapsed(newCollapsedState)
-    onToggle?.(newCollapsedState)
+    dispatch(toggleSidebar())
+    onToggle?.(!isSidebarOpen)
   }
 
   const handleLogout = async () => {

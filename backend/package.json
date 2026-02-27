@@ -42,8 +42,8 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.999.0",
     "@google/generative-ai": "^0.24.0",
-    "aws-sdk": "^2.1692.0",
     "bcryptjs": "^2.4.3",
     "chalk": "^5.6.2",
     "compression": "^1.8.1",
@@ -59,7 +59,7 @@
     "mongoose": "^8.9.5",
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
-    "multer-s3": "^2.10.0",
+    "multer-s3": "^3.0.1",
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
