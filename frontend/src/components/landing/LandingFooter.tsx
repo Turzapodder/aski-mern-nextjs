@@ -37,13 +37,11 @@ export const LandingFooter = () => {
                 </div>
 
                 <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-900 text-xs text-gray-500">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2 md:mb-0">
-                            <div className="w-6 h-6 bg-white/10 rounded flex items-center justify-center text-white font-serif font-bold">A</div>
-                            <span className="text-white font-bold">Aski</span>
-                        </div>
+                    <div className="flex items-center gap-2 mb-4 md:mb-0">
+                        <div className="w-6 h-6 bg-white/10 rounded flex items-center justify-center text-white font-serif font-bold">A</div>
+                        <span className="text-white font-bold">Aski</span>
                     </div>
-                    <div>
+                    <div className="mb-4 md:mb-0">
                         © 2024 Aski Inc. All rights reserved.
                     </div>
                     <div className="flex gap-4">

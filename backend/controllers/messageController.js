@@ -9,40 +9,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/chat-files');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  // Allow images, PDFs, and DOCX files
-  const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword'
-  ];
-  
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only images, PDF, and DOCX files are allowed.'), false);
-  }
-};
-
 const buildPublicFileUrl = (req, relativePath) => {
   if (!relativePath) return relativePath;
   if (relativePath.startsWith('http')) return relativePath;
@@ -51,14 +17,6 @@ const buildPublicFileUrl = (req, relativePath) => {
     `${req.protocol}://${req.get('host')}`;
   return `${baseUrl}${relativePath}`;
 };
-
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
 
 const CHAT_TUTOR_MESSAGE_GATE = process.env.CHAT_TUTOR_MESSAGE_GATE || 'user_first';
 const READ_THROTTLE_MS = Number(process.env.CHAT_READ_THROTTLE_MS || 1500);
@@ -252,21 +210,23 @@ class MessageController {
         });
       }
 
-      // Process file attachments
+      // Process file attachments (handling both local and S3)
       const attachments = files.map(file => {
-        const relativeUrl = `/uploads/chat-files/${file.filename}`;
         return {
-          filename: file.filename,
+          filename: file.filename || path.basename(file.key || file.location || ''),
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          url: buildPublicFileUrl(req, relativeUrl)
+          url: file.location || buildPublicFileUrl(req, `/uploads/chat-files/${file.filename}`)
         };
       });
 
       // Determine message type based on file types
       const hasImages = attachments.some(att => att.mimetype.startsWith('image/'));
-      const messageType = hasImages ? 'image' : 'file';
+      const hasVideos = attachments.some(att => att.mimetype.startsWith('video/'));
+      let messageType = 'file';
+      if (hasImages) messageType = 'image';
+      else if (hasVideos) messageType = 'video';
 
       const newMessage = new MessageModel({
         chat: actualChatId,

@@ -33,11 +33,11 @@ export const UnlockPotentialSection = () => {
                             <Link href="#" className="font-bold underline decoration-2 underline-offset-4 hover:text-blue-600 transition-colors">Go to Dashboard</Link>
                         </div>
                         <div className="absolute right-0 bottom-0 w-64 h-48 bg-white rounded-tl-[2rem] shadow-sm p-4 translate-y-4 translate-x-4 transition-transform group-hover:translate-x-2 group-hover:translate-y-2">
-                            <div className="space-y-3">
+                            <div className="space-y-3 p-4">
                                 {[1, 2].map(i => (
                                     <div key={i} className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-full"></div>
-                                        <div className="h-2 w-24 bg-gray-100 rounded"></div>
+                                        <div className="w-8 h-8 bg-blue-50 rounded-full"></div>
+                                        <div className="h-2 w-24 bg-blue-50 rounded"></div>
                                     </div>
                                 ))}
                             </div>

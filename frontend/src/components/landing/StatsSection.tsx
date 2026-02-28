@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export const StatsSection = () => {
     return (
@@ -6,7 +6,7 @@ export const StatsSection = () => {
             <div className="max-w-7xl mx-auto px-4 flex justify-between items-center opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
                 {/* Placeholder logos */}
                 {['Harvard', 'MIT', 'Stanford', 'Oxford', 'Cambridge'].map(brand => (
-                    <span key={brand} className="text-xl font-bold font-serif">{brand}</span>
+                    <span key={brand} className="text-xl font-bold font-serif opacity-30">{brand}</span>
                 ))}
             </div>
         </section>

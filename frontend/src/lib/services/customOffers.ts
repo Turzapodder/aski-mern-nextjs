@@ -27,7 +27,10 @@ export const customOffersApi = createApi({
   }),
   tagTypes: ["CustomOffer"],
   endpoints: (builder) => ({
-    getActiveOffer: builder.query<{ status: string; data: CustomOffer | null }, string>({
+    getActiveOffer: builder.query<
+      { status: string; data: CustomOffer | null },
+      string
+    >({
       query: (chatId) => ({
         url: `/conversation/${chatId}`,
         method: "GET",
@@ -36,7 +39,15 @@ export const customOffersApi = createApi({
     }),
     createOffer: builder.mutation<
       { status: string; data: CustomOffer },
-      { conversationId: string; assignmentId?: string; proposedBudget: number; proposedDeadline: string; message?: string }
+      {
+        conversationId: string;
+        assignmentId?: string;
+        title?: string;
+        description?: string;
+        proposedBudget: number;
+        proposedDeadline: string;
+        message?: string;
+      }
     >({
       query: (payload) => ({
         url: "",

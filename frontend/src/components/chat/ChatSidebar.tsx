@@ -82,13 +82,11 @@ const ChatSidebar = () => {
                         <p className="text-[11px] uppercase tracking-wide text-gray-400">Inbox</p>
                         <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
                     </div>
-                    <div
-                        className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${
-                            isConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                        }`}
+                    {!isConnected && (<div
+                        className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase bg-amber-100 text-amber-700`}
                     >
-                        {isConnected ? 'Realtime On' : 'Realtime Off'}
-                    </div>
+                        Network Offline
+                    </div>)}
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                     <span>{chats.length} chats</span>
@@ -113,18 +111,16 @@ const ChatSidebar = () => {
                     <button
                         type="button"
                         onClick={() => setFilter('all')}
-                        className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-                            filter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${filter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
                     >
                         All
                     </button>
                     <button
                         type="button"
                         onClick={() => setFilter('unread')}
-                        className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-                            filter === 'unread' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${filter === 'unread' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
                     >
                         Unread {unreadTotal > 0 ? `(${unreadTotal})` : ''}
                     </button>
@@ -185,11 +181,10 @@ const ChatSidebar = () => {
                         <button
                             key={chat._id}
                             onClick={() => selectChat(chat)}
-                            className={`group w-full text-left p-3 rounded-2xl cursor-pointer transition-all duration-200 ${
-                                isActive
+                            className={`group w-full text-left p-3 rounded-2xl cursor-pointer transition-all duration-200 ${isActive
                                     ? 'bg-gray-900 text-white shadow-lg shadow-black/5'
                                     : 'hover:bg-gray-50 text-gray-700'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-start gap-3">
                                 {/* Avatar */}

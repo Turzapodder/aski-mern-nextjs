@@ -1,8 +1,9 @@
 import express from 'express';
 import ChatController from '../controllers/chatController.js';
-import MessageController, { upload } from '../controllers/messageController.js';
+import MessageController from '../controllers/messageController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
+import { uploadChatFiles } from '../config/s3Config.js';
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router.post('/:chatId/leave', ChatController.leaveChat);
 
 // Message routes
 router.post('/:chatId/messages', MessageController.sendMessage);
-router.post('/:chatId/messages/file', upload.array('files', 5), MessageController.sendFileMessage);
+router.post('/:chatId/messages/file', uploadChatFiles.array('files', 5), MessageController.sendFileMessage);
 router.get('/:chatId/messages', MessageController.getChatMessages);
 router.post('/:chatId/messages/read', MessageController.markMessagesAsRead);
 router.put('/messages/:messageId', MessageController.editMessage);

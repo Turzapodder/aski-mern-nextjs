@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { Zap, Globe, ShieldCheck, Users, ArrowRight } from "lucide-react";
-import { SectionTitle } from "./LandingPageComponents";
 
 export const AttractTutorsSection = () => {
     return (

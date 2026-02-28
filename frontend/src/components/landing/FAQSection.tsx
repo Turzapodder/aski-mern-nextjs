@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { SectionTitle } from "./LandingPageComponents";
 
@@ -17,15 +17,20 @@ const AccordionItem = ({ question, answer }: { question: string, answer: string 
                     {isOpen ? <Minus size={16} /> : <Plus size={16} />}
                 </span>
             </button>
-            <motion.div
-                initial={false}
-                animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
-                className="overflow-hidden"
-            >
-                <p className="pt-4 text-gray-500 text-sm leading-relaxed">
-                    {answer}
-                </p>
-            </motion.div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <p className="pt-4 text-gray-500 text-sm leading-relaxed">
+                            {answer}
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

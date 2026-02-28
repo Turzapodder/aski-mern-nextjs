@@ -94,7 +94,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     return (
         <div className="w-80 bg-white border-l border-gray-100 flex flex-col h-full">
             {/* Header */}
-            <div className="p-6 flex items-center justify-between border-b border-gray-100">
+            <div className="p-4 flex items-center justify-between border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">Details</h3>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                     <X size={20} />
@@ -102,7 +102,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </div>
 
             {/* Profile Info */}
-            <div className="px-6 py-6 flex flex-col items-center border-b border-gray-100">
+            <div className="p-4 flex flex-col items-center border-b border-gray-100">
                 <div className="relative mb-4">
                     {avatar ? (
                         <Image
@@ -113,7 +113,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                             className="w-24 h-24 rounded-2xl object-cover shadow-sm"
                         />
                     ) : (
-                        <div className="w-24 h-24 rounded-2xl bg-primary-100 text-primary-600 flex items-center justify-center text-3xl font-medium shadow-sm">
+                        <div className="w-16 h-16 rounded-2xl bg-primary-100 text-primary-600 flex items-center justify-center text-3xl font-medium shadow-sm">
                             {getInitials(chatName)}
                         </div>
                     )}
@@ -131,7 +131,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </div>
 
             {assignment && (
-                <div className="px-6 py-5 border-b border-gray-100">
+                <div className="p-4 border-b border-gray-100">
                     <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Assignment</h5>
                     <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 space-y-3">
                         <div>
@@ -155,7 +155,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             )}
 
             {/* Files & Media */}
-            <div className="flex-1 overflow-y-auto px-6 py-2">
+            <div className="flex-1 overflow-y-auto px-4 py-2">
                 <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-4">Files</h5>
 
                 <AccordionItem id="photos" title="Photos" icon={ImageIcon} count={photos.length}>
@@ -172,7 +172,7 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                     rel="noreferrer"
                                     className="aspect-square rounded-lg overflow-hidden bg-gray-100 block"
                                 >
-                                    <Image src={photo.url} alt={photo.originalName || 'Photo'} width={80} height={80} className="w-full h-full object-cover" />
+                                    <Image src={photo.url} alt={photo.originalName || 'Photo'} width={40} height={40} className="w-full h-full object-cover" />
                                 </a>
                             ))}
                         </div>

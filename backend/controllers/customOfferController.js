@@ -78,7 +78,7 @@ class CustomOfferController {
 
   static createOffer = async (req, res) => {
     try {
-      const { conversationId, assignmentId, proposedBudget, proposedDeadline, message } = req.body || {};
+      const { conversationId, assignmentId, title, description, proposedBudget, proposedDeadline, message } = req.body || {};
       const userId = req.user._id;
       const roles = Array.isArray(req.user.roles) ? req.user.roles : [];
 
@@ -124,29 +124,69 @@ class CustomOfferController {
         });
       }
 
-      const proposal = await ProposalModel.findOne({
+
+
+      let assignment = assignmentId
+        ? await AssignmentModel.findById(assignmentId)
+        : chat.assignment
+          ? await AssignmentModel.findById(chat.assignment)
+          : null;
+
+      const studentParticipant = chat.participants.find(
+        (participant) => {
+           const participantId = participant.user._id || participant.user;
+           return participantId.toString() !== userId.toString();
+        }
+      );
+
+      if (!studentParticipant) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Unable to identify student for this conversation",
+        });
+      }
+
+      if (!assignment) {
+        if (!title) {
+          return res.status(400).json({
+            status: "failed",
+            message: "Assignment title is required for a new offer",
+          });
+        }
+        
+        assignment = await AssignmentModel.create({
+          title: title.trim(),
+          description: description?.trim() || title.trim(),
+          subject: "Custom",
+          student: studentParticipant.user,
+          deadline: new Date(proposedDeadline),
+          budget: budgetValue,
+          estimatedCost: budgetValue,
+          status: "draft",
+        });
+
+        chat.assignment = assignment._id;
+        chat.assignmentTitle = assignment.title;
+        await chat.save();
+      }
+
+      let proposal = await ProposalModel.findOne({
         conversation: conversationId,
         tutor: userId,
         isActive: true,
       });
 
       if (!proposal) {
-        return res.status(403).json({
-          status: "failed",
-          message: "Submit a proposal before sending a custom offer",
-        });
-      }
-
-      const assignment = assignmentId
-        ? await AssignmentModel.findById(assignmentId)
-        : chat.assignment
-          ? await AssignmentModel.findById(chat.assignment)
-          : null;
-
-      if (!assignment) {
-        return res.status(400).json({
-          status: "failed",
-          message: "Assignment not found for this conversation",
+        proposal = await ProposalModel.create({
+          assignment: assignment._id,
+          tutor: userId,
+          student: studentParticipant.user,
+          title: assignment.title,
+          description: assignment.description,
+          proposedPrice: budgetValue,
+          estimatedDeliveryTime: 24,
+          conversation: conversationId,
+          status: "pending",
         });
       }
 
@@ -162,22 +202,15 @@ class CustomOfferController {
         });
       }
 
-      const studentParticipant = chat.participants.find(
-        (participant) => participant.user.toString() !== userId.toString()
-      );
 
-      if (!studentParticipant) {
-        return res.status(400).json({
-          status: "failed",
-          message: "Unable to identify student for this conversation",
-        });
-      }
 
       const offer = await CustomOfferModel.create({
         assignment: assignment._id,
         conversation: conversationId,
         tutor: userId,
         student: studentParticipant.user,
+        title: typeof title === "string" ? title.trim() : assignment.title,
+        description: typeof description === "string" ? description.trim() : assignment.description,
         proposedBudget: budgetValue,
         proposedDeadline: new Date(proposedDeadline),
         message: typeof message === "string" ? message.trim() : "",
@@ -192,6 +225,8 @@ class CustomOfferController {
         content: "",
         meta: {
           offerId: offer._id,
+          title: offer.title,
+          description: offer.description,
           proposedBudget: offer.proposedBudget,
           proposedDeadline: offer.proposedDeadline,
           message: offer.message,
@@ -279,6 +314,8 @@ class CustomOfferController {
           throw new Error("Assignment not found");
         }
 
+        assignment.title = offer.title || assignment.title;
+        assignment.description = offer.description || assignment.description;
         assignment.budget = offer.proposedBudget;
         assignment.estimatedCost = offer.proposedBudget;
         assignment.deadline = offer.proposedDeadline;

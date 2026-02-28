@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { GraduationCap, ShieldCheck, Clock } from "lucide-react";
 import { FeatureCard, SectionTitle } from "./LandingPageComponents";
 

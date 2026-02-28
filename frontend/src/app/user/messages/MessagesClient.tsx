@@ -14,7 +14,7 @@ export const MessagesClient = () => {
   } = useMessagesLogic();
 
   return (
-    <div className="flex h-[100dvh] md:h-[calc(100vh-64px)] overflow-hidden bg-[#f5f6f8]">
+    <div className="flex h-full overflow-hidden bg-[#f5f6f8]">
         {/* Left Sidebar */}
         <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 min-w-0`}>
             <ChatSidebar />

@@ -30,7 +30,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
   const { data: userData } = useGetUserQuery()
   const router = useRouter()
   const dispatch = useAppDispatch()
-  
+
   // Notice that in UI slice it's 'isSidebarOpen', so 'isCollapsed' is '!isSidebarOpen'
   const isSidebarOpen = useAppSelector(state => state.ui.isSidebarOpen)
   const isCollapsed = !isSidebarOpen
@@ -64,21 +64,21 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
 
   const mainMenuItems = isTutor
     ? [
-        { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
-        { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' || (activeItem === 'tutors' && window.location.pathname.includes(userData?.user?._id || '')) },
-        { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
-        { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
-        { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
-        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
-        { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
-      ]
+      { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
+      { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' },
+      { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
+      { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
+      { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
+      { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
+      { name: 'Wallet', icon: '/assets/icons/rocket.png', href: '/user/wallet', active: activeItem === 'wallet' }
+    ]
     : [
-        { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
-        { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tasks' },
-        { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
-        { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
-        { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'calendar' }
-      ]
+      { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
+      { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tutors' },
+      { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
+      { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
+      { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' }
+    ]
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -135,11 +135,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
                 <ul className="space-y-1">
                   {section.items.map((item) => (
                     <li key={item.name}>
-                      <button
-                        onClick={() => handleNavigation(item.href)}
-                        className={`w-full flex items-center truncate px-3 py-4 rounded-lg transition-colors text-sm group ${item.active
-                          ? "bg-white text-gray-900 font-medium"
-                          : "text-black hover:bg-gray-200 hover:text-black"
+                      <Link
+                        href={item.href}
+                        className={`w-full flex items-center truncate px-3 py-4 rounded-lg transition-all duration-200 text-sm group ${item.active
+                          ? "bg-primary-600 text-white font-bold shadow-lg shadow-primary-100"
+                          : "text-gray-700 hover:bg-gray-200 hover:text-black"
                           }`}
                         title={isCollapsed ? item.name : undefined}
                       >
@@ -152,15 +152,15 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
                             alt={item.name}
                             width={30}
                             height={30}
-                            className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain ${!isCollapsed && "mr-3"
-                              }`}
+                            className={`min-w-[30px] min-h-[30px] w-[30px] h-[30px] object-contain transition-all ${!isCollapsed && "mr-3"
+                              } ${item.active ? "brightness-0 invert" : ""}`}
                           />
 
                           {!isCollapsed && (
                             <span className="truncate">{item.name}</span>
                           )}
                         </div>
-                      </button>
+                      </Link>
                     </li>
                   ))}
                 </ul>
