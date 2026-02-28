@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import Image from "next/image";
-import { ArrowLeft, BadgeDollarSign, Check, ChevronDown, MoreVertical, Paperclip, Phone, Search, Send, X, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, BadgeDollarSign, Check, ChevronDown, MoreVertical, MoreHorizontal, Paperclip, Phone, Search, Send, X, Pencil, Trash2, Play, Download, Maximize2, Calendar, DollarSign, Clipboard, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -65,6 +65,9 @@ const ChatWindow = () => {
 
   const [newMessage, setNewMessage] = useState('');
   const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [offerModalMode, setOfferModalMode] = useState<'create' | 'edit'>('create');
+  const [offerTitle, setOfferTitle] = useState('');
+  const [offerDescription, setOfferDescription] = useState('');
   const [offerBudget, setOfferBudget] = useState('');
   const [offerDeadline, setOfferDeadline] = useState('');
   const [offerNote, setOfferNote] = useState('');
@@ -74,6 +77,8 @@ const ChatWindow = () => {
   const [editingContent, setEditingContent] = useState('');
   const [messageToDelete, setMessageToDelete] = useState<any | null>(null);
   const [chatDeleteOpen, setChatDeleteOpen] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<{ file: File; preview: string; type: string }[]>([]);
+  const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,7 +105,7 @@ const ChatWindow = () => {
 
   const resolveFileUrl = (url?: string) => {
     if (!url) return '';
-    if (url.startsWith('http')) return url;
+    if (url.startsWith('http') || url.startsWith('blob:')) return url;
     return `${apiBaseUrl}${url}`;
   };
 
@@ -114,25 +119,67 @@ const ChatWindow = () => {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (newMessage.trim() && newMessage.length <= MAX_MESSAGE_LENGTH) {
-      await sendMessage(newMessage);
-      setNewMessage('');
-      if (inputRef.current) {
-        inputRef.current.style.height = "auto";
+    const content = newMessage.trim();
+
+    if (!content && stagedFiles.length === 0) return;
+
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      toast.error('Message too long');
+      return;
+    }
+
+    const filesToSend = stagedFiles.map(s => s.file);
+    const previewsToClear = stagedFiles.map(s => s.preview);
+
+    // Clear instantly for better UX
+    setStagedFiles([]);
+    setNewMessage('');
+    if (inputRef.current) inputRef.current.style.height = "auto";
+    stopTyping();
+
+    try {
+      if (filesToSend.length > 0) {
+        await sendFile(filesToSend, content);
+      } else if (content) {
+        await sendMessage(content);
       }
-      stopTyping();
+
+      // Cleanup staged previews after sending
+      previewsToClear.forEach(p => URL.revokeObjectURL(p));
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Optional: restoration logic if needed, but per request we show error in message area.
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      sendFile(file);
-      toast.success('File attached');
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (stagedFiles.length + files.length > 5) {
+      toast.error('You can only attach up to 5 files at a time');
+      return;
     }
+
+    const newStaged = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type
+    }));
+
+    setStagedFiles(prev => [...prev, ...newStaged]);
     if (e.target) {
       e.target.value = '';
     }
+  };
+
+  const removeStagedFile = (index: number) => {
+    setStagedFiles(prev => {
+      const next = [...prev];
+      URL.revokeObjectURL(next[index].preview);
+      next.splice(index, 1);
+      return next;
+    });
   };
 
   const handleTyping = (value: string) => {
@@ -162,7 +209,17 @@ const ChatWindow = () => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
+    // Clear staged files when switching chats
+    stagedFiles.forEach(s => URL.revokeObjectURL(s.preview));
+    setStagedFiles([]);
   }, [selectedChat]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      stagedFiles.forEach(s => URL.revokeObjectURL(s.preview));
+    };
+  }, [stagedFiles]);
 
   if (!selectedChat) {
     return (
@@ -185,10 +242,10 @@ const ChatWindow = () => {
     resolvedStudentId || selectedChat.participants.find((p: any) => !p.roles?.includes('tutor'))?._id;
   const studentHasMessaged = studentId
     ? messages.some((msg) => {
-        const senderId =
-          typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
-        return senderId === studentId;
-      })
+      const senderId =
+        typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
+      return senderId === studentId;
+    })
     : true;
   const tutorBlocked = Boolean(isTutor && selectedChat.type === 'direct' && !studentHasMessaged);
   const typingList = typingUsers[selectedChat._id] || [];
@@ -205,9 +262,12 @@ const ChatWindow = () => {
     return otherParticipant && onlineUsers.some(u => u._id === otherParticipant._id);
   };
 
-  const openOfferModal = () => {
-    setOfferBudget('');
-    setOfferDeadline('');
+  const openOfferModal = (mode: 'create' | 'edit' = 'create') => {
+    setOfferModalMode(mode);
+    setOfferTitle(assignmentTitle || '');
+    setOfferDescription(assignment?.description || '');
+    setOfferBudget(assignmentBudget?.toString() || '');
+    setOfferDeadline(assignmentDeadline ? new Date(assignmentDeadline).toISOString().split('T')[0] : '');
     setOfferNote('');
     setOfferError('');
     setOfferModalOpen(true);
@@ -215,6 +275,13 @@ const ChatWindow = () => {
 
   const handleOfferSubmit = async () => {
     if (!selectedChat) return;
+
+    // Title is required only when creating a new assignment
+    if (offerModalMode === 'create' && !offerTitle.trim()) {
+      setOfferError('Assignment title is required.');
+      return;
+    }
+
     const budgetValue = Number(offerBudget);
     if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
       setOfferError('Budget must be a positive number.');
@@ -234,6 +301,8 @@ const ChatWindow = () => {
       await createOffer({
         conversationId: selectedChat._id,
         assignmentId: assignment?._id,
+        title: offerTitle.trim(),
+        description: offerDescription.trim(),
         proposedBudget: budgetValue,
         proposedDeadline: deadlineDate.toISOString(),
         message: offerNote,
@@ -337,27 +406,25 @@ const ChatWindow = () => {
               <span className="h-1 w-1 rounded-full bg-gray-300"></span>
               {isUserOnline() && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
               <span className="text-xs text-gray-600 font-medium">{isUserOnline() ? 'Online' : 'Offline'}</span>
-              <span
-                className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                  isConnected
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-amber-100 text-amber-700'
-                }`}
-              >
-                Realtime {isConnected ? 'On' : 'Off'}
-              </span>
+              {!isConnected && (
+                <span
+                  className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase bg-amber-100 text-amber-700`}
+                >
+                  Network Offline
+                </span>
+              )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-gray-400">
-          {isTutor && assignmentTitle && (
+          {isTutor && (
             <button
-              onClick={openOfferModal}
+              onClick={() => openOfferModal(assignment ? 'edit' : 'create')}
               disabled={tutorBlocked || Boolean(activeOffer)}
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
-              <BadgeDollarSign className="h-4 w-4" />
-              Send Custom Offer
+              <Pencil className="h-4 w-4" />
+              {assignment ? 'Edit Offer' : 'Send Custom Offer'}
             </button>
           )}
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Search size={18} /></button>
@@ -481,19 +548,36 @@ const ChatWindow = () => {
                       <div className="font-semibold text-gray-900">Custom Offer</div>
                       <span className="text-xs uppercase tracking-wide text-gray-500">{msg.meta?.status || 'pending'}</span>
                     </div>
-                    <div className="space-y-2 text-gray-700">
-                      <div className="flex justify-between">
-                        <span>Budget</span>
-                        <span className="font-semibold">{msg.meta?.proposedBudget ?? 0}</span>
-                      </div>
-                      {msg.meta?.proposedDeadline && (
-                        <div className="flex justify-between">
-                          <span>Deadline</span>
-                          <span className="font-semibold">{format(new Date(msg.meta.proposedDeadline), 'MMM dd, yyyy')}</span>
+                    <div className="space-y-3 text-gray-700">
+                      {(msg.meta?.title || assignmentTitle) && (
+                        <div className="pb-2 border-b border-gray-100/50">
+                          <span className="text-xs text-gray-400 block mb-1 uppercase tracking-tight font-medium">Assignment</span>
+                          <span className="font-bold text-gray-900 line-clamp-2">{msg.meta?.title || assignmentTitle}</span>
                         </div>
                       )}
+                      {msg.meta?.description && (
+                        <p className="text-sm text-gray-600 line-clamp-4 italic leading-snug">{msg.meta.description}</p>
+                      )}
+                      <div className="pt-1 flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-gray-500 uppercase font-medium">Budget</span>
+                          <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">{formatAmount(msg.meta?.proposedBudget ?? 0)}</span>
+                        </div>
+                        {msg.meta?.proposedDeadline && (
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 uppercase font-medium">Deadline</span>
+                            <span className="font-semibold text-gray-900">{format(new Date(msg.meta.proposedDeadline), 'MMM dd, yyyy')}</span>
+                          </div>
+                        )}
+                      </div>
                       {msg.meta?.message && (
-                        <p className="text-sm text-gray-600">{msg.meta.message}</p>
+                        <div className="mt-3 p-3 bg-gray-50/80 rounded-xl border border-gray-100 relative group">
+                          <p className="text-xs italic text-gray-600 break-words leading-relaxed">
+                            <span className="text-indigo-600 font-bold mr-1">"</span>
+                            {msg.meta.message}
+                            <span className="text-indigo-600 font-bold ml-1">"</span>
+                          </p>
+                        </div>
                       )}
                     </div>
                     {isStudent && msg.meta?.status === 'pending' && offerId && (
@@ -521,12 +605,18 @@ const ChatWindow = () => {
                 ) : (
                   <div className="relative group w-full">
                     <div
-                      className={`p-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap ${
-                        isMe
-                          ? 'bg-[#2563EB] text-white rounded-tr-none shadow-sm'
-                          : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
-                      }`}
+                      className={`p-2 pl-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap transition-opacity ${isMe
+                        ? 'bg-primary-600 text-white rounded-tr-none shadow-sm'
+                        : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
+                        } ${msg.status === 'sending' ? 'opacity-60 cursor-not-allowed' : ''} ${msg.status === 'error' ? 'border-rose-300' : ''}`}
                     >
+                      {msg.status === 'error' && (
+                        <div className="absolute inset-0 z-10 bg-rose-50/40 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
+                          <div className="bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                            <X size={10} strokeWidth={3} /> Failed
+                          </div>
+                        </div>
+                      )}
                       {msg.isDeleted ? (
                         <span className={isMe ? 'text-white/70 italic' : 'text-gray-400 italic'}>
                           This message was deleted
@@ -561,22 +651,57 @@ const ChatWindow = () => {
                         <>
                           {msg.content}
                           {msg.attachments && msg.attachments.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              {msg.attachments.map((file, idx) => (
-                                <a
-                                  key={`${msg._id}-${idx}`}
-                                  href={resolveFileUrl(file.url)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={`block rounded-lg border px-3 py-2 text-xs ${
-                                    isMe
-                                      ? 'border-white/10 bg-white/20 text-white/90'
-                                      : 'border-gray-200 bg-white text-gray-600'
-                                  }`}
-                                >
-                                  {file.originalName}
-                                </a>
-                              ))}
+                            <div className={`flex flex-wrap gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                              {msg.attachments.map((file, idx) => {
+                                const isImage = file.mimetype.startsWith('image/');
+                                const isVideo = file.mimetype.startsWith('video/');
+                                const fileUrl = resolveFileUrl(file.url);
+
+                                if (isImage) {
+                                  return (
+                                    <div
+                                      key={`${msg._id}-${idx}`}
+                                      className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer border border-black/5"
+                                      onClick={() => setMediaViewer({ url: fileUrl, type: file.mimetype, name: file.originalName })}
+                                    >
+                                      <Image src={fileUrl} alt={file.originalName} fill className="object-cover transition-transform hover:scale-105" />
+                                    </div>
+                                  );
+                                }
+
+                                if (isVideo) {
+                                  return (
+                                    <div
+                                      key={`${msg._id}-${idx}`}
+                                      className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer bg-black/90 flex flex-col items-center justify-center border border-black/5"
+                                      onClick={() => setMediaViewer({ url: fileUrl, type: file.mimetype, name: file.originalName })}
+                                    >
+                                      <Play size={40} className="text-white opacity-50" />
+                                      <span className="text-[10px] text-white/50 mt-2 truncate w-32 text-center px-2">{file.originalName}</span>
+                                      <div className="absolute top-2 right-2 p-1 bg-black/30 rounded-full">
+                                        <Maximize2 size={12} className="text-white" />
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <a
+                                    key={`${msg._id}-${idx}`}
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${isMe
+                                      ? 'border-white/10 bg-white/10 text-white/90 hover:bg-white/20'
+                                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                      }`}
+                                  >
+                                    <Paperclip size={14} />
+                                    <span className="truncate max-w-[120px]">{file.originalName}</span>
+                                    <Download size={14} className="ml-2 opacity-50" />
+                                  </a>
+                                );
+                              })}
                             </div>
                           )}
                         </>
@@ -584,23 +709,19 @@ const ChatWindow = () => {
                     </div>
                     {(canEdit || canDelete) && !isEditing && !msg.isDeleted && (
                       <div
-                        className={`absolute top-2 ${isMe ? 'right-2' : 'left-2'} opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}
+                        className={`absolute top-1/2 -translate-y-1/2 -left-8 opacity-0 group-hover:opacity-100 transition-opacity`}
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
-                              className={`flex h-6 w-6 items-center justify-center rounded-full border shadow-sm ${
-                                isMe
-                                  ? 'border-white/30 bg-white/10 text-white hover:bg-white/20'
-                                  : 'border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                              }`}
+                              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
                               aria-label="Message actions"
                             >
-                              <ChevronDown className="h-3 w-3" />
+                              <MoreHorizontal className="h-4 w-4" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-44">
+                          <DropdownMenuContent align="start" className="w-44">
                             {canEdit && (
                               <DropdownMenuItem onClick={() => handleEditMessage(msg)}>
                                 <Pencil className="mr-2 h-4 w-4" />
@@ -656,12 +777,44 @@ const ChatWindow = () => {
             You already have a pending custom offer in this conversation.
           </div>
         )}
+
+        {/* Staged Files Preview */}
+        {stagedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {stagedFiles.map((staged, index) => (
+              <div key={index} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                {staged.type.startsWith('image/') ? (
+                  <Image src={staged.preview} alt="preview" fill className="object-cover" />
+                ) : staged.type.startsWith('video/') ? (
+                  <div className="flex flex-col items-center">
+                    <Play size={20} className="text-gray-400" />
+                    <span className="text-[10px] text-gray-500">Video</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Paperclip size={20} className="text-gray-400" />
+                    <span className="text-[10px] text-gray-500 truncate w-12 text-center">{staged.file.name}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeStagedFile(index)}
+                  className="absolute top-0 right-0 p-1 bg-black/50 text-white rounded-bl-lg"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex flex-col gap-2 bg-[#F3F4F9] p-3 rounded-2xl">
           <div className="flex items-end gap-3">
             <input
               type="file"
               ref={fileInputRef}
-              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx"
+              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.mp4,.webm,.ogg"
+              multiple
               className="hidden"
               onChange={handleFileSelect}
             />
@@ -688,63 +841,151 @@ const ChatWindow = () => {
 
             <button
               type="submit"
-              disabled={!newMessage.trim() || newMessage.length > MAX_MESSAGE_LENGTH || tutorBlocked}
+              disabled={(!newMessage.trim() && stagedFiles.length === 0) || newMessage.length > MAX_MESSAGE_LENGTH || tutorBlocked}
               className="p-2 text-[#2563EB] hover:bg-white rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-gray-400">
-            <span>{newMessage.length}/{MAX_MESSAGE_LENGTH}</span>
-            {isTutor && assignmentTitle && (
-              <button
-                type="button"
-                onClick={openOfferModal}
-                disabled={tutorBlocked || Boolean(activeOffer)}
-                className="inline-flex items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2 py-1 text-[11px] font-semibold text-primary-700 hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <BadgeDollarSign className="h-3 w-3" />
-                Send Custom Offer
-              </button>
-            )}
-          </div>
         </form>
       </div>
 
       <Dialog open={offerModalOpen} onOpenChange={setOfferModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Custom Offer</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="number"
-              value={offerBudget}
-              onChange={(e) => setOfferBudget(e.target.value)}
-              placeholder="Budget"
-            />
-            <Input
-              type="date"
-              value={offerDeadline}
-              onChange={(e) => setOfferDeadline(e.target.value)}
-            />
-            <Textarea
-              value={offerNote}
-              onChange={(e) => setOfferNote(e.target.value)}
-              placeholder="Optional note"
-              rows={3}
-            />
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-indigo-600 p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Pencil className="h-5 w-5" />
+                {offerModalMode === 'edit' ? 'Edit Assignment Offer' : 'Send Custom Offer'}
+              </DialogTitle>
+              <p className="text-indigo-100 text-sm mt-1">
+                {offerModalMode === 'edit'
+                  ? 'Adjust terms for the existing assignment'
+                  : 'Define assignment terms for the student'}
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto non-scrollbar">
+            {/* Details Section - Collapsed for Edit mode */}
+            <div className="space-y-4">
+              {offerModalMode === 'edit' ? (
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Assignment</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{offerTitle}</h4>
+                  {offerDescription && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offerDescription}</p>}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                      <Clipboard size={14} />
+                      Assignment Title
+                    </label>
+                    <Input
+                      value={offerTitle}
+                      onChange={(e) => setOfferTitle(e.target.value)}
+                      placeholder="e.g. Mathematics Home Task"
+                      className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all h-11 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                      <Info size={14} />
+                      Assignment Details
+                    </label>
+                    <Textarea
+                      value={offerDescription}
+                      onChange={(e) => setOfferDescription(e.target.value)}
+                      placeholder="Describe the work to be done..."
+                      rows={3}
+                      className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all text-sm resize-none"
+                    />
+                  </div>
+                </>
+              )}
+
+              {assignmentDeadline && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100 text-amber-700">
+                  <Info size={14} />
+                  <span className="text-[11px] font-medium">Original deadline: {format(new Date(assignmentDeadline), 'MMM dd, yyyy')}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                  <DollarSign size={14} />
+                  Proposed Budget
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                    <span className="text-sm font-medium">$</span>
+                  </div>
+                  <Input
+                    type="number"
+                    value={offerBudget}
+                    onChange={(e) => setOfferBudget(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7 bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all h-11 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                  <Calendar size={14} />
+                  Proposed Deadline
+                </label>
+                <Input
+                  type="date"
+                  value={offerDeadline}
+                  onChange={(e) => setOfferDeadline(e.target.value)}
+                  className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all h-11 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                  <Pencil size={14} />
+                  Message (Optional)
+                </label>
+                <Textarea
+                  value={offerNote}
+                  onChange={(e) => setOfferNote(e.target.value)}
+                  placeholder="Anything else the student should know?"
+                  rows={3}
+                  className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all text-sm resize-none"
+                />
+              </div>
+            </div>
+
             {offerError && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                {offerError}
+              <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 animate-in fade-in slide-in-from-top-1 duration-200">
+                <X className="h-4 w-4 shrink-0" />
+                <span className="text-xs font-medium">{offerError}</span>
               </div>
             )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOfferModalOpen(false)} disabled={isSendingOffer}>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setOfferModalOpen(false)}
+                disabled={isSendingOffer}
+                className="flex-1 rounded-xl h-11 border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all font-medium"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleOfferSubmit} disabled={isSendingOffer}>
-                Send Offer
+              <Button
+                onClick={handleOfferSubmit}
+                disabled={isSendingOffer}
+                className="flex-[1.5] rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
+              >
+                {isSendingOffer ? 'Sending...' : offerModalMode === 'edit' ? 'Send Edit Offer' : 'Send Custom Offer'}
               </Button>
             </div>
           </div>
@@ -801,6 +1042,49 @@ const ChatWindow = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Media Viewer Dialog */}
+      <Dialog open={Boolean(mediaViewer)} onOpenChange={(open) => !open && setMediaViewer(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+          <DialogHeader className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/50 to-transparent">
+            <div className="flex items-center justify-between text-white">
+              <DialogTitle className="text-sm font-medium truncate pr-8">{mediaViewer?.name}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <a
+                  href={mediaViewer?.url}
+                  download={mediaViewer?.name}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  title="Download"
+                >
+                  <Download size={20} />
+                </a>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="relative w-full h-[80vh] flex items-center justify-center">
+            {mediaViewer && (
+              mediaViewer.type.startsWith('image/') ? (
+                <div className="relative w-full h-full p-4">
+                  <Image
+                    src={mediaViewer.url}
+                    alt={mediaViewer.name}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              ) : mediaViewer.type.startsWith('video/') ? (
+                <video
+                  src={mediaViewer.url}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full"
+                />
+              ) : null
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

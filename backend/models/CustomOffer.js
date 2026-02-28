@@ -22,6 +22,15 @@ const customOfferSchema = new mongoose.Schema(
       ref: "user",
       required: true,
     },
+    title: {
+      type: String,
+      required: [true, "Offer title is required"],
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
     proposedBudget: {
       type: Number,
       required: true,

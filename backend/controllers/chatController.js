@@ -180,7 +180,7 @@ class ChatController {
         })
           .populate('participants.user', 'name email avatar roles')
           .populate('createdBy', 'name email avatar')
-          .populate('assignment', 'title deadline estimatedCost budget student')
+          .populate('assignment', 'title description deadline estimatedCost budget student')
           .populate({
             path: 'lastMessage',
             populate: {
@@ -258,7 +258,7 @@ class ChatController {
       })
       .populate('participants.user', 'name email avatar roles')
       .populate('createdBy', 'name email avatar')
-      .populate('assignment', 'title deadline estimatedCost budget student')
+      .populate('assignment', 'title description deadline estimatedCost budget student')
       .populate({
         path: 'lastMessage',
         populate: {

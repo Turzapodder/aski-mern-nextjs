@@ -91,21 +91,7 @@ export const UserDashboardClient = () => {
         </div >
 
         {/* Right Sidebar */}
-        < div className="w-80 space-y-6" >
-          {/* Go Premium */}
-          < div className="bg-gray-800 text-white p-6 rounded-xl shadow-sm flex flex-col items-center text-center relative overflow-hidden" >
-            <div className="relative z-10">
-              <div className="w-20 h-20 mx-auto mb-4 bg-primary-300 rounded-full flex items-center justify-center">
-                <Briefcase size={32} className="text-white" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2">Go Premium</h4>
-              <p className="text-sm opacity-80 mb-4">Explore 25k+ courses with lifetime membership.</p>
-              <button className="bg-primary-300 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-primary-600 transition-colors w-full">
-                Get Access
-              </button>
-            </div>
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-white bg-opacity-10 rounded-full"></div>
-          </div >
+        < div className="w-full  md:w-80 space-y-6" >
 
           {/* Calendar */}
           < div className="bg-white p-6 rounded-xl shadow-sm border" >

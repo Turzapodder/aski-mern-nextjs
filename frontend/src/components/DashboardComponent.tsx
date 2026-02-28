@@ -51,11 +51,11 @@ const TopStats = ({ assignments }: { assignments: Assignment[] }) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8 ">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 ">
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="flex items-center space-x-3 bg-white p-8 rounded-3xl"
+          className="flex items-center flex-col md:flex-row gap-4 bg-white p-8 rounded-3xl"
         >
           <div className="w-[40px] h-[40px] overflow-hidden">
             <Image
@@ -66,10 +66,10 @@ const TopStats = ({ assignments }: { assignments: Assignment[] }) => {
               className="h-full object-cover"
             />
           </div>
-          <div className="text-2xl font-semibold text-gray-900">
+         <div className="flex flex-col md:flex-row md:gap-4 items-center"> <div className="text-2xl font-semibold text-gray-900">
             {stat.count}
           </div>
-          <div className="text-md text-black">{stat.label}</div>
+          <div className="text-md text-black">{stat.label}</div></div>
         </div>
       ))}
     </div>
