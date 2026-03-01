@@ -48,7 +48,6 @@ class ProposalController {
     }
 
     const existingChat = await ChatModel.findOne({
-      assignment: assignment._id,
       type: 'direct',
       'participants.user': { $all: [proposal.tutor, proposal.student] },
       isActive: true

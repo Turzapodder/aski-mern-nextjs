@@ -26,11 +26,9 @@ const ChatSidebar = () => {
         const query = searchTerm.toLowerCase();
         const chatName = chat.name || chat.participants.find(p => p._id !== currentUserId)?.name || 'Chat';
         const lastMessage = chat.lastMessage?.content || '';
-        const assignmentTitle = chat.assignmentTitle || chat.assignment?.title || '';
         return (
             chatName.toLowerCase().includes(query) ||
-            lastMessage.toLowerCase().includes(query) ||
-            assignmentTitle.toLowerCase().includes(query)
+            lastMessage.toLowerCase().includes(query)
         );
     });
 
@@ -182,8 +180,8 @@ const ChatSidebar = () => {
                             key={chat._id}
                             onClick={() => selectChat(chat)}
                             className={`group w-full text-left p-3 rounded-2xl cursor-pointer transition-all duration-200 ${isActive
-                                    ? 'bg-gray-900 text-white shadow-lg shadow-black/5'
-                                    : 'hover:bg-gray-50 text-gray-700'
+                                ? 'bg-gray-900 text-white shadow-lg shadow-black/5'
+                                : 'hover:bg-gray-50 text-gray-700'
                                 }`}
                         >
                             <div className="flex items-start gap-3">
@@ -220,11 +218,7 @@ const ChatSidebar = () => {
                                             </span>
                                         )}
                                     </div>
-                                    {(chat.assignmentTitle || chat.assignment?.title) && (
-                                        <div className={`text-[11px] truncate ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            {chat.assignmentTitle || chat.assignment?.title}
-                                        </div>
-                                    )}
+
                                     <div className="flex justify-between items-end">
                                         <p className={`text-xs truncate max-w-[160px] ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
                                             {previewText}

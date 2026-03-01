@@ -16,6 +16,7 @@ router.use(checkUserAuth);
 // Chat routes
 router.post('/create', ChatController.createChat);
 router.get('/list', ChatController.getUserChats);
+router.get('/:chatId/assignments', ChatController.getActiveAssignments);
 router.get('/:chatId', ChatController.getChatDetails);
 router.post('/:chatId/participants', ChatController.addParticipants);
 router.delete('/:chatId/participants/:participantId', ChatController.removeParticipant);
