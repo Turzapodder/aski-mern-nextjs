@@ -22,7 +22,9 @@ export const TutorProfileClient = () => {
         isOwner,
         tutorData,
         availability,
-        detailItems
+        detailItems,
+        handleSendMessage,
+        isCreatingChat
     } = useTutorProfileLogic();
 
     if (loading) {
@@ -259,8 +261,8 @@ export const TutorProfileClient = () => {
                                         <Star
                                             key={`rating-${index}`}
                                             className={`w-4 h-4 ${index < Math.round(tutorData.rating)
-                                                    ? 'fill-amber-400 text-amber-400'
-                                                    : 'text-gray-300'
+                                                ? 'fill-amber-400 text-amber-400'
+                                                : 'text-gray-300'
                                                 }`}
                                         />
                                     ))}
@@ -302,11 +304,12 @@ export const TutorProfileClient = () => {
                                 Request proposal
                             </button>
                             <button
-                                className="w-full bg-white text-gray-500 font-bold py-3.5 rounded-xl border border-gray-200 flex items-center justify-center gap-2 transition-colors opacity-70 cursor-not-allowed"
-                                disabled
+                                onClick={handleSendMessage}
+                                disabled={isCreatingChat}
+                                className="w-full bg-white text-gray-900 font-bold py-3.5 rounded-xl border border-gray-200 flex items-center justify-center gap-2 transition-all hover:bg-gray-50 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                <MessageSquare className="w-5 h-5" />
-                                Send message
+                                <MessageSquare className="w-5 h-5 text-purple-500" />
+                                {isCreatingChat ? 'Starting chat...' : 'Send message'}
                             </button>
                             <p className="text-xs text-gray-500 text-center">
                                 {canRequestProposal

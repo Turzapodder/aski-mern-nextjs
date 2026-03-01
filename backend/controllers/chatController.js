@@ -48,13 +48,8 @@ class ChatController {
             isActive: true
           });
         }
-
-        if (!proposal) {
-          return res.status(403).json({
-            status: 'failed',
-            message: 'A proposal is required to start a direct chat'
-          });
-        }
+        
+        // No longer returning 403 if proposal is missing, allowing direct contact.
 
         const tutor = await UserModel.findById(tutorId).select('name email avatar');
         if (!tutor) {
@@ -64,16 +59,20 @@ class ChatController {
           });
         }
 
-        assignment = proposal.assignment
-          ? await AssignmentModel.findById(proposal.assignment).select('title')
-          : null;
+        if (proposal && proposal.assignment) {
+          assignment = await AssignmentModel.findById(proposal.assignment).select('title');
+        } else if (assignmentId && mongoose.Types.ObjectId.isValid(assignmentId)) {
+          assignment = await AssignmentModel.findById(assignmentId).select('title');
+        }
 
-        // Check if direct chat already exists
+        console.log('Resolved assignment:', assignment?._id, assignment?.title);
+
+        // Check if direct chat already exists between these two users
         const existingChat = await ChatModel.findOne({
           type: 'direct',
           'participants.user': { $all: [userId, tutorId] },
           isActive: true
-        }).populate('participants.user', 'name email avatar');
+        }).populate('participants.user', 'name email avatar roles');
 
         if (existingChat) {
           return res.status(200).json({
@@ -90,9 +89,14 @@ class ChatController {
 
         // Generate name for direct chat
         const currentUser = await UserModel.findById(userId).select('name');
-        chatName = assignment?.title
-          ? `Assignment: ${assignment.title}`
-          : `${currentUser.name} & ${tutor.name}`;
+        if (!currentUser) {
+          return res.status(401).json({
+            status: 'failed',
+            message: 'User not found in database'
+          });
+        }
+        chatName = `${currentUser.name} & ${tutor.name}`;
+        console.log('Generating chat name:', chatName);
 
       } else if (type === 'group') {
         // For group chats
@@ -153,7 +157,9 @@ class ChatController {
       console.error('Create chat error:', error);
       res.status(500).json({
         status: 'failed',
-        message: 'Unable to create chat'
+        message: 'Unable to create chat',
+        error: error.message,
+        details: error.errors ? Object.values(error.errors).map(e => e.message) : undefined
       });
     }
   };
@@ -447,6 +453,46 @@ class ChatController {
     }
   };
 
+  // Get active assignments between chat participants
+  static getActiveAssignments = async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const userId = req.user._id;
+
+      const chat = await ChatModel.findOne({
+        _id: chatId,
+        'participants.user': userId,
+        isActive: true
+      });
+
+      if (!chat) {
+        return res.status(404).json({
+          status: 'failed',
+          message: 'Chat not found'
+        });
+      }
+
+      // Identify the participants in this chat
+      const participants = chat.participants.map(p => p.user.toString());
+      
+      const assignments = await AssignmentModel.find({
+        student: { $in: participants },
+        assignedTutor: { $in: participants },
+        status: { $in: ['created', 'proposal_received', 'proposal_accepted', 'assigned', 'in_progress', 'submitted'] }
+      }).sort({ deadline: 1 });
+
+      res.status(200).json({
+        status: 'success',
+        data: assignments
+      });
+    } catch (error) {
+      console.error('Error fetching active assignments:', error);
+      res.status(500).json({
+        status: 'failed',
+        message: 'Unable to fetch active assignments'
+      });
+    }
+  };
 }
 
 export default ChatController;

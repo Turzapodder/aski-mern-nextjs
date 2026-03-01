@@ -24,31 +24,35 @@ class SocketManager {
       return { allowed: true };
     }
 
+    // Direct chats are now relationship-based. 
+    // We allow tutors to reply if a student has messaged them (user_first gate)
+    // or if they have an active proposal.
+    
     const proposal = await ProposalModel.findOne({
       conversation: chat._id,
       isActive: true
     }).lean();
 
-    if (!proposal) {
-      return { allowed: false, reason: 'Submit a proposal to start conversation' };
-    }
-
-    if (proposal.tutor.toString() !== socketUser._id.toString()) {
-      return { allowed: true };
-    }
-
     const gate = process.env.CHAT_TUTOR_MESSAGE_GATE || 'user_first';
-    if (gate === 'proposal_accepted' && proposal.status !== 'accepted') {
-      return { allowed: false, reason: 'Proposal must be accepted before messaging' };
+
+    // If there is a proposal, respect its status if required
+    if (proposal && gate === 'proposal_accepted' && proposal.status !== 'accepted') {
+       return { allowed: false, reason: 'Proposal must be accepted before messaging' };
     }
 
-    if (gate === 'user_first') {
+    // If no proposal, check if student messaged first
+    if (!proposal || gate === 'user_first') {
+      // Find person who is NOT the tutor
+      const studentParticipant = chat.participants.find(p => p.user.toString() !== socketUser._id.toString());
+      if (!studentParticipant) return { allowed: true };
+
       const studentHasMessaged = await MessageModel.exists({
         chat: chat._id,
-        sender: proposal.student,
+        sender: studentParticipant.user,
         isDeleted: false
       });
-      if (!studentHasMessaged) {
+
+      if (!studentHasMessaged && !proposal) {
         return { allowed: false, reason: 'Wait for the student to start the conversation' };
       }
     }

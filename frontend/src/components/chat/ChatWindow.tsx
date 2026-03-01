@@ -7,7 +7,12 @@ import { toast } from 'sonner';
 
 import { useChatContext } from '@/contexts/ChatContext';
 import { useGetUserQuery } from '@/lib/services/auth';
-import { useDeleteMessageMutation, useEditMessageMutation, useLeaveChatMutation } from '@/lib/services/chat';
+import {
+  useDeleteMessageMutation,
+  useEditMessageMutation,
+  useLeaveChatMutation,
+  useGetChatAssignmentsQuery
+} from '@/lib/services/chat';
 import {
   useAcceptOfferMutation,
   useCreateOfferMutation,
@@ -79,6 +84,8 @@ const ChatWindow = () => {
   const [chatDeleteOpen, setChatDeleteOpen] = useState(false);
   const [stagedFiles, setStagedFiles] = useState<{ file: File; preview: string; type: string }[]>([]);
   const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const [selectedAssignmentForEdit, setSelectedAssignmentForEdit] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +104,11 @@ const ChatWindow = () => {
   const [editMessage] = useEditMessageMutation();
   const [deleteMessage] = useDeleteMessageMutation();
   const [leaveChat, { isLoading: leavingChat }] = useLeaveChatMutation();
+  const { data: assignmentsResponse, refetch: refetchAssignments } = useGetChatAssignmentsQuery(
+    selectedChat?._id || '',
+    { skip: !selectedChat }
+  );
+  const activeAssignments = assignmentsResponse?.data || [];
 
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -262,12 +274,21 @@ const ChatWindow = () => {
     return otherParticipant && onlineUsers.some(u => u._id === otherParticipant._id);
   };
 
-  const openOfferModal = (mode: 'create' | 'edit' = 'create') => {
+  const openOfferModal = (mode: 'create' | 'edit' = 'create', assignmentToEdit?: any) => {
     setOfferModalMode(mode);
-    setOfferTitle(assignmentTitle || '');
-    setOfferDescription(assignment?.description || '');
-    setOfferBudget(assignmentBudget?.toString() || '');
-    setOfferDeadline(assignmentDeadline ? new Date(assignmentDeadline).toISOString().split('T')[0] : '');
+    if (mode === 'edit' && assignmentToEdit) {
+      setOfferTitle(assignmentToEdit.title || '');
+      setOfferDescription(assignmentToEdit.description || '');
+      setOfferBudget(assignmentToEdit.budget?.toString() || assignmentToEdit.estimatedCost?.toString() || '');
+      setOfferDeadline(assignmentToEdit.deadline ? new Date(assignmentToEdit.deadline).toISOString().split('T')[0] : '');
+      setSelectedAssignmentForEdit(assignmentToEdit);
+    } else {
+      setOfferTitle('');
+      setOfferDescription('');
+      setOfferBudget('');
+      setOfferDeadline('');
+      setSelectedAssignmentForEdit(null);
+    }
     setOfferNote('');
     setOfferError('');
     setOfferModalOpen(true);
@@ -300,7 +321,7 @@ const ChatWindow = () => {
     try {
       await createOffer({
         conversationId: selectedChat._id,
-        assignmentId: assignment?._id,
+        assignmentId: offerModalMode === 'edit' ? selectedAssignmentForEdit?._id : undefined,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         proposedBudget: budgetValue,
@@ -308,7 +329,9 @@ const ChatWindow = () => {
         message: offerNote,
       }).unwrap();
       setOfferModalOpen(false);
+      setTasksModalOpen(false); // Close tasks modal too if it was open
       refetchOffer();
+      refetchAssignments();
       refreshMessages();
     } catch (error: any) {
       setOfferError(error?.data?.message || 'Failed to send offer.');
@@ -402,8 +425,6 @@ const ChatWindow = () => {
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{getChatName()}</h2>
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className="text-xs text-gray-500">{assignmentTitle || 'Direct chat'}</span>
-              <span className="h-1 w-1 rounded-full bg-gray-300"></span>
               {isUserOnline() && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
               <span className="text-xs text-gray-600 font-medium">{isUserOnline() ? 'Online' : 'Offline'}</span>
               {!isConnected && (
@@ -419,12 +440,12 @@ const ChatWindow = () => {
         <div className="flex items-center gap-2 text-gray-400">
           {isTutor && (
             <button
-              onClick={() => openOfferModal(assignment ? 'edit' : 'create')}
+              onClick={() => openOfferModal('create')}
               disabled={tutorBlocked || Boolean(activeOffer)}
               className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
-              <Pencil className="h-4 w-4" />
-              {assignment ? 'Edit Offer' : 'Send Custom Offer'}
+              <BadgeDollarSign className="h-4 w-4" />
+              Send Custom Offer
             </button>
           )}
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Search size={18} /></button>
@@ -444,25 +465,46 @@ const ChatWindow = () => {
         </div>
       </div>
 
-      {assignmentTitle && (
-        <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-100">
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-600 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs text-gray-500">Assignment</p>
-              <p className="font-semibold text-gray-900">{assignmentTitle}</p>
-            </div>
-            <div className="flex items-center gap-6">
-              <div>
-                <p className="text-xs text-gray-500">Budget</p>
-                <p className="font-semibold text-gray-900">{formatAmount(assignmentBudget ?? 0)}</p>
+      {/* Ongoing Assignments Bar */}
+      {activeAssignments.length > 0 ? (
+        <div
+          onClick={() => setTasksModalOpen(true)}
+          className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 group-hover:scale-110 transition-transform">
+                <Clipboard size={14} />
               </div>
-              {assignmentDeadline && (
-                <div>
-                  <p className="text-xs text-gray-500">Deadline</p>
-                  <p className="font-semibold text-gray-900">{format(new Date(assignmentDeadline), 'MMM dd, yyyy')}</p>
-                </div>
-              )}
+              <span className="text-sm font-semibold text-gray-900">
+                {activeAssignments.length === 1
+                  ? activeAssignments[0].title
+                  : `${activeAssignments.length} Ongoing Assignments`}
+              </span>
             </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                  {activeAssignments.length === 1 ? 'Details' : 'Latest Deadline'}
+                </span>
+                <span className="text-[11px] font-semibold text-indigo-600">
+                  {activeAssignments.length === 1
+                    ? `${formatAmount(activeAssignments[0].budget || activeAssignments[0].estimatedCost)} • ${format(new Date(activeAssignments[0].deadline), 'MMM dd')}`
+                    : format(new Date(Math.max(...activeAssignments.map((a: any) => new Date(a.deadline).getTime()))), 'MMM dd, yyyy')}
+                </span>
+              </div>
+              <ChevronDown size={16} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-gray-50 rounded-lg text-gray-400">
+              <Info size={14} />
+            </div>
+            <span className="text-xs font-medium text-gray-400 italic">No active assignments</span>
           </div>
         </div>
       )}
@@ -866,11 +908,11 @@ const ChatWindow = () => {
             </DialogHeader>
           </div>
 
-          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto non-scrollbar">
+          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto non-scrollbar">
             {/* Details Section - Collapsed for Edit mode */}
             <div className="space-y-4">
               {offerModalMode === 'edit' ? (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-100 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Assignment</span>
                   </div>
@@ -1082,6 +1124,74 @@ const ChatWindow = () => {
                 />
               ) : null
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Active Tasks/Assignments Modal */}
+      <Dialog open={tasksModalOpen} onOpenChange={setTasksModalOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-indigo-600 p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Clipboard className="h-5 w-5" />
+                Ongoing Assignments
+              </DialogTitle>
+              <p className="text-indigo-100 text-sm mt-1">
+                Manage all active contracts between you and {getChatName()}
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto non-scrollbar bg-gray-50">
+            {activeAssignments.length > 0 ? (
+              activeAssignments.map((assignment: any) => (
+                <div key={assignment._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-gray-900 leading-tight">{assignment.title}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${assignment.status === 'in_progress' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                          {assignment.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-indigo-600 leading-none">{formatAmount(assignment.budget || assignment.estimatedCost)}</p>
+                      <p className="text-[10px] text-gray-400 mt-1 font-medium">{format(new Date(assignment.deadline), 'MMM dd, yyyy')}</p>
+                    </div>
+                  </div>
+
+                  {isTutor && assignment.status === 'proposal_accepted' && (
+                    <div className="pt-2 border-t border-gray-50">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openOfferModal('edit', assignment)}
+                        className="w-full justify-start gap-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold text-xs rounded-xl"
+                      >
+                        <Pencil size={14} />
+                        Edit Offer Terms
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mb-3">
+                  <Clipboard size={20} />
+                </div>
+                <p className="text-sm font-medium text-gray-500 italic">No active assignments found.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-white border-t border-gray-100 flex justify-end">
+            <Button onClick={() => setTasksModalOpen(false)} variant="outline" className="rounded-xl px-6">
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -88,6 +88,9 @@ interface CreateChatRequest {
   description?: string;
   type: "direct" | "group";
   participants: string[];
+  tutorId?: string;
+  assignmentId?: string;
+  proposalId?: string;
 }
 
 interface SendMessageRequest {
@@ -267,6 +270,15 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ["Chat"],
     }),
+
+    // Get active assignments for a chat
+    getChatAssignments: builder.query<ChatResponse, string>({
+      query: (chatId) => ({
+        url: `${chatId}/assignments`,
+        method: "GET",
+      }),
+      providesTags: ["Chat"],
+    }),
   }),
 });
 
@@ -283,6 +295,7 @@ export const {
   useAddParticipantMutation,
   useRemoveParticipantMutation,
   useLeaveChatMutation,
+  useGetChatAssignmentsQuery,
 } = chatApi;
 
 // Export types for use in components
