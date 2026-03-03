@@ -20,6 +20,7 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
   const paymentAmount =
     assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0;
   const isPaid = assignment.paymentStatus === "paid";
+  const [paymentMethod, setPaymentMethod] = React.useState("bkash");
   const [processPayment, { isLoading }] = useProcessPaymentMutation();
 
   const handlePayNow = async () => {
@@ -32,7 +33,7 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
       const result = await processPayment({
         id: assignment._id,
         amount: paymentAmount,
-        method: "uddoktapay",
+        method: paymentMethod,
       }).unwrap();
 
       const checkoutUrl = result?.data?.checkoutUrl;
@@ -78,6 +79,23 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
       <div className="flex items-center space-x-2 text-sm text-gray-600 mt-4">
         <Shield size={16} className="text-primary-500" />
         <span>You will complete payment securely on UddoktaPay</span>
+      </div>
+
+      <div className="mt-4">
+        <label htmlFor="payment-method" className="block text-sm font-medium text-gray-700 mb-2">
+          Payment method
+        </label>
+        <select
+          id="payment-method"
+          value={paymentMethod}
+          onChange={(event) => setPaymentMethod(event.target.value)}
+          disabled={isLoading || isPaid}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
+        >
+          <option value="bkash">bKash</option>
+          <option value="nagad">Nagad</option>
+          <option value="rocket">Rocket</option>
+        </select>
       </div>
 
       <button
