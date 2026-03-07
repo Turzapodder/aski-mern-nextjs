@@ -23,6 +23,56 @@ const parseNumber = (value, fallback = 0) => {
 
 const sanitizeText = (value) => (typeof value === "string" ? value.trim() : "");
 
+const isUddoktaMockModeEnabled = () => {
+  const raw = sanitizeText(process.env.UDDOKTAPAY_MOCK_MODE || "").toLowerCase();
+  return ["1", "true", "yes", "on"].includes(raw);
+};
+
+const normalizeMockPaymentMethod = (value) => {
+  const normalized = sanitizeText(value).toLowerCase();
+  if (["bkash", "nagad", "rocket", "card", "bank"].includes(normalized)) {
+    return normalized;
+  }
+  return "bkash";
+};
+
+const createMockInvoiceId = () =>
+  `MOCK-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+
+const buildMockGatewayUrl = ({ backendBaseUrl, assignmentId, invoiceId, method }) => {
+  const url = new URL(`${backendBaseUrl}/api/assignments/payment/mock`);
+  url.searchParams.set("assignment_id", assignmentId);
+  url.searchParams.set("invoice_id", invoiceId);
+  url.searchParams.set("method", normalizeMockPaymentMethod(method));
+  return url.toString();
+};
+
+const getMockVerificationResponse = ({
+  invoiceId,
+  assignmentId,
+  amount,
+  method,
+  status,
+}) => {
+  const normalizedStatus = sanitizeText(status || "COMPLETED").toUpperCase();
+  const roundedAmount = Number(parseNumber(amount, 0).toFixed(2));
+  return {
+    full_name: "Mock Customer",
+    email: "mock@example.com",
+    amount: roundedAmount,
+    currency: "BDT",
+    fee: 0,
+    charged_amount: roundedAmount,
+    invoice_id: invoiceId,
+    metadata: { assignmentId },
+    payment_method: normalizeMockPaymentMethod(method),
+    sender_number: "01700000000",
+    transaction_id: `MOCK-TXN-${invoiceId}`,
+    date: new Date().toISOString(),
+    status: normalizedStatus,
+  };
+};
+
 const isLocalHostValue = (value = "") =>
   /(^https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?/i.test(sanitizeText(value));
 
@@ -122,6 +172,21 @@ const buildAssignmentRedirectUrl = ({ assignmentId, paymentState, invoiceId }) =
     url.searchParams.set("invoice_id", invoiceId);
   }
   return url.toString();
+};
+
+const buildMockStatusActionUrl = ({
+  backendBaseUrl,
+  assignmentId,
+  invoiceId,
+  method,
+  status,
+}) => {
+  const actionUrl = new URL(`${backendBaseUrl}/api/assignments/payment/mock-complete`);
+  actionUrl.searchParams.set("assignment_id", assignmentId);
+  actionUrl.searchParams.set("invoice_id", invoiceId);
+  actionUrl.searchParams.set("method", normalizeMockPaymentMethod(method));
+  actionUrl.searchParams.set("status", status);
+  return actionUrl.toString();
 };
 
 const sanitizePaymentSnapshot = (verifyData = {}) => ({
@@ -1218,7 +1283,8 @@ class AssignmentController {
   // Initialize UddoktaPay checkout (by student)
   static processPayment = async (req, res) => {
     try {
-      if (!isUddoktaConfigured()) {
+      const isMockMode = isUddoktaMockModeEnabled();
+      if (!isMockMode && !isUddoktaConfigured()) {
         return res.status(500).json({
           status: "failed",
           message: "Payment gateway is not configured",
@@ -1279,6 +1345,9 @@ class AssignmentController {
         });
       }
 
+      const selectedPaymentMethod = isMockMode
+        ? normalizeMockPaymentMethod(method)
+        : sanitizeText(method) || "uddoktapay";
       const backendBaseUrl = getBackendBaseUrl(req);
       const callbackUrl = new URL(`${backendBaseUrl}/api/assignments/payment/callback`);
       callbackUrl.searchParams.set("assignment_id", String(assignment._id));
@@ -1288,37 +1357,50 @@ class AssignmentController {
 
       const webhookUrl = new URL(`${backendBaseUrl}/api/assignments/payment/webhook`);
 
-      const checkoutPayload = {
-        full_name: req.user?.name || "Student",
-        email: req.user?.email || "",
-        amount: Number(paymentAmount.toFixed(2)),
-        currency: checkoutCurrency,
-        metadata: {
+      let checkoutUrl = "";
+      let invoiceId = "";
+
+      if (isMockMode) {
+        invoiceId = createMockInvoiceId();
+        checkoutUrl = buildMockGatewayUrl({
+          backendBaseUrl,
           assignmentId: String(assignment._id),
-          studentId: String(assignment.student),
-          method: sanitizeText(method) || "uddoktapay",
-          currency: checkoutCurrency,
-        },
-        redirect_url: callbackUrl.toString(),
-        cancel_url: cancelUrl.toString(),
-        webhook_url: webhookUrl.toString(),
-        return_type: "GET",
-      };
-
-      const checkout = await createUddoktaCheckout(checkoutPayload);
-      const checkoutUrl = sanitizeText(checkout?.payment_url);
-
-      if (!isSuccessfulCheckoutResponse(checkout) || !checkoutUrl) {
-        return res.status(502).json({
-          status: "failed",
-          message: checkout?.message || "Unable to initialize payment",
+          invoiceId,
+          method: selectedPaymentMethod,
         });
-      }
+      } else {
+        const checkoutPayload = {
+          full_name: req.user?.name || "Student",
+          email: req.user?.email || "",
+          amount: Number(paymentAmount.toFixed(2)),
+          currency: checkoutCurrency,
+          metadata: {
+            assignmentId: String(assignment._id),
+            studentId: String(assignment.student),
+            method: selectedPaymentMethod,
+            currency: checkoutCurrency,
+          },
+          redirect_url: callbackUrl.toString(),
+          cancel_url: cancelUrl.toString(),
+          webhook_url: webhookUrl.toString(),
+          return_type: "GET",
+        };
 
-      const invoiceId =
-        extractInvoiceIdFromValue(checkout?.invoice_id) ||
-        extractInvoiceIdFromValue(checkout?.data) ||
-        extractInvoiceIdFromValue(checkoutUrl);
+        const checkout = await createUddoktaCheckout(checkoutPayload);
+        checkoutUrl = sanitizeText(checkout?.payment_url);
+
+        if (!isSuccessfulCheckoutResponse(checkout) || !checkoutUrl) {
+          return res.status(502).json({
+            status: "failed",
+            message: checkout?.message || "Unable to initialize payment",
+          });
+        }
+
+        invoiceId =
+          extractInvoiceIdFromValue(checkout?.invoice_id) ||
+          extractInvoiceIdFromValue(checkout?.data) ||
+          extractInvoiceIdFromValue(checkoutUrl);
+      }
 
       assignment.paymentAmount = paymentAmount;
       assignment.paymentStatus = "pending";
@@ -1333,6 +1415,7 @@ class AssignmentController {
           ...(assignment.paymentGateway?.metadata || {}),
           initSource: "assignment_payment",
           currency: checkoutCurrency,
+          mode: isMockMode ? "mock" : "live",
         },
       };
       await assignment.save();
@@ -1352,9 +1435,10 @@ class AssignmentController {
           ...(existingPendingTransaction.metadata || {}),
           provider: "uddoktapay",
           invoiceId,
-          paymentMethod: sanitizeText(method) || "uddoktapay",
+          paymentMethod: selectedPaymentMethod,
           currency: checkoutCurrency,
           checkoutUrl,
+          mode: isMockMode ? "mock" : "live",
         };
         await existingPendingTransaction.save();
       } else {
@@ -1368,9 +1452,10 @@ class AssignmentController {
           metadata: {
             provider: "uddoktapay",
             invoiceId,
-            paymentMethod: sanitizeText(method) || "uddoktapay",
+            paymentMethod: selectedPaymentMethod,
             currency: checkoutCurrency,
             checkoutUrl,
+            mode: isMockMode ? "mock" : "live",
           },
         });
       }
@@ -1393,6 +1478,146 @@ class AssignmentController {
         message: error?.message || "Unable to process payment",
       });
     }
+  };
+
+  // Local mock gateway screen for sandboxless testing
+  static handleMockGateway = async (req, res) => {
+    if (!isUddoktaMockModeEnabled()) {
+      return res.status(404).send("Mock payment mode is disabled");
+    }
+
+    const assignmentId = sanitizeText(req.query?.assignment_id);
+    const invoiceId =
+      extractInvoiceIdFromValue(req.query?.invoice_id) ||
+      extractInvoiceIdFromValue(req.query?.invoiceId) ||
+      "";
+    const method = normalizeMockPaymentMethod(req.query?.method);
+
+    if (!assignmentId || !invoiceId) {
+      return res.status(400).send("assignment_id and invoice_id are required");
+    }
+
+    const backendBaseUrl = getBackendBaseUrl(req);
+    const successUrl = buildMockStatusActionUrl({
+      backendBaseUrl,
+      assignmentId,
+      invoiceId,
+      method,
+      status: "COMPLETED",
+    });
+    const pendingUrl = buildMockStatusActionUrl({
+      backendBaseUrl,
+      assignmentId,
+      invoiceId,
+      method,
+      status: "PENDING",
+    });
+    const failedUrl = buildMockStatusActionUrl({
+      backendBaseUrl,
+      assignmentId,
+      invoiceId,
+      method,
+      status: "FAILED",
+    });
+    const cancelUrl = new URL(`${backendBaseUrl}/api/assignments/payment/cancel`);
+    cancelUrl.searchParams.set("assignment_id", assignmentId);
+    cancelUrl.searchParams.set("invoice_id", invoiceId);
+
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mock UddoktaPay</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f5f7fb;padding:24px;color:#1f2937}
+    .card{max-width:560px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px}
+    .meta{font-size:14px;color:#4b5563;margin-bottom:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    a.btn{display:inline-block;padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:600}
+    .ok{background:#16a34a;color:#fff}
+    .pd{background:#0ea5e9;color:#fff}
+    .fl{background:#dc2626;color:#fff}
+    .cl{background:#6b7280;color:#fff}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Mock UddoktaPay Checkout</h2>
+    <p class="meta">Method: <code>${method}</code> | Invoice: <code>${invoiceId}</code></p>
+    <div class="row">
+      <a class="btn ok" href="${successUrl}">Success</a>
+      <a class="btn pd" href="${pendingUrl}">Pending</a>
+      <a class="btn fl" href="${failedUrl}">Failed</a>
+      <a class="btn cl" href="${cancelUrl.toString()}">Cancel</a>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return res.status(200).send(html);
+  };
+
+  // Apply mock gateway status to assignment payment state
+  static handleMockPaymentComplete = async (req, res) => {
+    if (!isUddoktaMockModeEnabled()) {
+      return res.status(404).send("Mock payment mode is disabled");
+    }
+
+    const invoiceId =
+      extractInvoiceIdFromValue(req.query?.invoice_id) ||
+      extractInvoiceIdFromValue(req.query?.invoiceId) ||
+      "";
+    const assignmentId = sanitizeText(req.query?.assignment_id);
+    const method = normalizeMockPaymentMethod(req.query?.method);
+    const status = sanitizeText(req.query?.status || "COMPLETED").toUpperCase();
+
+    let redirectAssignmentId = assignmentId;
+    let paymentState = "failed";
+
+    try {
+      if (!invoiceId || !assignmentId) {
+        throw new Error("assignment_id and invoice_id are required");
+      }
+
+      const assignment = await AssignmentModel.findById(assignmentId)
+        .select("paymentAmount budget estimatedCost")
+        .lean();
+      const amount = parseNumber(
+        assignment?.paymentAmount ?? assignment?.budget ?? assignment?.estimatedCost ?? 0,
+        0
+      );
+
+      const result = await verifyAndApplyAssignmentPayment({
+        invoiceId,
+        source: "mock_gateway_redirect",
+        app: req.app,
+        deps: {
+          verifyPaymentFn: async (incomingInvoiceId) =>
+            getMockVerificationResponse({
+              invoiceId: incomingInvoiceId,
+              assignmentId,
+              amount,
+              method,
+              status,
+            }),
+        },
+      });
+
+      redirectAssignmentId = result.assignmentId || redirectAssignmentId;
+      paymentState = result.paymentState || "failed";
+    } catch (error) {
+      paymentState = "failed";
+    }
+
+    return res.redirect(
+      buildAssignmentRedirectUrl({
+        assignmentId: redirectAssignmentId,
+        paymentState,
+        invoiceId,
+      })
+    );
   };
 
   // Verify payment by invoice ID and apply state changes
@@ -1483,7 +1708,7 @@ class AssignmentController {
       assignmentId = await findAssignmentIdByInvoiceId(invoiceId);
     }
 
-    if (invoiceId) {
+    if (assignmentId || invoiceId) {
       const assignment = assignmentId
         ? await AssignmentModel.findById(assignmentId)
         : null;
@@ -1503,22 +1728,26 @@ class AssignmentController {
         await assignment.save();
       }
 
-      await TransactionModel.updateMany(
-        {
-          type: "escrow_hold",
-          "relatedTo.model": "Assignment",
-          ...(assignmentId ? { "relatedTo.id": assignmentId } : {}),
-          $or: [{ gatewayId: invoiceId }, { "metadata.invoiceId": invoiceId }],
-          status: "pending",
+      const transactionFilter = {
+        type: "escrow_hold",
+        "relatedTo.model": "Assignment",
+        ...(assignmentId ? { "relatedTo.id": assignmentId } : {}),
+        status: "pending",
+      };
+      if (invoiceId) {
+        transactionFilter.$or = [
+          { gatewayId: invoiceId },
+          { "metadata.invoiceId": invoiceId },
+        ];
+      }
+
+      await TransactionModel.updateMany(transactionFilter, {
+        $set: {
+          status: "cancelled",
+          "metadata.cancelledAt": new Date().toISOString(),
+          "metadata.cancellationSource": "gateway_redirect",
         },
-        {
-          $set: {
-            status: "cancelled",
-            "metadata.cancelledAt": new Date().toISOString(),
-            "metadata.cancellationSource": "gateway_redirect",
-          },
-        }
-      );
+      });
     }
 
     return res.redirect(

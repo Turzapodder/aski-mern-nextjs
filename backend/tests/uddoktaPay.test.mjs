@@ -24,6 +24,14 @@ test("extractInvoiceIdFromValue handles url, object, and raw id", () => {
     extractInvoiceIdFromValue("https://pay.example.com/checkout?invoice_id=INV-100"),
     "INV-100"
   );
+  assert.equal(
+    extractInvoiceIdFromValue("https://aski.paymently.io/checkout/TDJsJGmam5L8pJzqTPe45H25RHk71KHpO15owgsQ"),
+    "TDJsJGmam5L8pJzqTPe45H25RHk71KHpO15owgsQ"
+  );
+  assert.equal(
+    extractInvoiceIdFromValue("https://aski.paymently.io/checkout/TDJsJGmam5L8pJzqTPe45H25RHk71KHpO15owgsQ/cancel"),
+    "TDJsJGmam5L8pJzqTPe45H25RHk71KHpO15owgsQ"
+  );
   assert.equal(extractInvoiceIdFromValue({ invoice_id: "INV-200" }), "INV-200");
   assert.equal(extractInvoiceIdFromValue("INV-300"), "INV-300");
   assert.equal(extractInvoiceIdFromValue(null), "");
