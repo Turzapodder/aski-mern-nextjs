@@ -123,11 +123,25 @@ export const extractInvoiceIdFromValue = (value) => {
 
     try {
       const url = new URL(trimmed);
-      return (
+      const queryInvoiceId = (
         url.searchParams.get("invoice_id") ||
         url.searchParams.get("invoiceId") ||
         ""
       ).trim();
+      if (queryInvoiceId) return queryInvoiceId;
+
+      const pathSegments = url.pathname
+        .split("/")
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+      const checkoutIndex = pathSegments.findIndex(
+        (segment) => segment.toLowerCase() === "checkout"
+      );
+      if (checkoutIndex >= 0 && pathSegments[checkoutIndex + 1]) {
+        return pathSegments[checkoutIndex + 1];
+      }
+
+      return "";
     } catch {
       return trimmed;
     }
