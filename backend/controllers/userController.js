@@ -562,6 +562,7 @@ class UserController {
             res.clearCookie('accessToken', getCookieClearOptions({ httpOnly: true }));
             res.clearCookie('refreshToken', getCookieClearOptions({ httpOnly: true }));
             res.clearCookie('is_auth', getCookieClearOptions({ httpOnly: false }));
+            res.clearCookie('user_role', getCookieClearOptions({ httpOnly: false }));
             
             res.status(200).json({status: "success", message: "Logout Successful"});
         } catch (error) {
