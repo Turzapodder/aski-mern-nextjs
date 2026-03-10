@@ -4,6 +4,7 @@ import axios, {
   AxiosError,
   AxiosRequestConfig,
 } from "axios";
+import { apiBaseUrl } from "./apiConfig";
 
 // Augment AxiosRequestConfig to include a custom retry flag
 declare module "axios" {
@@ -13,14 +14,7 @@ declare module "axios" {
 }
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: (() => {
-    const rawBase =
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.REACT_APP_API_URL ||
-      "http://localhost:8000";
-    const trimmed = rawBase.replace(/\/+$/, "");
-    return /\/api$/i.test(trimmed) ? trimmed : `${trimmed}/api`;
-  })(),
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
@@ -36,7 +30,7 @@ axiosInstance.interceptors.response.use(
       try {
         console.log("Token expired, refreshing...");
 
-        await axiosInstance.get("/student/session/generate");
+        await axiosInstance.post("/user/refresh-token");
 
         console.log("Token refreshed, retrying request");
         return axiosInstance(originalRequest);

@@ -18,6 +18,7 @@ import {
     getRoleMismatchMessage,
     normalizeLoginRole,
 } from "../utils/authRole.js";
+import { getCookieClearOptions } from "../utils/cookieOptions.js";
 
 const loadPlatformSettings = async () => {
     try {
@@ -529,9 +530,9 @@ class UserController {
             );
 
             // clear access token and refresh token from cookies
-            res.clearCookie('accessToken');
-            res.clearCookie('refreshToken');
-            res.clearCookie('is_auth');
+            res.clearCookie('accessToken', getCookieClearOptions({ httpOnly: true }));
+            res.clearCookie('refreshToken', getCookieClearOptions({ httpOnly: true }));
+            res.clearCookie('is_auth', getCookieClearOptions({ httpOnly: false }));
             
             res.status(200).json({status: "success", message: "Logout Successful"});
         } catch (error) {

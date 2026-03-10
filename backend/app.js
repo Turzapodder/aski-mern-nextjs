@@ -47,6 +47,27 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const sanitizeOrigin = (value = "") =>
+  value.trim().replace(/^['\"]|['\"]$/g, "").replace(/\/+$/, "");
+
+const configuredFrontendOrigins = [
+  process.env.FRONTEND_HOST,
+  ...(process.env.FRONTEND_HOSTS || "").split(","),
+  "http://127.0.0.1:3000",
+  "http://localhost:3000",
+]
+  .map((origin) => sanitizeOrigin(origin || ""))
+  .filter(Boolean);
+
+const allowedFrontendOrigins = new Set(configuredFrontendOrigins);
+const frontendHost =
+  sanitizeOrigin(process.env.FRONTEND_HOST || configuredFrontendOrigins[0] || "http://localhost:3000");
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  return allowedFrontendOrigins.has(sanitizeOrigin(origin));
+};
+
 let server;
 let isShuttingDown = false;
 
@@ -150,11 +171,13 @@ const startServer = async () => {
 
     // CORS configuration - Enhanced for Socket.IO
     const corsOptions = {
-      origin: [
-        process.env.FRONTEND_HOST || "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-      ],
+      origin: (origin, callback) => {
+        if (isOriginAllowed(origin)) {
+          return callback(null, true);
+        }
+        logger.warn(`CORS blocked origin: ${origin}`);
+        return callback(new Error("Not allowed by CORS"));
+      },
       optionsSuccessStatus: 200,
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -170,6 +193,7 @@ const startServer = async () => {
     };
 
     app.use(cors(corsOptions));
+    app.options("*", cors(corsOptions));
 
     // Custom Morgan logging format with colors and error handling
     morgan.token("colorStatus", (req, res) => {
@@ -304,12 +328,6 @@ const startServer = async () => {
 
     // FIXED: Custom CORS middleware for uploaded files
     app.use("/uploads", (req, res, next) => {
-      const allowedOrigins = [
-        process.env.FRONTEND_HOST || "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-      ];
-
       next();
     });
 
@@ -464,7 +482,7 @@ const startServer = async () => {
       } catch (error) {
         logger.error("Google OAuth initiation error:", error);
         res.redirect(
-          `${process.env.FRONTEND_HOST}/account/login?role=user&error=oauth_init_failed`
+          `${frontendHost}/account/login?role=user&error=oauth_init_failed`
         );
       }
     });
@@ -474,7 +492,7 @@ const startServer = async () => {
       (req, res, next) => {
         passport.authenticate("google", {
           session: false,
-          failureRedirect: `${process.env.FRONTEND_HOST}/account/login?role=user&error=oauth_failed`,
+          failureRedirect: `${frontendHost}/account/login?role=user&error=oauth_failed`,
         })(req, res, next);
       },
       (req, res) => {
@@ -482,7 +500,7 @@ const startServer = async () => {
           if (!req.user) {
             logger.error("Google OAuth callback: No user data received");
             return res.redirect(
-              `${process.env.FRONTEND_HOST}/account/login?role=user&error=no_user_data`
+              `${frontendHost}/account/login?role=user&error=no_user_data`
             );
           }
 
@@ -510,7 +528,7 @@ const startServer = async () => {
               `Google OAuth role mismatch for ${user?.email || "unknown"} (requested: ${requestedRole})`
             );
             return res.redirect(
-              `${process.env.FRONTEND_HOST}/account/login?role=${requestedRole}&error=role_mismatch`
+              `${frontendHost}/account/login?role=${requestedRole}&error=role_mismatch`
             );
           }
 
@@ -529,26 +547,19 @@ const startServer = async () => {
             user
           );
 
-          if (user.roles?.includes("admin")) {
-            return res.redirect(`${process.env.FRONTEND_HOST}/admin`);
-          }
+          const roleHint = user.roles?.includes("admin")
+            ? "admin"
+            : user.roles?.includes("tutor")
+            ? "tutor"
+            : "user";
 
-          if (
-            (user.roles?.includes("tutor") &&
-              user.onboardingStatus === "pending") ||
-            isNewTutor
-          ) {
-            res.redirect(
-              `${process.env.FRONTEND_HOST}/account/tutor-onboarding`
-            );
-          } else {
-            res.redirect(`${process.env.FRONTEND_HOST}/user/dashboard`);
-          }
+          // Route through login to let frontend domain establish auth marker cookies.
+          res.redirect(`${frontendHost}/account/login?role=${roleHint}&oauth=success`);
         } catch (error) {
           logger.error("Google OAuth callback error:", error);
           if (!res.headersSent) {
             res.redirect(
-              `${process.env.FRONTEND_HOST}/account/login?role=user&error=callback_failed`
+              `${frontendHost}/account/login?role=user&error=callback_failed`
             );
           }
         }

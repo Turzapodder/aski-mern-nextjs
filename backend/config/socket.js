@@ -6,6 +6,25 @@ import MessageModel from '../models/Message.js';
 import ProposalModel from '../models/Proposal.js';
 import logger from '../utils/logger.js';
 
+const sanitizeOrigin = (value = '') =>
+  value.trim().replace(/^['\"]|['\"]$/g, '').replace(/\/+$/, '');
+
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_HOST,
+    ...(process.env.FRONTEND_HOSTS || '').split(','),
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+  ]
+    .map((origin) => sanitizeOrigin(origin || ''))
+    .filter(Boolean)
+);
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  return allowedOrigins.has(sanitizeOrigin(origin));
+};
+
 class SocketManager {
   constructor() {
     this.io = null;
@@ -63,7 +82,13 @@ class SocketManager {
   initialize(server) {
     this.io = new Server(server, {
       cors: {
-        origin: [process.env.FRONTEND_HOST || "http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: (origin, callback) => {
+          if (isOriginAllowed(origin)) {
+            return callback(null, true);
+          }
+          logger.warn(`Socket.IO CORS blocked origin: ${origin}`);
+          return callback(new Error('Not allowed by CORS'));
+        },
         methods: ['GET', 'POST'],
         credentials: true
       },

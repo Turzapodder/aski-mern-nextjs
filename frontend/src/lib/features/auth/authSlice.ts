@@ -37,6 +37,8 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.userRole = action.payload.role;
       state.isAuthenticated = true;
+      Cookies.set('is_auth', 'true', { sameSite: 'lax' });
+      Cookies.set('user_role', action.payload.role, { sameSite: 'lax' });
     },
     logout: (state) => {
       state.user = null;
@@ -45,7 +47,8 @@ const authSlice = createSlice({
       // Also clear cookies when explicitly dispatched
       Cookies.remove('is_auth');
       Cookies.remove('user_role');
-      Cookies.remove('access_token');
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
     },
     setUserProfile: (state, action: PayloadAction<UserProfile>) => {
       state.user = action.payload;
