@@ -1,15 +1,16 @@
-"use client"
+"use client";
 
 import Link from "next/link";
 import { useResetPasswordConfirmLogic } from "./useResetPasswordConfirmLogic";
 
 export const ResetPasswordConfirmClient = () => {
-  const { formik, loading, serverErrorMessage, serverSuccessMessage } = useResetPasswordConfirmLogic();
+  const { formik, loading, serverErrorMessage, serverSuccessMessage } =
+    useResetPasswordConfirmLogic();
   const { values, errors, handleChange, handleSubmit } = formik;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white p-4">
-      <div className="w-full max-w-[420px] p-8">
+    <div className="flex items-center justify-center min-h-screen bg-white p-4 sm:p-6">
+      <div className="w-full max-w-[420px] p-4 sm:p-8">
         <div className="flex justify-center mb-6">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
             <svg
@@ -29,7 +30,7 @@ export const ResetPasswordConfirmClient = () => {
           </div>
         </div>
 
-        <h2 className="text-2xl font-semibold text-center mb-2">
+        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">
           Set a new password
         </h2>
         <p className="text-sm text-center mb-8 text-gray-500">
@@ -54,9 +55,7 @@ export const ResetPasswordConfirmClient = () => {
               placeholder="Enter a new password"
             />
             {errors.password && (
-              <div className="mt-1 text-sm text-red-500">
-                {errors.password}
-              </div>
+              <div className="mt-1 text-sm text-red-500">{errors.password}</div>
             )}
           </div>
 
