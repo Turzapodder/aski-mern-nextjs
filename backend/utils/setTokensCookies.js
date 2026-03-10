@@ -16,19 +16,6 @@ const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, new
     
     // Set Cookies for Refresh Token
     res.cookie('refreshToken', refreshToken, getCookieOptions(refreshTokenMaxAge, { httpOnly: true }));
-
-    // Determine if we should set is_auth to true
-    const shouldSetIsAuth = !user || 
-                           !user.roles.includes('tutor') || 
-                           (user.roles.includes('tutor') && user.onboardingStatus === 'completed');
-
-    // Set Cookie for is_auth only if user is not a tutor with pending onboarding
-    if (shouldSetIsAuth) {
-        res.cookie('is_auth', true, getCookieOptions(refreshTokenMaxAge, { httpOnly: false }));
-    } else {
-        // For tutors with pending onboarding, set is_auth_pending
-        res.cookie('is_auth', true, getCookieOptions(refreshTokenMaxAge, { httpOnly: false }));
-    }
 }
 
 export default setTokensCookies;

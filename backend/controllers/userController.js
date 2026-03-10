@@ -87,7 +87,14 @@ class UserController {
             if (existingUser) {
                 // If user exists but not verified, send new OTP
                 if (!existingUser.is_verified) {
-                    await sendEmailVerifyOTP(req, existingUser);
+                    try {
+                        await sendEmailVerifyOTP(req, existingUser);
+                    } catch (mailError) {
+                        return res.status(503).json({
+                            status: "failed",
+                            message: "Email exists but OTP delivery is unavailable right now. Please try again shortly.",
+                        });
+                    }
                     return res.status(409).json({ 
                         status: "failed", 
                         message: "Email exists but not verified. New verification code has been sent to your email." 
@@ -104,7 +111,15 @@ class UserController {
             //Create new user
             const newUser = await new UserModel({ name, email, password: hashedPassword }).save();
 
-            sendEmailVerifyOTP(req, newUser);
+            try {
+                await sendEmailVerifyOTP(req, newUser);
+            } catch (mailError) {
+                await UserModel.deleteOne({ _id: newUser._id });
+                return res.status(503).json({
+                    status: "failed",
+                    message: "Registration could not be completed because OTP email delivery is unavailable. Please try again later.",
+                });
+            }
 
             //send success response
             res.status(201).json({
@@ -143,7 +158,14 @@ class UserController {
             const emailVerification = await EmailVerificationModel.findOne({ userId: existingUser._id, otp });
             if (!emailVerification) {
                 if (!existingUser.is_verified) {
-                    await sendEmailVerifyOTP(req, existingUser);
+                    try {
+                        await sendEmailVerifyOTP(req, existingUser);
+                    } catch (mailError) {
+                        return res.status(503).json({
+                            status: "failed",
+                            message: "Invalid OTP and we could not send a new code right now. Please try again shortly.",
+                        });
+                    }
                     return res.status(400).json({ status: "failed", message: "Invalid OTP,new OTP sent to your email" });
                 }
                 return res.status(400).json({ status: "failed", message: "Invalid OTP,new OTP sent to your email" });
@@ -153,7 +175,14 @@ class UserController {
             const currentTime = new Date();
             const expiredTime = new Date(emailVerification.createdAt.getTime() + 15 * 60 * 1000);
             if (currentTime > expiredTime) {
-                await sendEmailVerifyOTP(req, existingUser);
+                try {
+                    await sendEmailVerifyOTP(req, existingUser);
+                } catch (mailError) {
+                    return res.status(503).json({
+                        status: "failed",
+                        message: "OTP expired and we could not send a new code right now. Please try again shortly.",
+                    });
+                }
                 return res.status(400).json({ status: "failed", message: "OTP expired, new OTP sent to your email" });
             }
 
