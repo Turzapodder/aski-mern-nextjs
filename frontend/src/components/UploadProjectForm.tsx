@@ -401,18 +401,18 @@ const UploadProjectForm = ({
   }
 
   return (
-    <div className={`bg-white rounded-2xl shadow-lg p-8 ${maxWidth} w-full ${className}`}>
+   <div className={`bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-8 ${maxWidth} w-full ${className}`}>
       <form onSubmit={handleSubmit}>
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             {requestedTutorName ? "Request a Proposal" : (
               <>
                 Post a <span className="text-secondary-500">New Project</span>
               </>
             )}
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-xs sm:text-sm">
             {requestedTutorName
               ? "Share your assignment details to invite this tutor to send a proposal."
               : "Please provide the necessary details below"}
@@ -420,15 +420,15 @@ const UploadProjectForm = ({
         </div>
 
         {requestedTutorName && (
-          <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+          <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 text-xs sm:text-sm text-gray-600">
             Requesting proposal from <span className="font-semibold text-gray-900">{requestedTutorName}</span>.
             Once submitted, only this tutor will see the request.
           </div>
         )}
 
         {/* Project Title */}
-        <div className="mb-6">
-          <label className="block text-gray-900 font-medium mb-2">
+        <div className="mb-5 sm:mb-6">
+          <label className="block text-gray-900 font-medium mb-1.5 sm:mb-2 text-sm sm:text-base">
             Project Title <span className="text-red-500">*</span>
           </label>
           <input
@@ -436,14 +436,14 @@ const UploadProjectForm = ({
             placeholder="e.g. Calculus Homework Help"
             value={formData.title}
             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
             required
           />
         </div>
 
         {/* Project Description */}
-        <div className="mb-6">
-          <label className="block text-gray-900 font-medium mb-2">
+        <div className="mb-5 sm:mb-6">
+          <label className="block text-gray-900 font-medium mb-1.5 sm:mb-2 text-sm sm:text-base">
             Project Description <span className="text-red-500">*</span>
           </label>
           <textarea
@@ -451,18 +451,18 @@ const UploadProjectForm = ({
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent resize-none"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent resize-none text-sm sm:text-base"
             required
           />
         </div>
 
         {/* Deadline */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-gray-900 font-medium">Assignment Deadline <span className="text-red-500">*</span></label>
+        <div className="mb-5 sm:mb-6">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <label className="text-gray-900 font-medium text-sm sm:text-base">Assignment Deadline <span className="text-red-500">*</span></label>
             <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center group relative cursor-help">
-              <span className="text-gray-500 text-xs">i</span>
-              <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-gray-800 text-white text-xs rounded p-2 z-10">
+              <span className="text-gray-500 text-[10px] sm:text-xs">i</span>
+              <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 bg-gray-800 text-white text-[10px] sm:text-xs rounded p-2 z-10">
                 Select when this assignment should be completed
               </div>
             </div>
@@ -471,7 +471,7 @@ const UploadProjectForm = ({
             type="datetime-local"
             value={formData.deadline}
             onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
             required
             min={new Date().toISOString().slice(0, 16)}
           />
@@ -481,14 +481,14 @@ const UploadProjectForm = ({
         {isAdvanced && (
           <div className="animate-in fade-in slide-in-from-top-4 duration-300">
             {/* Subject */}
-            <div className="mb-6">
-              <label className="block text-gray-900 font-medium mb-2">
+            <div className="mb-5 sm:mb-6">
+              <label className="block text-gray-900 font-medium mb-1.5 sm:mb-2 text-sm sm:text-base">
                 Subject
               </label>
               <select
                 value={formData.subject}
                 onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white text-sm sm:text-base"
               >
                 <option value="">Select a Subject</option>
                 {SUBJECTS.map(subject => (
@@ -498,20 +498,20 @@ const UploadProjectForm = ({
             </div>
 
             {/* Topics */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-gray-900 font-medium">Topics</label>
-                <span className="text-gray-400 text-sm">{12 - formData.topics.length} topics remaining</span>
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <label className="text-gray-900 font-medium text-sm sm:text-base">Topics</label>
+                <span className="text-gray-400 text-[10px] sm:text-xs">{12 - formData.topics.length} topics remaining</span>
               </div>
 
-              <div className="flex flex-wrap gap-2 mb-3">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
                 {formData.topics.map((topic, index) => (
-                  <span key={index} className="inline-flex items-center px-3 py-1 bg-gray-900 text-white rounded-full text-sm">
+                  <span key={index} className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 bg-gray-900 text-white rounded-full text-[10px] sm:text-sm">
                     {topic}
                     <button
                       type="button"
                       onClick={() => removeTopic(topic)}
-                      className="ml-2 text-gray-300 hover:text-white"
+                      className="ml-1.5 text-gray-300 hover:text-white"
                     >
                       ×
                     </button>
@@ -522,29 +522,29 @@ const UploadProjectForm = ({
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Add topics (e.g. algebra, calculus, essay ...)"
+                  placeholder="Add topics (e.g. algebra...)"
                   value={newTopic}
                   onChange={(e) => setNewTopic(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm pr-10"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-xs sm:text-sm pr-10"
                 />
                 <button
                   type="button"
                   onClick={handleAddNewTopic}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-500"
                 >
-                  <Plus size={20} />
+                  <Plus size={18} className="sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
             {/* File Upload Area */}
-            <div className="mb-6">
-              <label className="block text-gray-900 font-medium mb-2">Upload Files</label>
+            <div className="mb-5 sm:mb-6">
+              <label className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">Upload Files</label>
 
               {/* File Upload Zone */}
               <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer relative ${isDragging
+                className={`border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-all cursor-pointer relative ${isDragging
                   ? 'border-primary-400 bg-primary-50'
                   : fileError
                     ? 'border-red-300 bg-red-50'
@@ -566,12 +566,12 @@ const UploadProjectForm = ({
 
                 {formData.files.length > 0 ? (
                   // Files Preview List
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 gap-2 sm:gap-4">
                     {formData.files.map((file, index) => (
-                      <div key={index} className="relative bg-gray-50 rounded-lg p-3 flex items-center justify-between group">
-                        <div className="flex items-center space-x-3 overflow-hidden">
+                      <div key={index} className="relative bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between group">
+                        <div className="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
                           {isImage(file) ? (
-                            <div className="relative w-10 h-10 flex-shrink-0">
+                            <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
                               <Image
                                 src={previewUrls[index]}
                                 alt="Preview"
@@ -582,17 +582,17 @@ const UploadProjectForm = ({
                               />
                             </div>
                           ) : isVideo(file) ? (
-                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
-                              <Play size={20} className="text-gray-500" />
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                              <Play size={16} className="text-gray-500 sm:w-5 sm:h-5" />
                             </div>
                           ) : (
-                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
-                              <FileImage size={20} className="text-gray-500" />
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                              <FileImage size={16} className="text-gray-500 sm:w-5 sm:h-5" />
                             </div>
                           )}
                           <div className="min-w-0 text-left">
-                            <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                            <p className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                            <p className="text-[8px] sm:text-xs text-gray-500">{formatFileSize(file.size)}</p>
                           </div>
                         </div>
                         <button
@@ -603,27 +603,27 @@ const UploadProjectForm = ({
                           }}
                           className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                         >
-                          <X size={16} />
+                          <X size={14} className="sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     ))}
-                    <div className="mt-2 text-center">
-                      <p className="text-xs text-primary-600">Click to add more files</p>
+                    <div className="mt-1 sm:mt-2 text-center">
+                      <p className="text-[10px] sm:text-xs text-primary-600">Click to add more files</p>
                     </div>
                   </div>
                 ) : (
                   // Upload Prompt
                   <>
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Upload size={20} className="text-gray-400" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-4">
+                      <Upload size={18} className="text-gray-400 sm:w-5 sm:h-5" />
                     </div>
-                    <p className="text-gray-600 font-medium mb-1">
+                    <p className="text-gray-600 font-medium mb-1 text-xs sm:text-base">
                       {isDragging ? 'Drop your files here' : 'Upload images, videos or PDFs'}
                     </p>
-                    <p className="text-gray-400 text-sm mb-2">
+                    <p className="text-gray-400 text-[10px] sm:text-sm mb-1 sm:mb-2">
                       Drag and drop or click to browse
                     </p>
-                    <p className="text-gray-400 text-xs">
+                    <p className="text-gray-400 text-[8px] sm:text-xs">
                       Max file size: 10MB each
                     </p>
                   </>
@@ -632,20 +632,20 @@ const UploadProjectForm = ({
 
               {/* File Error */}
               {fileError && (
-                <p className="text-red-500 text-sm mt-2 flex items-center">
-                  <X size={16} className="mr-1" />
+                <p className="text-red-500 text-[10px] sm:text-sm mt-2 flex items-center">
+                  <X size={14} className="mr-1 sm:w-4 sm:h-4" />
                   {fileError}
                 </p>
               )}
             </div>
 
             {/* Budget (Optional) */}
-            <div className="mb-6">
-              <label className="block text-gray-900 font-medium mb-2">
+            <div className="mb-5 sm:mb-6">
+              <label className="block text-gray-900 font-medium mb-1.5 sm:mb-2 text-sm sm:text-base">
                 Budget (Optional)
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-semibold">
+                <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] sm:text-xs font-semibold">
                   {currency}
                 </span>
                 <input
@@ -655,7 +655,7 @@ const UploadProjectForm = ({
                   step="0.01"
                   value={formData.budget || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, budget: parseFloat(e.target.value) }))}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                  className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
             </div>
@@ -664,58 +664,55 @@ const UploadProjectForm = ({
 
         {/* Submit Error */}
         {submitError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          <div className="mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs sm:text-sm">
             {submitError}
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-4">
-            {/* Advanced Form Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                if (isAdvanced) {
-                  // Clear advanced fields when hiding
-                  setFormData(prev => ({
-                    ...prev,
-                    subject: '',
-                    topics: [],
-                    budget: undefined,
-                    files: []
-                  }))
-                  setNewTopic('')
-                  setFileError('')
-                  if (previewUrls.length > 0) {
-                    previewUrls.forEach(url => URL.revokeObjectURL(url))
-                    setPreviewUrls([])
-                  }
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = ''
-                  }
+        <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-gray-100 gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              if (isAdvanced) {
+                // Clear advanced fields when hiding
+                setFormData(prev => ({
+                  ...prev,
+                  subject: '',
+                  topics: [],
+                  budget: undefined,
+                  files: []
+                }))
+                setNewTopic('')
+                setFileError('')
+                if (previewUrls.length > 0) {
+                  previewUrls.forEach(url => URL.revokeObjectURL(url))
+                  setPreviewUrls([])
                 }
-                setIsAdvanced(!isAdvanced)
-              }}
-              className="text-primary-600 hover:text-primary-700 text-sm font-medium hover:underline transition-colors flex items-center"
-            >
-              {isAdvanced ? 'Hide Options' : 'Show More Options'}
-            </button>
-          </div>
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = ''
+                }
+              }
+              setIsAdvanced(!isAdvanced)
+            }}
+            className="text-primary-600 hover:text-primary-700 text-xs sm:text-sm font-medium hover:underline transition-colors flex items-center"
+          >
+            {isAdvanced ? 'Hide Options' : 'Show More Options'}
+          </button>
 
-          <div className="flex space-x-3">
+          <div className="flex w-full sm:w-auto space-x-3">
             <button
               type="button"
               onClick={onCancel}
               disabled={isCreating}
-              className="px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors disabled:opacity-50 text-sm sm:text-base"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isCreating}
-              className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {isCreating ? (
                 <>
