@@ -221,9 +221,11 @@ const ChatWindow = () => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
-    // Clear staged files when switching chats
-    stagedFiles.forEach(s => URL.revokeObjectURL(s.preview));
-    setStagedFiles([]);
+    // Clear staged files when switching chats.
+    setStagedFiles((prev) => {
+      prev.forEach((s) => URL.revokeObjectURL(s.preview));
+      return [];
+    });
   }, [selectedChat]);
 
   // Cleanup effect
@@ -615,9 +617,9 @@ const ChatWindow = () => {
                       {msg.meta?.message && (
                         <div className="mt-3 p-3 bg-gray-50/80 rounded-xl border border-gray-100 relative group">
                           <p className="text-xs italic text-gray-600 break-words leading-relaxed">
-                            <span className="text-indigo-600 font-bold mr-1">"</span>
+                            <span className="text-indigo-600 font-bold mr-1">&quot;</span>
                             {msg.meta.message}
-                            <span className="text-indigo-600 font-bold ml-1">"</span>
+                            <span className="text-indigo-600 font-bold ml-1">&quot;</span>
                           </p>
                         </div>
                       )}
