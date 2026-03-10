@@ -5,9 +5,6 @@ const sendEmailVerifyOTP = async (req, user) => {
     // Generate a random 4-digit Number
     const otp = Math.floor(1000 + Math.random() * 9000);
 
-    // Save OTP in Database
-    await new EmailVerificationModel({ userId: user._id, otp: otp }).save();
-
     //OTP Verification Link
     const otpVerifyLink = `${process.env.FRONTEND_HOST}/account/verify-email`;
 
@@ -130,13 +127,15 @@ const sendEmailVerifyOTP = async (req, user) => {
         html: mailBody
     }
 
-     transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error("Error sending email:", error);
-        } else {
-            console.log("Email sent successfully:", info.response);
-        }
-    });
+    try {
+        await transporter.sendMail(mailOptions);
+        // Keep only the latest OTP for this user.
+        await EmailVerificationModel.deleteMany({ userId: user._id });
+        await new EmailVerificationModel({ userId: user._id, otp: otp }).save();
+    } catch (error) {
+        console.error("Error sending email:", error?.message || error);
+        throw new Error("OTP email delivery failed");
+    }
 
     return otp
 
