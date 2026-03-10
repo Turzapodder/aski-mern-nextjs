@@ -1,19 +1,22 @@
 "use client"
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
+import { useDispatch } from 'react-redux';
 import { useLogoutUserMutation } from '@/lib/services/auth';
+import { logout } from '@/lib/features/auth/authSlice';
 
 const UserSidebar = () => {
   const [logoutUser] = useLogoutUserMutation()
   const router = useRouter();
+  const dispatch = useDispatch();
   const handleLogout = async () => {
     try {
-      const response:any = await logoutUser({})
-      if (response.data && response.data.status === "success") {
-        router.push('/')
-      }
+      await logoutUser({})
     } catch (error) {
       console.log(error);
+    } finally {
+      dispatch(logout());
+      router.push('/')
     }
   }
   return (

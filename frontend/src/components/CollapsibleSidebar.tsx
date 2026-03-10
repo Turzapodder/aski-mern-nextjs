@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { CopyMinus, Menu, LogOut } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/lib/hooks'
 import { toggleSidebar } from '@/lib/features/ui/uiSlice'
+import { logout } from '@/lib/features/auth/authSlice'
 
 interface SidebarItem {
   name: string
@@ -42,14 +43,11 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
 
   const handleLogout = async () => {
     try {
-      const response = await logoutUser({})
-      if (response.data && response.data.status === "success") {
-        // Clear any local storage or session data if needed
-        router.push('/')
-      }
+      await logoutUser({})
     } catch (error) {
       console.log(error)
-      // Even if logout fails, redirect to home page
+    } finally {
+      dispatch(logout())
       router.push('/')
     }
   }
