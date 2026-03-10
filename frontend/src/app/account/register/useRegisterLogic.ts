@@ -4,6 +4,7 @@ import { registerSchema } from '@/validation/schemas'
 import { useCreateUserMutation } from "@/lib/services/auth";
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useGetStudentFormQuery, useConvertFormToAssignmentMutation } from '@/lib/services/student'
+import { apiOrigin } from "@/lib/apiConfig";
 
 const initialValues = {
   name: "",
@@ -119,7 +120,7 @@ export const useRegisterLogic = () => {
   const handleGoogleLogin = async () => {
     // Pass the role parameter to the Google auth endpoint
     window.open(
-      `http://localhost:8000/auth/google?role=${userRole}`,
+      `${apiOrigin}/auth/google?role=${userRole}`,
       "_self"
     );
   }

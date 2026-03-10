@@ -5,6 +5,7 @@ const AUTH_PAGES = [
   "/account/login",
   "/account/register",
   "/account/reset-password-link",
+  "/account/reset-password-confirm",
   "/account/verify-email",
 ];
 
@@ -31,7 +32,15 @@ const getUserRoles = (request: NextRequest) => {
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
   const payload = decodeJwtPayload(accessToken || refreshToken);
-  return Array.isArray(payload?.roles) ? payload.roles : [];
+  if (Array.isArray(payload?.roles)) {
+    return payload.roles;
+  }
+
+  const roleFromCookie = normalizeLoginRole(request.cookies.get("user_role")?.value || null);
+  if (!roleFromCookie) return [];
+  if (roleFromCookie === "admin") return ["admin"];
+  if (roleFromCookie === "tutor") return ["tutor"];
+  return ["user"];
 };
 
 const normalizeLoginRole = (value: string | null) => {
@@ -46,6 +55,7 @@ const normalizeLoginRole = (value: string | null) => {
 const isPublicPath = (path: string) => {
   if (path === "/") return true;
   if (AUTH_PAGES.includes(path)) return true;
+  if (path.startsWith("/account/reset-password-confirm/")) return true;
   return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
 };
 
@@ -68,8 +78,7 @@ const redirectToLogin = (
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuth = request.cookies.get("is_auth")?.value === "true";
-  const refreshToken = request.cookies.get("refreshToken")?.value;
-  const isAuthenticated = Boolean(isAuth && refreshToken);
+  const isAuthenticated = Boolean(isAuth);
   const roles = getUserRoles(request);
   const isAdmin = roles.includes("admin");
   const defaultAuthedPath = isAdmin ? "/admin" : "/user/dashboard";

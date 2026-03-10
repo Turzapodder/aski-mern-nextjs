@@ -6,6 +6,8 @@ import { useLoginUserMutation } from "@/lib/services/auth";
 import { useConvertFormToAssignmentMutation } from "@/lib/services/student";
 import { useAppDispatch } from "@/lib/hooks";
 import { setCredentials } from "@/lib/features/auth/authSlice";
+import { apiOrigin } from "@/lib/apiConfig";
+import axiosInstance from "@/lib/axiosInstance";
 
 export type LoginRole = "user" | "tutor" | "admin";
 
@@ -40,6 +42,7 @@ export const useLoginLogic = () => {
   );
   const redirect = searchParams.get("redirect");
   const authError = searchParams.get("error");
+  const oauthStatus = searchParams.get("oauth");
   const authErrorMessage = useMemo(() => {
     if (!authError) return "";
     if (authError === "role_mismatch") {
@@ -71,6 +74,51 @@ export const useLoginLogic = () => {
     }
     setServerErrorMessage("");
   }, [isRoleMissing, authErrorMessage]);
+
+  useEffect(() => {
+    if (oauthStatus !== "success") return;
+
+    const syncOAuthSession = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get("/user/profile");
+        const profile = response?.data?.user;
+        const roles = Array.isArray(profile?.roles) ? profile.roles : [];
+        const role = roles.includes("admin")
+          ? "admin"
+          : roles.includes("tutor")
+          ? "tutor"
+          : "user";
+
+        if (profile) {
+          dispatch(setCredentials({ user: profile, role }));
+        }
+
+        if (role === "admin") {
+          router.replace("/admin");
+          return;
+        }
+
+        if (
+          roles.includes("tutor") &&
+          profile?.onboardingStatus &&
+          profile.onboardingStatus !== "completed" &&
+          profile.onboardingStatus !== "approved"
+        ) {
+          router.replace("/account/tutor-onboarding");
+          return;
+        }
+
+        router.replace("/user/dashboard");
+      } catch {
+        setServerErrorMessage("Google login succeeded but session sync failed. Please login again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    syncOAuthSession();
+  }, [oauthStatus, dispatch, router]);
 
   useEffect(() => {
     if (loginRole === "admin") return;
@@ -169,7 +217,7 @@ export const useLoginLogic = () => {
   const handleGoogleLogin = () => {
     if (!loginRole) return;
     window.open(
-      `http://localhost:8000/auth/google?role=${loginRole}`,
+      `${apiOrigin}/auth/google?role=${loginRole}`,
       "_self"
     );
   };

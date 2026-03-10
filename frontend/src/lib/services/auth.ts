@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { apiBaseUrl } from '../apiConfig'
 
 // Define response types
 interface AuthResponse {
@@ -59,14 +60,9 @@ interface QuizResponse {
   };
 }
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:8000'
-
 export const authApi = createApi({
   reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({ baseUrl: `${apiBaseUrl}/api/user/` }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${apiBaseUrl}/user/` }),
   endpoints: (builder) => ({
     createUser: builder.mutation<AuthResponse, User>({
       query: (user) => ({
