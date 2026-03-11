@@ -1,114 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-// Define interfaces for chat-related data
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  subjects?: string[];
-  isActive?: boolean;
-  roles?: string[];
-}
-
-interface Chat {
-  _id: string;
-  name?: string;
-  description?: string;
-  type: "direct" | "group";
-  participants: User[];
-  assignment?: {
-    _id: string;
-    title?: string;
-    deadline?: string;
-    estimatedCost?: number;
-    budget?: number;
-    description?: string;
-    student?: string;
-  };
-  assignmentTitle?: string;
-  creator: string;
-  avatar?: string;
-  isActive: boolean;
-  lastMessage?: {
-    content: string;
-    sender: User;
-    createdAt: string;
-    type?: "text" | "file" | "image" | "offer";
-    attachments?: {
-      filename: string;
-      originalName: string;
-      mimetype: string;
-      size: number;
-      url: string;
-    }[];
-  };
-  unreadCount?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Message {
-  _id: string;
-  chat: string | { _id?: string };
-  sender: User | string;
-  content?: string;
-  type: "text" | "file" | "image" | "offer";
-  attachments?: {
-    filename: string;
-    originalName: string;
-    mimetype: string;
-    size: number;
-    url: string;
-  }[];
-  meta?: Record<string, any> | null;
-  readBy: {
-    user: string;
-    readAt: Date;
-  }[];
-  isEdited: boolean;
-  isDeleted: boolean;
-  editedAt?: string;
-  deletedAt?: string;
-  replyTo?: string;
-  createdAt: string;
-  updatedAt: string;
-  status?: "sending" | "error";
-  tempId?: string;
-}
-
-interface ChatResponse {
-  status: string;
-  message: string;
-  data?: any;
-}
-
-interface CreateChatRequest {
-  name?: string;
-  description?: string;
-  type: "direct" | "group";
-  participants: string[];
-  tutorId?: string;
-  assignmentId?: string;
-  proposalId?: string;
-}
-
-interface SendMessageRequest {
-  chatId: string;
-  content?: string;
-  type?: "text" | "file" | "image";
-  replyTo?: string;
-}
-
-interface GetMessagesRequest {
-  chatId: string;
-  page?: number;
-  limit?: number;
-}
-
-interface MarkAsReadRequest {
-  chatId: string;
-}
+import type {
+  ChatUser as User,
+  Chat,
+  Message,
+  ChatResponse,
+  CreateChatRequest,
+  SendMessageRequest,
+  GetMessagesRequest,
+  MarkAsReadRequest,
+} from "@/types/chat";
 
 const chatApiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||

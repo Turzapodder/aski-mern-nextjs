@@ -1,12 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { CreateReportPayload } from "@/types/report";
 
-export interface CreateReportPayload {
-  reporterType: "user" | "tutor";
-  reportedType: "assignment" | "tutorProfile" | "userProfile";
-  reportedId: string;
-  reason: string;
-  comments?: string;
-}
+// Re-export for backward compatibility
+export type { CreateReportPayload }
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||

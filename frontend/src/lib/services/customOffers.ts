@@ -1,18 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { CustomOffer } from "@/types/offer";
 
-export interface CustomOffer {
-  _id: string;
-  assignment: string;
-  conversation: string;
-  tutor: string;
-  student: string;
-  proposedBudget: number;
-  proposedDeadline: string;
-  message?: string;
-  status: "pending" | "accepted" | "declined" | "expired";
-  createdAt: string;
-  expiresAt: string;
-}
+// Re-export for backward compatibility
+export type { CustomOffer }
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||

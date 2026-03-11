@@ -1,132 +1,25 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type {
+  StudentProfile,
+  TutorProfile,
+  UserProfile,
+  ProfileUpdatePayload,
+  UploadFilesResponse,
+  ProfileCompletionResponse,
+  TutorPublicProfile,
+  VerifiedTutorsResponse,
+} from "@/types/user";
 
-// Type definitions
-export interface StudentProfile {
-  institutionName?: string;
-  institutionType?: "College" | "University" | "High School" | "Other";
-  department?: string;
-  degree?: string;
-  yearOfStudy?: string;
-  studentID?: string;
-  cgpa?: string;
-  interests?: string[];
-  skills?: string[];
-  guardianContact?: string;
-  documents?: Array<{
-    filename: string;
-    originalName: string;
-    url: string;
-    mimetype: string;
-    size: number;
-  }>;
-}
-
-export interface TutorProfile {
-  professionalTitle?: string;
-  qualification?: string;
-  expertiseSubjects?: string[];
-  skills?: string[];
-  experienceYears?: number;
-  currentInstitution?: string;
-  availableDays?: string[];
-  availableTimeSlots?: Array<string | { day: string; slots: string[] }>;
-  hourlyRate?: number;
-  teachingMode?: "Online" | "Offline" | "Hybrid";
-  achievements?: string;
-  bio?: string;
-  documents?: Array<{
-    filename: string;
-    originalName: string;
-    url: string;
-    mimetype: string;
-    size: number;
-  }>;
-  verificationStatus?: "Pending" | "Verified" | "Rejected";
-}
-
-export interface UserProfile {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  gender?: "Male" | "Female" | "Other";
-  dateOfBirth?: string;
-  country?: string;
-  city?: string;
-  address?: string;
-  about?: string;
-  languages?: string[];
-  profileImage?: string;
-  profileStatus?: boolean;
-  roles: string[];
-  is_verified: boolean;
-  registrationDate: string;
-  lastLogin?: string;
-  studentProfile?: StudentProfile;
-  tutorProfile?: TutorProfile;
-  onboardingStatus?: string;
-  status?: string;
-}
-
-export interface ProfileUpdatePayload {
-  name?: string;
-  phone?: string;
-  gender?: "Male" | "Female" | "Other";
-  dateOfBirth?: string;
-  country?: string;
-  city?: string;
-  address?: string;
-  about?: string;
-  languages?: string[];
-  profileImage?: string;
-  profileStatus?: boolean;
-  studentProfile?: StudentProfile;
-  tutorProfile?: TutorProfile;
-}
-
-export interface UploadFilesResponse {
-  status: string;
-  message: string;
-  files: {
-    profileImage?: {
-      filename: string;
-      originalName: string;
-      url: string;
-      absoluteUrl: string;
-      mimetype: string;
-      size: number;
-    };
-    documents?: Array<{
-      filename: string;
-      originalName: string;
-      url: string;
-      absoluteUrl: string;
-      mimetype: string;
-      size: number;
-    }>;
-  };
-}
-
-export interface ProfileCompletionResponse {
-  status: string;
-  completion: number;
-  profileStatus: boolean;
-}
-
-export interface TutorPublicProfile {
-  status: string;
-  tutor: UserProfile;
-}
-
-export interface VerifiedTutorsResponse {
-  status: string;
-  tutors: UserProfile[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
+// Re-export types for backward compatibility
+export type {
+  StudentProfile,
+  TutorProfile,
+  UserProfile,
+  ProfileUpdatePayload,
+  UploadFilesResponse,
+  ProfileCompletionResponse,
+  TutorPublicProfile,
+  VerifiedTutorsResponse,
 }
 
 /**

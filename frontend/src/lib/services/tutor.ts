@@ -1,51 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-interface TutorApplicationData {
-  personalInfo: {
-    name: string;
-    email: string;
-    phoneNumber: string;
-    university: string;
-    degree: string;
-    gpa: string;
-    country: string;
-  };
-  academicInfo: {
-    subject: string;
-    topics: string[];
-  };
-  quizSummary: {
-    score: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    incorrectAnswers: number;
-    timeSpent: number;
-    topicPerformance: Record<string, any>;
-    answers?: any[];
-  };
-  documents?: {
-    certificate?: File;
-    profilePicture?: File;
-  };
-}
-
-interface TutorResponse {
-  status: string;
-  message: string;
-  data?: any;
-  application?: string;
-}
-
-interface CanApplyResponse {
-  status: string;
-  canApply: boolean;
-  message: string;
-  existingApplication?: {
-    id: string;
-    status: string;
-    createdAt: string;
-  } | null;
-}
+import type { TutorApplicationData, TutorResponse, CanApplyResponse } from "@/types/tutor";
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||
