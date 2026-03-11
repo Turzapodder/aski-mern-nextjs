@@ -3,6 +3,7 @@ import useSWR from "swr"
 import { adminApi } from "@/lib/adminApi"
 import type { AdminLogEntry, DashboardStats } from "@/types/admin"
 import type { ValueType } from "recharts/types/component/DefaultTooltipContent"
+import { actionLabels } from "@/constants/adminActions"
 
 export type Trend = {
   direction: "up" | "down" | "flat"
@@ -19,28 +20,6 @@ const currencyFormatter = new Intl.NumberFormat("en-BD", {
 const numberFormatter = new Intl.NumberFormat("en-BD", {
   maximumFractionDigits: 0,
 })
-
-export const actionLabels: Record<string, string> = {
-  BAN_USER: "Banned user",
-  UNBAN_USER: "Unbanned user",
-  APPROVE_TUTOR: "Approved tutor",
-  REJECT_TUTOR: "Rejected tutor",
-  DEMOTE_TUTOR: "Demoted tutor",
-  DELETE_ASSIGNMENT: "Deleted assignment",
-  FORCE_CANCEL_ASSIGNMENT: "Force-cancelled assignment",
-  PROCESS_WITHDRAWAL: "Processed withdrawal",
-  RESOLVE_DISPUTE_REFUND: "Resolved dispute (refund)",
-  RESOLVE_DISPUTE_RELEASE: "Resolved dispute (release)",
-  RESOLVE_DISPUTE_SPLIT: "Resolved dispute (split)",
-  UPDATE_SETTINGS: "Updated settings",
-  CREATE_QUIZ_QUESTION: "Created quiz question",
-  UPDATE_QUIZ_QUESTION: "Updated quiz question",
-  DELETE_QUIZ_QUESTION: "Deleted quiz question",
-  DUPLICATE_QUIZ_QUESTION: "Duplicated quiz question",
-  PROMOTE_ADMIN: "Granted admin access",
-  UPDATE_ADMIN_ROLE: "Updated admin role",
-  REVOKE_ADMIN: "Revoked admin access",
-}
 
 export const formatCurrency = (value: number) =>
   currencyFormatter.format(Number.isFinite(value) ? value : 0)
