@@ -11,8 +11,6 @@ export const LoginClient = () => {
     loading,
     loginRole,
     isRoleMissing,
-    serverErrorMessage,
-    serverSuccessMessage,
     handleGoogleLogin,
   } = useLoginLogic();
 
@@ -196,17 +194,6 @@ export const LoginClient = () => {
           </div>
         </div>
       </div>
-
-      {serverSuccessMessage && (
-        <div className="fixed bottom-4 right-4 bg-primary-100 border border-primary-400 text-primary-700 px-4 py-3 rounded">
-          {serverSuccessMessage}
-        </div>
-      )}
-      {serverErrorMessage && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-lg">
-          {serverErrorMessage}
-        </div>
-      )}
     </div>
   );
 };
