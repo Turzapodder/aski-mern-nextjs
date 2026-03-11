@@ -14,7 +14,7 @@ import {
 import MultiSelect from "@/components/MultiSelect";
 import Quiz from "@/components/Quiz";
 import { Skeleton } from "@/components/ui/skeleton";
-import { subjectTopics } from "@/lib/constants";
+import { subjectTopics } from "@/constants/subjectTopics";
 import { countries } from "countries-list";
 import {
   useTutorOnboardingLogic,
