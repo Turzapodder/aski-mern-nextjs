@@ -191,11 +191,14 @@ const resolveApiRoot = () => {
     : `${normalizedBaseUrl}/api`;
 };
 
+const assignmentsApiBaseUrl = `${resolveApiRoot()}/assignments`;
+console.log('[assignmentsApi] API base URL:', assignmentsApiBaseUrl);
+
 export const assignmentsApi = createApi({
   reducerPath: 'assignmentsApi',
   tagTypes: ['Assignment', 'Assignments'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${resolveApiRoot()}/assignments`,
+    baseUrl: assignmentsApiBaseUrl,
     credentials: 'include',
   }),
   endpoints: (builder) => ({

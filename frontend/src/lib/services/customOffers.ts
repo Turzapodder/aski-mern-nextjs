@@ -19,10 +19,13 @@ const apiBaseUrl =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000";
 
+const customOffersApiBaseUrl = `${apiBaseUrl}/api/custom-offers`;
+console.log('[customOffersApi] API base URL:', customOffersApiBaseUrl);
+
 export const customOffersApi = createApi({
   reducerPath: "customOffersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${apiBaseUrl}/api/custom-offers`,
+    baseUrl: customOffersApiBaseUrl,
     credentials: "include",
   }),
   tagTypes: ["CustomOffer"],

@@ -115,10 +115,13 @@ const chatApiBaseUrl =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000";
 
+const chatApiServiceBaseUrl = `${chatApiBaseUrl}/api/chat/`;
+console.log('[chatApi] API base URL:', chatApiServiceBaseUrl);
+
 export const chatApi = createApi({
   reducerPath: "chatApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${chatApiBaseUrl}/api/chat/`,
+    baseUrl: chatApiServiceBaseUrl,
     credentials: "include",
   }),
   tagTypes: ["Chat", "Message", "User"],

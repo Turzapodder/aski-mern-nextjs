@@ -1,18 +1,13 @@
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
-const configuredApiUrl = trimTrailingSlash(
+const rawApiUrl =
   process.env.NEXT_PUBLIC_API_URL ||
-    ""
-);
+  "http://localhost:8000";
 
-const developmentApiOrigin = "http://localhost:8000";
+// Direct backend origin — used only for full-page OAuth redirects (e.g. Google auth)
+export const apiOrigin = trimTrailingSlash(rawApiUrl.replace(/\/api\/?$/i, ""));
 
-export const apiOrigin = configuredApiUrl
-  ? trimTrailingSlash(configuredApiUrl.replace(/\/api\/?$/i, ""))
-  : developmentApiOrigin;
-
-export const apiBaseUrl = configuredApiUrl
-  ? /\/api\/?$/i.test(configuredApiUrl)
-    ? configuredApiUrl
-    : `${apiOrigin}/api`
-  : `${developmentApiOrigin}/api`;
+// Relative base URL for all XHR/fetch API calls.
+// In production this routes through the Next.js rewrite proxy (/api/* → Render backend),
+// making cookies same-site (Vercel domain) and eliminating cross-browser cookie-blocking.
+export const apiBaseUrl = "/api";

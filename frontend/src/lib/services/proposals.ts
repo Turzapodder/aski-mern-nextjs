@@ -132,12 +132,15 @@ const resolveApiRoot = () => {
     : `${normalizedBaseUrl}/api`;
 };
 
+const proposalsApiBaseUrl = `${resolveApiRoot()}/proposals`;
+console.log('[proposalsApi] API base URL:', proposalsApiBaseUrl);
+
 // Create the proposals API
 export const proposalsApi = createApi({
   reducerPath: 'proposalsApi',
   tagTypes: ['Proposal', 'Proposals'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${resolveApiRoot()}/proposals`,
+    baseUrl: proposalsApiBaseUrl,
     credentials: 'include',
   }),
   endpoints: (builder) => ({

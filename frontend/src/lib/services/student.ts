@@ -23,10 +23,13 @@ const apiBaseUrl =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000";
 
+const studentApiBaseUrl = `${apiBaseUrl}/api/student/`;
+console.log('[studentApi] API base URL:', studentApiBaseUrl);
+
 export const studentApi = createApi({
   reducerPath: 'studentApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: `${apiBaseUrl}/api/student/`,
+    baseUrl: studentApiBaseUrl,
     credentials: 'include'
   }),
   tagTypes: ['StudentForm'],
