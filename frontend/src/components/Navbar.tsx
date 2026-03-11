@@ -1,15 +1,10 @@
 'use client'
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
+import { useAppSelector } from '@/lib/hooks';
 
 const Navbar = () => {
-  const [isAuth, setIsAuth] = useState<any>(null);
+  const isAuth = useAppSelector((state) => state.auth.isAuthenticated);
   
-  useEffect(() => {
-    const authCookie = Cookies.get('is_auth')
-    setIsAuth(authCookie)
-  }, [])
   
   return (
     <>

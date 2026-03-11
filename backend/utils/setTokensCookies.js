@@ -1,6 +1,6 @@
 import { getCookieOptions } from "./cookieOptions.js";
 
-const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, newRefreshTokenExp, user = null) => {
+const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, newRefreshTokenExp) => {
 
     const accessTokenMaxAge = (newAccessTokenExp - Math.floor(Date.now() / 1000)) * 1000;
     const refreshTokenMaxAge = (newRefreshTokenExp - Math.floor(Date.now() / 1000)) * 1000;
@@ -16,16 +16,6 @@ const setTokensCookies = (res, accessToken, refreshToken, newAccessTokenExp, new
     
     // Set Cookies for Refresh Token
     res.cookie('refreshToken', refreshToken, getCookieOptions(refreshTokenMaxAge, { httpOnly: true }));
-
-    // Non-httpOnly auth marker cookies used by frontend middleware/UI state.
-    const role = user?.roles?.includes('admin')
-        ? 'admin'
-        : user?.roles?.includes('tutor')
-        ? 'tutor'
-        : 'user';
-
-    res.cookie('is_auth', 'true', getCookieOptions(refreshTokenMaxAge, { httpOnly: false }));
-    res.cookie('user_role', role, getCookieOptions(refreshTokenMaxAge, { httpOnly: false }));
 }
 
-export default setTokensCookies;
+export default setTokensCookies;

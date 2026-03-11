@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, DollarSign, Clock, User, BookOpen } from 'lucide-react';
 import { useCreateProposalMutation } from '@/lib/services/proposals';
-import { toast } from 'sonner';
 import { Assignment } from '@/lib/services/assignments';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '@/lib/store';
@@ -125,7 +124,6 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
 
       await createProposal(submitData).unwrap();
       dispatch(chatApi.util.invalidateTags(['Chat']));
-      toast.success('Proposal sent');
       onClose();
 
       // Reset form
@@ -138,12 +136,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
       });
       setAttachments([]);
       setErrors({});
-    } catch (error: any) {
-      const message =
-        error?.data?.message ||
-        error?.message ||
-        'Unable to send proposal. Please try again.';
-      toast.error(message);
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 

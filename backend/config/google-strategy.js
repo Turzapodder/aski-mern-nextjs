@@ -59,8 +59,6 @@ passport.use(
           refreshTokenExp,
         } = await generateTokens(user);
 
-        console.log("✅ Google Auth - Tokens generated for user:", user.email);
-        console.log("✅ Google Auth - Refresh token saved to DB");
 
         return done(null, {
           user,

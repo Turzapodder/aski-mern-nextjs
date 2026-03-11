@@ -2,11 +2,11 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from "next/image"
 import { X, Upload, FileImage, Play, Plus } from 'lucide-react'
-import { useGenerateSessionIdQuery, useSaveStudentFormMutation } from '@/lib/services/student'
+import { useGenerateSessionIdQuery } from '@/lib/services/student'
 import { useCreateAssignmentMutation } from '@/lib/services/assignments'
 import { apiOrigin } from '@/lib/apiConfig'
 import { useRouter } from 'next/navigation'
-import Cookies from 'js-cookie'
+import { useAppSelector } from '@/lib/hooks'
 import { Skeleton } from '@/components/ui/skeleton'
 import useCurrency from '@/lib/hooks/useCurrency'
 
@@ -81,10 +81,10 @@ const UploadProjectForm = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
 
   // API Mutations
   const { data: sessionData } = useGenerateSessionIdQuery()
-  const [saveStudentForm] = useSaveStudentFormMutation()
   const [createAssignment, { isLoading: isCreating }] = useCreateAssignmentMutation()
 
   // Set session ID when received
@@ -195,10 +195,10 @@ const UploadProjectForm = ({
     e.preventDefault()
     setSubmitError('')
 
-    // Check if user is logged in
-    const isAuth = Cookies.get('is_auth')
+    // Check if user is logged in via Redux state
+    const isAuth = isAuthenticated;
 
-    if (isAuth === 'true') {
+    if (isAuth) {
       // User is logged in, proceed normally
       if (onSubmit) {
         // If onSubmit is provided, use it (override behavior)

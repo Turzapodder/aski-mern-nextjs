@@ -72,7 +72,6 @@ const AccessTokenAutoRefresh = async (req, res, next) => {
             // Clear cookies on error
             res.clearCookie('accessToken', getCookieClearOptions({ httpOnly: true }));
             res.clearCookie('refreshToken', getCookieClearOptions({ httpOnly: true }));
-            res.clearCookie('is_auth', getCookieClearOptions({ httpOnly: false }));
 
             const refreshToken = req.cookies.refreshToken;
             if (refreshToken && error.message) {

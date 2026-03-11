@@ -83,7 +83,8 @@ export const authApi = createApi({
         body: data,
         headers: {
           'Content-type': 'application/json'
-        }
+        },
+        credentials: 'include'
       })
     }),
     loginUser: builder.mutation<AuthResponse, LoginPayload>({
@@ -100,6 +101,13 @@ export const authApi = createApi({
     getUser: builder.query<any, void>({
       query: () => ({
         url: `profile`,
+        method: 'GET',
+        credentials: 'include'
+      })
+    }),
+    getMe: builder.query<any, void>({
+      query: () => ({
+        url: 'me',
         method: 'GET',
         credentials: 'include'
       })
@@ -176,6 +184,7 @@ export const {
   useVerifyEmailMutation,
   useLoginUserMutation,
   useGetUserQuery,
+  useGetMeQuery,
   useLogoutUserMutation,
   useResetPasswordLinkMutation,
   useResetPasswordMutation,
