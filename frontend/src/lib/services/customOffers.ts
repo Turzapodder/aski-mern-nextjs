@@ -20,7 +20,6 @@ const apiBaseUrl =
   "http://localhost:8000";
 
 const customOffersApiBaseUrl = `${apiBaseUrl}/api/custom-offers`;
-console.log('[customOffersApi] API base URL:', customOffersApiBaseUrl);
 
 export const customOffersApi = createApi({
   reducerPath: "customOffersApi",

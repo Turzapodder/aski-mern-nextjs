@@ -116,7 +116,6 @@ const chatApiBaseUrl =
   "http://localhost:8000";
 
 const chatApiServiceBaseUrl = `${chatApiBaseUrl}/api/chat/`;
-console.log('[chatApi] API base URL:', chatApiServiceBaseUrl);
 
 export const chatApi = createApi({
   reducerPath: "chatApi",

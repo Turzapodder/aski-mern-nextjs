@@ -133,7 +133,6 @@ const resolveApiRoot = () => {
 };
 
 const proposalsApiBaseUrl = `${resolveApiRoot()}/proposals`;
-console.log('[proposalsApi] API base URL:', proposalsApiBaseUrl);
 
 // Create the proposals API
 export const proposalsApi = createApi({
