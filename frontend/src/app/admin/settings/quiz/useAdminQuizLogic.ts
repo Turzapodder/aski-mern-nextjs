@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { adminApi, QuizQuestion } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { QuizQuestion } from "@/types/admin"
 
 export type EditorState = {
   question: string

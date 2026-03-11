@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { adminApi, AdminUserSummary } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { AdminUserSummary } from "@/types/admin"
 
 export const roleLabel = (roles: string[]) => {
   if (roles.includes("admin")) return "Admin"

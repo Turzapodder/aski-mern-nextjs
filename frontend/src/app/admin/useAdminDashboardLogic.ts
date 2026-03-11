@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useCallback } from "react"
 import useSWR from "swr"
-import { adminApi, AdminLogEntry, DashboardStats } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import type { AdminLogEntry, DashboardStats } from "@/types/admin"
 import type { ValueType } from "recharts/types/component/DefaultTooltipContent"
 
 export type Trend = {

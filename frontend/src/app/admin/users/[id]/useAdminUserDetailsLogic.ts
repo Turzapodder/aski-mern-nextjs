@@ -2,7 +2,8 @@ import { useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { adminApi, AdminLogEntry } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { AdminLogEntry } from "@/types/admin"
 
 export const statusTone = (status?: string) => {
   switch (status) {

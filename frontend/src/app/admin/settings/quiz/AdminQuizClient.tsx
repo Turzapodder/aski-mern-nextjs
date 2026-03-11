@@ -2,7 +2,7 @@
 
 import { Copy, Pencil, Plus, Trash2 } from "lucide-react"
 
-import { QuizQuestion } from "@/lib/adminApi"
+import { QuizQuestion } from "@/types/admin"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"

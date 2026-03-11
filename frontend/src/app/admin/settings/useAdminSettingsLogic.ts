@@ -2,7 +2,8 @@ import { useEffect, useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
 
-import { adminApi, PlatformSettings } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { PlatformSettings } from "@/types/admin"
 
 export type SettingsForm = Omit<PlatformSettings, "platformFeeRate" | "minTransactionFee"> & {
   platformFeeRate?: string | number
