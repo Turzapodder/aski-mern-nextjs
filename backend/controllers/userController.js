@@ -192,7 +192,26 @@ class UserController {
 
             // Delete email verification data from database
             await EmailVerificationModel.deleteMany({ userId: existingUser._id });
-            res.status(200).json({ status: "Success", message: "Email Verified" });
+
+            // Auto-login: generate tokens and set cookies
+            const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } = await generateTokens(existingUser);
+            setTokensCookies(res, accessToken, refreshToken, accessTokenExp, refreshTokenExp);
+
+            res.status(200).json({
+                status: "Success",
+                message: "Email Verified",
+                user: {
+                    id: existingUser._id,
+                    email: existingUser.email,
+                    name: existingUser.name,
+                    roles: existingUser.roles,
+                    onboardingStatus: existingUser.onboardingStatus,
+                    status: existingUser.status,
+                },
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                access_token_exp: accessTokenExp,
+            });
 
 
         } catch (error) {
@@ -274,7 +293,6 @@ class UserController {
                 access_token: accessToken,
                 refresh_token: refreshToken,
                 access_token_exp: accessTokenExp,
-                is_auth: true
             })
 
         } catch (error) {
@@ -343,18 +361,18 @@ class UserController {
             const {email} = req.body;
             //check if email is provided
             if(!email){
-                res.status(400).json({status:"failed", message:"Email Field is Required!"});
+                return res.status(400).json({status:"failed", message:"Email Field is Required!"});
             }
             
             //find user by email from database
             const user = await UserModel.findOne({email});
             if(!user){
-                res.status(404).json({status:"failed", message:"Email Doesn't Exist!"});
+                return res.status(404).json({status:"failed", message:"Email Doesn't Exist!"});
             }
 
             // Generate token for password reset
             const secret = user._id + process.env.JWT_ACCESS_TOKEN_SECRET_KEY;
-            const token = jwt.sign({ userID: user._id }, secret, { expiresIn: '365d' });
+            const token = jwt.sign({ userID: user._id }, secret, { expiresIn: '1h' });
 
             const resetLink = `${process.env.FRONTEND_HOST}/account/reset-password-confirm/${user._id}/${token}`;
 
@@ -561,14 +579,28 @@ class UserController {
             // clear access token and refresh token from cookies
             res.clearCookie('accessToken', getCookieClearOptions({ httpOnly: true }));
             res.clearCookie('refreshToken', getCookieClearOptions({ httpOnly: true }));
-            res.clearCookie('is_auth', getCookieClearOptions({ httpOnly: false }));
-            res.clearCookie('user_role', getCookieClearOptions({ httpOnly: false }));
             
             res.status(200).json({status: "success", message: "Logout Successful"});
         } catch (error) {
             console.error(error);
             res.status(500).json({status: "failed", message: "Unable to logout, Try again later!"});
         }
+    }
+
+    // Lightweight auth check — returns user info if authenticated
+    static userMe = async (req, res) => {
+        res.status(200).json({
+            status: "success",
+            user: {
+                id: req.user._id,
+                email: req.user.email,
+                name: req.user.name,
+                roles: req.user.roles,
+                profileImage: req.user.profileImage,
+                onboardingStatus: req.user.onboardingStatus,
+                status: req.user.status,
+            },
+        });
     }
 
 }

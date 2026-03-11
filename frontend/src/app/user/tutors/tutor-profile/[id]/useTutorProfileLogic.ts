@@ -85,8 +85,8 @@ export const useTutorProfileLogic = () => {
       if (response.status === "success") {
         router.push("/user/messages");
       }
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to start conversation.");
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 

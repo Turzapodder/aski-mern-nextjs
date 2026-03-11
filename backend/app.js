@@ -543,8 +543,7 @@ const startServer = async () => {
             accessToken,
             refreshToken,
             accessTokenExp,
-            refreshTokenExp,
-            user
+            refreshTokenExp
           );
 
           const roleHint = user.roles?.includes("admin")

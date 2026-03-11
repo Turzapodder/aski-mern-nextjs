@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-
 import { useCreateReportMutation } from "@/lib/services/reports"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -44,12 +43,11 @@ const ReportModal = ({ isOpen, onClose, reporterType, reportedType, reportedId }
         reason,
         comments: comments || undefined,
       }).unwrap()
-      toast.success("Report submitted")
       setReason("")
       setComments("")
       onClose()
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to submit report")
+    } catch {
+      // Error toast handled by centralized middleware
     }
   }
 

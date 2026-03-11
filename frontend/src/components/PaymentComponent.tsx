@@ -42,13 +42,12 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
         return;
       }
 
-      toast.success("Redirecting to UddoktaPay...");
       if (onPaymentComplete) {
         onPaymentComplete(assignment);
       }
       window.location.href = checkoutUrl;
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to initialize payment");
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 

@@ -3,6 +3,8 @@ import { verifyEmailSchema } from '@/validation/schemas';
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVerifyEmailMutation } from "@/lib/services/auth";
+import { useAppDispatch } from "@/lib/hooks";
+import { setCredentials } from "@/lib/features/auth/authSlice";
 
 const initialValues = {
   email: "",
@@ -24,6 +26,7 @@ export const useVerifyEmailLogic = () => {
   const [serverSuccessMessage, setServerSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false);
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const [verifyEmailMutation] = useVerifyEmailMutation()
   
   const formik = useFormik({
@@ -37,8 +40,40 @@ export const useVerifyEmailLogic = () => {
           setServerSuccessMessage(response.data.message)
           setServerErrorMessage('')
           action.resetForm()
+
+          // Auto-login: the backend now returns user data + tokens on verify
+          const user = response.data.user;
+          if (user) {
+            const role = user.roles?.includes("admin")
+              ? "admin"
+              : user.roles?.includes("tutor")
+              ? "tutor"
+              : "user";
+            dispatch(setCredentials({ user, role }));
+
+            // Redirect based on role
+            setTimeout(() => {
+              if (role === "admin") {
+                router.push("/admin");
+                return;
+              }
+              if (
+                role === "tutor" &&
+                user.onboardingStatus &&
+                user.onboardingStatus !== "completed" &&
+                user.onboardingStatus !== "approved"
+              ) {
+                router.push("/account/tutor-onboarding");
+                return;
+              }
+              router.push("/user/dashboard");
+            }, 500);
+          } else {
+            // Fallback: redirect to login if no user data
+            router.push(loginHref);
+          }
           setLoading(false);
-          router.push(loginHref)
+          return;
         }
         if (response.error && response.error.data.status === "failed") {
           setServerErrorMessage(response.error.data.message)
@@ -89,3 +124,4 @@ export const useVerifyEmailLogic = () => {
     handleKeyDown
   }
 }
+

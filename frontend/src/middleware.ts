@@ -35,21 +35,7 @@ const getUserRoles = (request: NextRequest) => {
   if (Array.isArray(payload?.roles)) {
     return payload.roles;
   }
-
-  const roleFromCookie = normalizeLoginRole(request.cookies.get("user_role")?.value || null);
-  if (!roleFromCookie) return [];
-  if (roleFromCookie === "admin") return ["admin"];
-  if (roleFromCookie === "tutor") return ["tutor"];
-  return ["user"];
-};
-
-const normalizeLoginRole = (value: string | null) => {
-  if (!value) return null;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "student" || normalized === "user") return "user";
-  if (normalized === "tutor") return "tutor";
-  if (normalized === "admin") return "admin";
-  return null;
+  return [];
 };
 
 const isPublicPath = (path: string) => {
@@ -77,8 +63,12 @@ const redirectToLogin = (
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isAuth = request.cookies.get("is_auth")?.value === "true";
-  const isAuthenticated = Boolean(isAuth);
+
+  // Derive auth state from httpOnly token cookies (tamper-proof)
+  const hasAccessToken = !!request.cookies.get("accessToken")?.value;
+  const hasRefreshToken = !!request.cookies.get("refreshToken")?.value;
+  const isAuthenticated = hasAccessToken || hasRefreshToken;
+
   const roles = getUserRoles(request);
   const isAdmin = roles.includes("admin");
   const defaultAuthedPath = isAdmin ? "/admin" : "/user/dashboard";
@@ -108,11 +98,12 @@ export function middleware(request: NextRequest) {
   }
 
   if (path === "/account/login") {
-    const requestedRole = normalizeLoginRole(request.nextUrl.searchParams.get("role"));
-    if (requestedRole === "admin" && !isAdmin) {
+    const requestedRole = request.nextUrl.searchParams.get("role")?.trim().toLowerCase() || null;
+    const normalizedRole = requestedRole === "admin" ? "admin" : requestedRole === "tutor" ? "tutor" : requestedRole === "user" || requestedRole === "student" ? "user" : null;
+    if (normalizedRole === "admin" && !isAdmin) {
       return NextResponse.redirect(new URL("/user/dashboard", request.url));
     }
-    if (requestedRole && requestedRole !== "admin" && isAdmin) {
+    if (normalizedRole && normalizedRole !== "admin" && isAdmin) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
     return NextResponse.redirect(new URL(defaultAuthedPath, request.url));
@@ -130,3 +121,4 @@ export const config = {
     "/((?!api|_next/static|_next/image|favicon.ico|assets|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).*)",
   ],
 };
+

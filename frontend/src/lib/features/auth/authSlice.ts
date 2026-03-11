@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import Cookies from 'js-cookie';
 
 interface UserProfile {
   _id: string;
@@ -18,11 +17,10 @@ interface AuthState {
   user: UserProfile | null;
 }
 
-// Initialize state from cookies if available, otherwise default to false/null.
-// We do not load `user` from cookies as it can be large/stale and is fetched separately.
+// Start unauthenticated — the app hydrates via getMe query on mount
 const initialState: AuthState = {
-  isAuthenticated: Cookies.get('is_auth') === 'true',
-  userRole: Cookies.get('user_role') || null,
+  isAuthenticated: false,
+  userRole: null,
   user: null,
 };
 
@@ -37,18 +35,11 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.userRole = action.payload.role;
       state.isAuthenticated = true;
-      Cookies.set('is_auth', 'true', { sameSite: 'lax' });
-      Cookies.set('user_role', action.payload.role, { sameSite: 'lax' });
     },
     logout: (state) => {
       state.user = null;
       state.userRole = null;
       state.isAuthenticated = false;
-      // Also clear cookies when explicitly dispatched
-      Cookies.remove('is_auth');
-      Cookies.remove('user_role');
-      Cookies.remove('accessToken');
-      Cookies.remove('refreshToken');
     },
     setUserProfile: (state, action: PayloadAction<UserProfile>) => {
       state.user = action.payload;
@@ -58,3 +49,4 @@ const authSlice = createSlice({
 
 export const { setCredentials, logout, setUserProfile } = authSlice.actions;
 export default authSlice.reducer;
+

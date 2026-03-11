@@ -89,12 +89,11 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
         rating,
         comments: comments.trim() || undefined,
       }).unwrap();
-      toast.success("Feedback submitted. Assignment marked as complete.");
       if (result?.data && onCompleted) {
         onCompleted(result.data);
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to submit feedback");
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 
@@ -108,10 +107,9 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
         id: assignment._id,
         note: revisionNote.trim(),
       }).unwrap();
-      toast.success("Revision requested.");
       setRevisionNote("");
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Unable to request revision");
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 

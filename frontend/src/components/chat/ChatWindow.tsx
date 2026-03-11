@@ -359,11 +359,10 @@ const ChatWindow = () => {
     }
     try {
       await editMessage({ messageId: editingMessageId, content }).unwrap();
-      toast.success('Message updated');
       cancelEditMessage();
       refreshMessages();
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Unable to edit message');
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 
@@ -375,11 +374,10 @@ const ChatWindow = () => {
     if (!messageToDelete?._id) return;
     try {
       await deleteMessage({ messageId: messageToDelete._id }).unwrap();
-      toast.success('Message deleted');
       setMessageToDelete(null);
       refreshMessages();
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Unable to delete message');
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 
@@ -387,12 +385,11 @@ const ChatWindow = () => {
     if (!selectedChat?._id) return;
     try {
       await leaveChat(selectedChat._id).unwrap();
-      toast.success('Chat removed');
       clearSelectedChat();
       refreshChats();
       setChatDeleteOpen(false);
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Unable to delete chat');
+    } catch {
+      // Error toast handled by centralized middleware
     }
   };
 

@@ -94,6 +94,14 @@ export const LoginClient = () => {
                     {errors.password}
                   </div>
                 )}
+                <div className="flex justify-end mt-2">
+                  <Link
+                    href="/account/reset-password-link"
+                    className="text-sm text-gray-500 hover:text-black transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <button

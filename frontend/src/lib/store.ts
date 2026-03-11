@@ -14,6 +14,7 @@ import { notificationsApi } from './services/notifications'
 
 import authReducer from './features/auth/authSlice'
 import uiReducer from './features/ui/uiSlice'
+import { rtkToastMiddleware } from './middleware/rtkToastMiddleware'
 
 export const store = configureStore({
   reducer: {
@@ -33,6 +34,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
+      rtkToastMiddleware,
       authApi.middleware, 
       chatApi.middleware,
       tutorApi.middleware,

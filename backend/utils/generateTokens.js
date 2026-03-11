@@ -19,24 +19,16 @@ const generateTokens = async (user) => {
     // Remove old tokens
     await userRefreshTokenModel.deleteMany({ userId: user._id });
 
-    // ✅ Save new token and verify
-    const savedToken = await new userRefreshTokenModel({
+    // Save new refresh token
+    await new userRefreshTokenModel({
       userId: user._id,
       token: refreshToken,
     }).save();
 
-    console.log("✅ Refresh token saved:", !!savedToken._id);
-
-    return Promise.resolve({
-      accessToken,
-      refreshToken,
-      accessTokenExp,
-      refreshTokenExp,
-    });
+    return { accessToken, refreshToken, accessTokenExp, refreshTokenExp };
   } catch (error) {
-    console.error("❌ Token generation failed:", error);
-    return Promise.reject(error);
+    throw error;
   }
 };
 
-export default generateTokens;
+export default generateTokens;
