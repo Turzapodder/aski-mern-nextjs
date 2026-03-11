@@ -53,7 +53,6 @@ const apiBaseUrl =
   "http://localhost:8000";
 
 const tutorApiBaseUrl = `${apiBaseUrl}/api/tutor/`;
-console.log('[tutorApi] API base URL:', tutorApiBaseUrl);
 
 export const tutorApi = createApi({
   reducerPath: "tutorApi",

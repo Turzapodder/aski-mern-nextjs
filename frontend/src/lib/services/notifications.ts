@@ -29,7 +29,6 @@ const apiBaseUrl =
   "http://localhost:8000";
 
 const notificationsApiBaseUrl = `${apiBaseUrl}/api/notifications`;
-console.log('[notificationsApi] API base URL:', notificationsApiBaseUrl);
 
 export const notificationsApi = createApi({
   reducerPath: "notificationsApi",

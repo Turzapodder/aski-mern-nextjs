@@ -94,7 +94,6 @@ const apiBaseUrl =
   "http://localhost:8000";
 
 const submissionsApiBaseUrl = `${apiBaseUrl}/api/submissions`;
-console.log('[submissionsApi] API base URL:', submissionsApiBaseUrl);
 
 export const submissionsApi = createApi({
   reducerPath: "submissionsApi",

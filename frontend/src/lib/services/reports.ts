@@ -14,7 +14,6 @@ const apiBaseUrl =
   "http://localhost:8000";
 
 const reportsApiBaseUrl = `${apiBaseUrl}/api/reports`;
-console.log('[reportsApi] API base URL:', reportsApiBaseUrl);
 
 export const reportsApi = createApi({
   reducerPath: "reportsApi",

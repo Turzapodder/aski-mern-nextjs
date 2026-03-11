@@ -192,7 +192,6 @@ const resolveApiRoot = () => {
 };
 
 const assignmentsApiBaseUrl = `${resolveApiRoot()}/assignments`;
-console.log('[assignmentsApi] API base URL:', assignmentsApiBaseUrl);
 
 export const assignmentsApi = createApi({
   reducerPath: 'assignmentsApi',

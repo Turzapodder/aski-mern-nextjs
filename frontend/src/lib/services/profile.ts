@@ -138,7 +138,6 @@ const profileApiBaseUrl = `${
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000"
 }/api/profile`;
-console.log('[profileApi] API base URL:', profileApiBaseUrl);
 
 export const profileApi = createApi({
   reducerPath: "profileApi",
