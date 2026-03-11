@@ -1,66 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { apiBaseUrl } from '../apiConfig'
+import type {
+  AuthResponse,
+  RegisterUser as User,
+  LoginPayload,
+  PasswordReset,
+  ChangePassword,
+} from '@/types/user'
+import type { QuizRequest, QuizResponse } from '@/types/quiz'
 
 const authApiBaseUrl = `${apiBaseUrl}/user/`
-
-// Define response types
-interface AuthResponse {
-  status: string;
-  message: string;
-  data?: any;
-}
-
-// Fix User interface
-interface User {
-  email: string;
-  password: string;
-  name?: string;
-  tc?: boolean;
-}
-
-type LoginRole = 'user' | 'tutor' | 'admin';
-
-interface LoginPayload {
-  email: string;
-  password: string;
-  role: LoginRole;
-}
-
-interface PasswordReset {
-  id: string;
-  token: string;
-  password: string;
-  password_confirmation: string;
-}
-
-interface ChangePassword {
-  password: string;
-  password_confirmation: string;
-}
-
-// Define a service using a base URL and expected endpoints
-interface QuizRequest {
-  subject: string;
-  topics: string[];
-  difficulty?: string;
-  questionCount?: number;
-}
-
-interface QuizResponse {
-  success: boolean;
-  data: {
-    subject: string;
-    topics: string[];
-    questions: {
-      id: number;
-      question: string;
-      options: string[];
-      correctAnswer: number;
-      explanation: string;
-      topic: string;
-    }[];
-  };
-}
 
 export const authApi = createApi({
   reducerPath: 'authApi',

@@ -1,27 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { Notification, NotificationsResponse } from "@/types/notification";
 
-export interface Notification {
-  _id: string;
-  type: string;
-  title: string;
-  message: string;
-  link?: string;
-  isRead: boolean;
-  createdAt: string;
-}
-
-export interface NotificationsResponse {
-  status: string;
-  data: {
-    notifications: Notification[];
-    unreadCount: number;
-    pagination?: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-    };
-  };
-}
+// Re-export for backward compatibility
+export type { Notification, NotificationsResponse }
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||
