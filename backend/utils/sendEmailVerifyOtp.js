@@ -123,7 +123,7 @@ const sendEmailVerifyOTP = async (req, user) => {
     const mailOptions = {
         from: process.env.EMAIL_FROM,
         to: user.email,
-        subject: "OTP - Verify your account",
+        subject: "(ASKI) OTP - Verify your account",
         html: mailBody
     }
 
