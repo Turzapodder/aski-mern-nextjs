@@ -1,8 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { apiOrigin } from '../apiConfig'
+import { apiBaseUrl } from '../apiConfig'
 
-const authApiBaseUrl = `${apiOrigin}/user/`
-console.log('[authApi] API base URL:', authApiBaseUrl)
+const authApiBaseUrl = `${apiBaseUrl}/user/`
 
 // Define response types
 interface AuthResponse {
