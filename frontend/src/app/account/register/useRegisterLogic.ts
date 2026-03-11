@@ -21,6 +21,7 @@ export const useRegisterLogic = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState("user");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const router = useRouter()
   const searchParams = useSearchParams();
   const [pendingSessionId, setPendingSessionId] = useState<string>('')
@@ -132,6 +133,8 @@ export const useRegisterLogic = () => {
     showPassword,
     setShowPassword,
     showConfirmPassword,
+    termsAccepted,
+    setTermsAccepted,
     setShowConfirmPassword,
     loading,
     userRole,

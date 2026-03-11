@@ -12,6 +12,8 @@ export const RegisterClient = () => {
     serverSuccessMessage,
     showPassword,
     setShowPassword,
+    termsAccepted,
+    setTermsAccepted,
     showConfirmPassword,
     setShowConfirmPassword,
     loading,
@@ -320,6 +322,8 @@ export const RegisterClient = () => {
               <input
                 type="checkbox"
                 id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
               />
               <label
@@ -344,7 +348,7 @@ export const RegisterClient = () => {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsAccepted}
               className="w-full bg-primary-500 text-white py-2 px-4 rounded-[15px] hover:bg-black hover:text-white transition duration-200 disabled:bg-gray-400"
             >
               {loading ? "Creating Account..." : "Register"}
