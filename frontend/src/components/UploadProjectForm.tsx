@@ -4,6 +4,7 @@ import Image from "next/image"
 import { X, Upload, FileImage, Play, Plus } from 'lucide-react'
 import { useGenerateSessionIdQuery, useSaveStudentFormMutation } from '@/lib/services/student'
 import { useCreateAssignmentMutation } from '@/lib/services/assignments'
+import { apiBaseUrl } from '@/lib/apiConfig'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -325,7 +326,7 @@ const UploadProjectForm = ({
       }
 
       // Save assignment data to backend
-      const response = await fetch('http://localhost:8000/api/assignments', {
+      const response = await fetch(`${apiBaseUrl}/assignments`, {
         method: 'POST',
         body: submitFormData
       })
