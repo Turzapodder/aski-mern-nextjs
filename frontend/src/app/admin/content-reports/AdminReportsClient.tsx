@@ -1,7 +1,6 @@
 "use client"
 
 import { MoreHorizontal } from "lucide-react"
-import { ReportRecord } from "@/lib/adminApi"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -10,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import AdminPagination from "@/components/admin/AdminPagination"
 import { getReportedLabel, useAdminReportsLogic } from "./useAdminReportsLogic"
+import { ReportRecord } from "@/types/admin"
 
 export const AdminReportsClient = () => {
   const {

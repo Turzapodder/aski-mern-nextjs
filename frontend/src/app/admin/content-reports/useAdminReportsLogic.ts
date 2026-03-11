@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { adminApi, ReportRecord } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { ReportRecord } from "@/types/admin"
 
 export const getEntityLabel = (value: unknown, fallback: string) =>
   typeof value === "string" && value.trim().length > 0 ? value : fallback

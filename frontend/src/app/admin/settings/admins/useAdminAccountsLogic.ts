@@ -1,7 +1,8 @@
 import { useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { adminApi, AdminAccount } from "@/lib/adminApi"
+import { adminApi } from "@/lib/adminApi"
+import { AdminAccount } from "@/types/admin"
 
 export const useAdminAccountsLogic = () => {
   const { data, error, isLoading, mutate } = useSWR("admin-accounts", () => adminApi.admins.getAll())
