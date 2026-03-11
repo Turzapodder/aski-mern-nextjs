@@ -47,12 +47,15 @@ interface CanApplyResponse {
   } | null;
 }
 
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:8000";
+
 export const tutorApi = createApi({
   reducerPath: "tutorApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-    }/api/tutor/`,
+    baseUrl: `${apiBaseUrl}/api/tutor/`,
     credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       // Add any additional headers if needed

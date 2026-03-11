@@ -18,10 +18,15 @@ interface StudentResponse {
   formData?: StudentFormData;
 }
 
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:8000";
+
 export const studentApi = createApi({
   reducerPath: 'studentApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8000/api/student/',
+    baseUrl: `${apiBaseUrl}/api/student/`,
     credentials: 'include'
   }),
   tagTypes: ['StudentForm'],
