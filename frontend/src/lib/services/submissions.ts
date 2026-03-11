@@ -93,11 +93,14 @@ const apiBaseUrl =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000";
 
+const submissionsApiBaseUrl = `${apiBaseUrl}/api/submissions`;
+console.log('[submissionsApi] API base URL:', submissionsApiBaseUrl);
+
 export const submissionsApi = createApi({
   reducerPath: "submissionsApi",
   tagTypes: ["Submissions", "Submission"],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${apiBaseUrl}/api/submissions`,
+    baseUrl: submissionsApiBaseUrl,
     credentials: "include",
   }),
   endpoints: (builder) => ({

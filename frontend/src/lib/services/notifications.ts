@@ -28,11 +28,14 @@ const apiBaseUrl =
   process.env.REACT_APP_API_URL ||
   "http://localhost:8000";
 
+const notificationsApiBaseUrl = `${apiBaseUrl}/api/notifications`;
+console.log('[notificationsApi] API base URL:', notificationsApiBaseUrl);
+
 export const notificationsApi = createApi({
   reducerPath: "notificationsApi",
   tagTypes: ["Notifications"],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${apiBaseUrl}/api/notifications`,
+    baseUrl: notificationsApiBaseUrl,
     credentials: "include",
   }),
   endpoints: (builder) => ({

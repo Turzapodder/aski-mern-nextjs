@@ -133,15 +133,18 @@ export interface VerifiedTutorsResponse {
  * Profile API - Redux Toolkit Query setup
  * Handles all profile-related API operations
  */
+const profileApiBaseUrl = `${
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:8000"
+}/api/profile`;
+console.log('[profileApi] API base URL:', profileApiBaseUrl);
+
 export const profileApi = createApi({
   reducerPath: "profileApi",
   tagTypes: ["Profile", "VerifiedTutors"],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.REACT_APP_API_URL ||
-      "http://localhost:8000"
-    }/api/profile`,
+    baseUrl: profileApiBaseUrl,
     credentials: "include",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("accessToken");
