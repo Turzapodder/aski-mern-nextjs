@@ -6,6 +6,8 @@ const rawApiUrl =
 
 const origin = trimTrailingSlash(rawApiUrl.replace(/\/api\/?$/i, ""));
 
-// Final API base
-export const apiOrigin = `${origin}/api`;
+// Backend origin for non-API routes like OAuth (/auth/google)
+export const apiOrigin = origin;
 
+// API root used by REST calls
+export const apiBaseUrl = `${origin}/api`;
