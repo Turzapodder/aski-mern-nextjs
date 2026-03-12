@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { X } from 'lucide-react';
-import UploadProjectForm from './UploadProjectForm';
+import UploadProjectForm from './uploadForm';
 
 interface PostAssignmentModalProps {
   isOpen: boolean;
