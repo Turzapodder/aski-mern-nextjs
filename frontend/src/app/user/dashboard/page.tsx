@@ -1,9 +1,9 @@
-import React from "react";
-import { UserDashboardClient } from "./UserDashboardClient";
+import React from 'react';
+import { UserDashboardClient } from './UserDashboardClient';
 
 export const metadata = {
-  title: "Dashboard | Aski",
-  description: "User and Tutor Dashboard",
+  title: 'Dashboard | Aski',
+  description: 'User and Tutor Dashboard',
 };
 
 export default function UserDashboardPage() {

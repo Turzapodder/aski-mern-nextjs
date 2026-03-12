@@ -20,16 +20,19 @@ const pastelColors = [
   'bg-indigo-200',
 ];
 
-export default function MultiSelect({ options, placeholder = 'Choose a tag', onChange }: MultiSelectProps) {
+export default function MultiSelect({
+  options,
+  placeholder = 'Choose a tag',
+  onChange,
+}: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter(
-    option => 
-      !selected.includes(option) && 
-      option.toLowerCase().includes(searchTerm.toLowerCase())
+    (option) =>
+      !selected.includes(option) && option.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSelect = (option: string) => {
@@ -40,7 +43,7 @@ export default function MultiSelect({ options, placeholder = 'Choose a tag', onC
   };
 
   const handleRemove = (option: string) => {
-    const newSelected = selected.filter(item => item !== option);
+    const newSelected = selected.filter((item) => item !== option);
     setSelected(newSelected);
     onChange?.(newSelected);
   };
@@ -68,13 +71,8 @@ export default function MultiSelect({ options, placeholder = 'Choose a tag', onC
         } cursor-pointer`}
       >
         {/* Selected Items Display */}
-        <div
-          className="min-h-[42px] p-2 flex flex-wrap gap-2"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {selected.length === 0 && !isOpen && (
-            <span className="text-gray-500">{placeholder}</span>
-          )}
+        <div className="min-h-[42px] p-2 flex flex-wrap gap-2" onClick={() => setIsOpen(!isOpen)}>
+          {selected.length === 0 && !isOpen && <span className="text-gray-500">{placeholder}</span>}
           {selected.map((item, index) => (
             <span
               key={item}
@@ -97,9 +95,7 @@ export default function MultiSelect({ options, placeholder = 'Choose a tag', onC
 
         {/* Dropdown Icon */}
         <div className="absolute right-2 top-3">
-          <ChevronDown
-            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          />
+          <ChevronDown className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 

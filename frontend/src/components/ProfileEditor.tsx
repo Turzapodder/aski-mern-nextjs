@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   useGetProfileQuery,
   useUpdateProfileMutation,
   useUploadFilesMutation,
   UserProfile,
   ProfileUpdatePayload,
-} from "@/lib/services/profile";
-import { AlertCircle, X } from "lucide-react";
-import ProfileSidebar from "./ProfileSidebar";
-import ProfileForm from "./ProfileForm";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AvailabilityValue, buildAvailabilityValue } from "@/lib/availability";
+} from '@/lib/services/profile';
+import { AlertCircle, X } from 'lucide-react';
+import ProfileSidebar from './ProfileSidebar';
+import ProfileForm from './ProfileForm';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AvailabilityValue, buildAvailabilityValue } from '@/lib/availability';
 
 interface ProfileEditorProps {
   userId: string;
@@ -36,7 +36,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
   // State management
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState<ProfileUpdatePayload>({});
-  const [activeTab, setActiveTab] = useState("personal");
+  const [activeTab, setActiveTab] = useState('personal');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [availability, setAvailability] = useState<AvailabilityValue>({
@@ -78,9 +78,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
    * Handle simple input changes
    */
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => {
@@ -89,7 +87,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
         [name]: value,
       };
 
-      if (name === "about" && profile?.roles?.includes("tutor")) {
+      if (name === 'about' && profile?.roles?.includes('tutor')) {
         next.tutorProfile = {
           ...(prev.tutorProfile || {}),
           bio: value,
@@ -101,7 +99,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
   };
 
   const updateTutorField = (
-    field: keyof NonNullable<ProfileUpdatePayload["tutorProfile"]>,
+    field: keyof NonNullable<ProfileUpdatePayload['tutorProfile']>,
     value: any
   ) => {
     setFormData((prev) => ({
@@ -137,7 +135,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
 
     try {
       const formDataObj = new FormData();
-      formDataObj.append("profileImage", file);
+      formDataObj.append('profileImage', file);
 
       const result = await uploadFiles({
         userId,
@@ -149,10 +147,10 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
           ...prev,
           profileImage: result.files.profileImage!.url,
         }));
-        setSuccess("Profile image updated successfully");
+        setSuccess('Profile image updated successfully');
       }
     } catch (err: any) {
-      setError(err?.data?.message || "Failed to upload image");
+      setError(err?.data?.message || 'Failed to upload image');
     }
   };
 
@@ -167,7 +165,7 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
     try {
       // Validate required fields
       if (!formData.name || formData.name.trim().length < 2) {
-        setError("Name must be at least 2 characters long");
+        setError('Name must be at least 2 characters long');
         return;
       }
 
@@ -177,11 +175,9 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
       }).unwrap();
 
       setProfile(result.user);
-      setSuccess("Profile updated successfully!");
+      setSuccess('Profile updated successfully!');
     } catch (err: any) {
-      setError(
-        err?.data?.message || "Failed to update profile. Please try again."
-      );
+      setError(err?.data?.message || 'Failed to update profile. Please try again.');
     }
   };
 
@@ -214,13 +210,11 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
 
   if (profileError) {
     return (
-      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
-        <div className='bg-white p-8 rounded-xl shadow-lg w-full max-w-md'>
-          <AlertCircle className='w-12 h-12 text-red-600 mx-auto mb-4' />
-          <p className='text-gray-800 text-center font-semibold'>
-            Failed to load profile
-          </p>
-          <p className='text-gray-600 text-center mt-2 text-sm'>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+          <p className="text-gray-800 text-center font-semibold">Failed to load profile</p>
+          <p className="text-gray-600 text-center mt-2 text-sm">
             Please refresh the page and try again
           </p>
         </div>
@@ -228,10 +222,10 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
     );
   }
 
-  const isTutor = profile?.roles?.includes("tutor");
+  const isTutor = profile?.roles?.includes('tutor');
 
   return (
-    <div className='min-h-screen flex'>
+    <div className="min-h-screen flex">
       {/* Sidebar */}
       <ProfileSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -239,16 +233,13 @@ export default function ProfileEditor({ userId, role }: ProfileEditorProps) {
       <div className="flex-1 p-8">
         {/* Alerts */}
         {error && (
-          <div className='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <AlertCircle className='w-5 h-5 text-red-600' />
-              <span className='text-red-800'>{error}</span>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <span className="text-red-800">{error}</span>
             </div>
-            <button
-              onClick={() => setError(null)}
-              className='text-red-600 hover:text-red-800'
-            >
-              <X className='w-4 h-4' />
+            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}

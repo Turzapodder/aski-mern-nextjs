@@ -1,11 +1,11 @@
 export const WEEKDAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
 ];
 
 const TIME_SLOT_REGEX = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/;
@@ -28,12 +28,7 @@ const parseTimeSlot = (slot: string) => {
     return null;
   }
 
-  if (
-    startHour > 23 ||
-    startMinute > 59 ||
-    endHour > 23 ||
-    endMinute > 59
-  ) {
+  if (startHour > 23 || startMinute > 59 || endHour > 23 || endMinute > 59) {
     return null;
   }
 
@@ -55,7 +50,7 @@ const normalizeSlots = (slots: unknown) => {
   if (!Array.isArray(slots)) return [];
   const unique = new Set<string>();
   slots.forEach((slot) => {
-    if (typeof slot === "string") {
+    if (typeof slot === 'string') {
       const trimmed = slot.trim();
       if (trimmed) unique.add(trimmed);
     }
@@ -71,10 +66,10 @@ export const buildAvailabilityValue = (
   const daySet = new Set<string>();
 
   availableTimeSlots.forEach((entry) => {
-    if (typeof entry === "string") {
+    if (typeof entry === 'string') {
       return;
     }
-    const day = typeof entry?.day === "string" ? entry.day.trim() : "";
+    const day = typeof entry?.day === 'string' ? entry.day.trim() : '';
     if (!day) return;
     const slots = normalizeSlots(entry?.slots);
     daySet.add(day);
@@ -82,7 +77,7 @@ export const buildAvailabilityValue = (
   });
 
   availableDays.forEach((day) => {
-    const trimmed = typeof day === "string" ? day.trim() : "";
+    const trimmed = typeof day === 'string' ? day.trim() : '';
     if (!trimmed) return;
     daySet.add(trimmed);
     if (!slotsByDay[trimmed]) {
@@ -91,9 +86,7 @@ export const buildAvailabilityValue = (
   });
 
   const orderedDays = WEEKDAYS.filter((day) => daySet.has(day));
-  const extraDays = Array.from(daySet).filter(
-    (day) => !WEEKDAYS.includes(day)
-  );
+  const extraDays = Array.from(daySet).filter((day) => !WEEKDAYS.includes(day));
 
   return {
     days: [...orderedDays, ...extraDays],
@@ -111,7 +104,7 @@ export const validateDaySlots = (day: string, slots: string[]) => {
   }
 
   const parsedSlots = slots.map((slot) => {
-    if (typeof slot !== "string") return null;
+    if (typeof slot !== 'string') return null;
     const trimmed = slot.trim();
     if (!trimmed) return null;
     const parsed = parseTimeSlot(trimmed);
@@ -125,13 +118,13 @@ export const validateDaySlots = (day: string, slots: string[]) => {
     if (!parsed) {
       return `Invalid time slot format for ${day}`;
     }
-    if ("error" in parsed && parsed.error) {
+    if ('error' in parsed && parsed.error) {
       return parsed.error;
     }
   }
 
   const ranges = parsedSlots
-    .filter((slot) => slot && !("error" in slot))
+    .filter((slot) => slot && !('error' in slot))
     .map((slot) => ({ start: (slot as any).start, end: (slot as any).end }))
     .sort((a, b) => a.start - b.start);
 

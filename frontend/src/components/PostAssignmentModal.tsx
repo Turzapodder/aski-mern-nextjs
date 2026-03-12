@@ -1,18 +1,22 @@
-'use client'
-import React from 'react'
-import { X } from 'lucide-react'
-import UploadProjectForm from './UploadProjectForm'
+'use client';
+import React from 'react';
+import { X } from 'lucide-react';
+import UploadProjectForm from './UploadProjectForm';
 
 interface PostAssignmentModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit?: (data: any) => void
-  initialData?: any
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit?: (data: any) => void;
+  initialData?: any;
 }
 
-export default function PostAssignmentModal({ isOpen, onClose, onSubmit, initialData }: PostAssignmentModalProps) {
-
-  if (!isOpen) return null
+export default function PostAssignmentModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+}: PostAssignmentModalProps) {
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -27,8 +31,8 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit, initial
         <div className="overflow-y-auto custom-scrollbar rounded-2xl">
           <UploadProjectForm
             onSuccess={() => {
-              onClose()
-              if (onSubmit) onSubmit({}) // Optional callback
+              onClose();
+              if (onSubmit) onSubmit({}); // Optional callback
             }}
             onCancel={onClose}
             className="w-full shadow-none border-none"
@@ -38,5 +42,5 @@ export default function PostAssignmentModal({ isOpen, onClose, onSubmit, initial
         </div>
       </div>
     </div>
-  )
+  );
 }

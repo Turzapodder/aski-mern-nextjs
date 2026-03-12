@@ -1,36 +1,36 @@
-'use client'
-import { useState, useEffect, useRef } from 'react'
-import Image from "next/image"
-import { X, Upload, FileImage, Play, Plus } from 'lucide-react'
-import { useGenerateSessionIdQuery } from '@/lib/services/student'
-import { useCreateAssignmentMutation } from '@/lib/services/assignments'
-import { apiOrigin } from '@/lib/apiConfig'
-import { useRouter } from 'next/navigation'
-import { useAppSelector } from '@/lib/hooks'
-import { Skeleton } from '@/components/ui/skeleton'
-import useCurrency from '@/lib/hooks/useCurrency'
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import { X, Upload, FileImage, Play, Plus } from 'lucide-react';
+import { useGenerateSessionIdQuery } from '@/lib/services/student';
+import { useCreateAssignmentMutation } from '@/lib/services/assignments';
+import { apiOrigin } from '@/lib/apiConfig';
+import { useRouter } from 'next/navigation';
+import { useAppSelector } from '@/lib/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
+import useCurrency from '@/lib/hooks/useCurrency';
 
 interface UploadProjectFormProps {
-  onSubmit?: (formData: FormData) => void // Kept for backward compatibility or override
-  onSuccess?: () => void // New prop for success callback
-  onCreated?: (assignmentId: string) => void
-  onCancel?: () => void
-  onSaveDraft?: (formData: FormData) => void
-  className?: string
-  maxWidth?: string
-  advanced?: boolean
-  requestedTutorId?: string
-  requestedTutorName?: string
+  onSubmit?: (formData: FormData) => void; // Kept for backward compatibility or override
+  onSuccess?: () => void; // New prop for success callback
+  onCreated?: (assignmentId: string) => void;
+  onCancel?: () => void;
+  onSaveDraft?: (formData: FormData) => void;
+  className?: string;
+  maxWidth?: string;
+  advanced?: boolean;
+  requestedTutorId?: string;
+  requestedTutorName?: string;
 }
 
 interface FormData {
-  title: string
-  description: string
-  deadline: string
-  subject: string
-  topics: string[]
-  budget?: number
-  files: File[]
+  title: string;
+  description: string;
+  deadline: string;
+  subject: string;
+  topics: string[];
+  budget?: number;
+  files: File[];
 }
 
 const SUBJECTS = [
@@ -44,8 +44,8 @@ const SUBJECTS = [
   'Economics',
   'Business',
   'Engineering',
-  'Other'
-]
+  'Other',
+];
 
 const UploadProjectForm = ({
   onSubmit,
@@ -53,13 +53,13 @@ const UploadProjectForm = ({
   onCreated,
   onCancel,
   onSaveDraft,
-  className = "",
-  maxWidth = "max-w-3xl",
+  className = '',
+  maxWidth = 'max-w-3xl',
   advanced = false,
   requestedTutorId,
   requestedTutorName,
 }: UploadProjectFormProps) => {
-  const { currency } = useCurrency()
+  const { currency } = useCurrency();
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -67,133 +67,139 @@ const UploadProjectForm = ({
     subject: '',
     topics: [],
     budget: undefined,
-    files: []
-  })
+    files: [],
+  });
 
-  const [newTopic, setNewTopic] = useState('')
-  const [isDraft, setIsDraft] = useState(true)
-  const [isAdvanced, setIsAdvanced] = useState(advanced)
-  const [sessionId, setSessionId] = useState<string>('')
-  const [isDragging, setIsDragging] = useState(false)
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [fileError, setFileError] = useState<string>('')
-  const [submitError, setSubmitError] = useState<string>('')
+  const [newTopic, setNewTopic] = useState('');
+  const [isDraft, setIsDraft] = useState(true);
+  const [isAdvanced, setIsAdvanced] = useState(advanced);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [fileError, setFileError] = useState<string>('');
+  const [submitError, setSubmitError] = useState<string>('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const router = useRouter()
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   // API Mutations
-  const { data: sessionData } = useGenerateSessionIdQuery()
-  const [createAssignment, { isLoading: isCreating }] = useCreateAssignmentMutation()
+  const { data: sessionData } = useGenerateSessionIdQuery();
+  const [createAssignment, { isLoading: isCreating }] = useCreateAssignmentMutation();
 
   // Set session ID when received
   useEffect(() => {
     if (sessionData?.sessionId) {
-      setSessionId(sessionData.sessionId)
+      setSessionId(sessionData.sessionId);
     }
-  }, [sessionData])
+  }, [sessionData]);
 
   // Clean up preview URLs when component unmounts or files change
   useEffect(() => {
     return () => {
-      previewUrls.forEach(url => URL.revokeObjectURL(url))
-    }
-  }, [previewUrls])
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
 
   const validateFile = (file: File): string => {
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    const allowedTypes = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/',
+      'video/',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
 
     if (file.size > maxSize) {
-      return 'File size must be less than 10MB'
+      return 'File size must be less than 10MB';
     }
 
     // Allow images, videos, PDFs, and Docs
-    if (!allowedTypes.some(type => file.type.startsWith(type) || file.type === type)) {
+    if (!allowedTypes.some((type) => file.type.startsWith(type) || file.type === type)) {
       // return 'Only image, video, PDF and document files are allowed'
     }
 
-    return ''
-  }
+    return '';
+  };
 
   const handleFilesSelect = (selectedFiles: File[]) => {
-    const validFiles: File[] = []
-    let error = ''
+    const validFiles: File[] = [];
+    let error = '';
 
-    selectedFiles.forEach(file => {
-      const fileError = validateFile(file)
+    selectedFiles.forEach((file) => {
+      const fileError = validateFile(file);
       if (fileError) {
-        error = fileError
+        error = fileError;
       } else {
-        validFiles.push(file)
+        validFiles.push(file);
       }
-    })
+    });
 
     if (error && validFiles.length === 0) {
-      setFileError(error)
-      return
+      setFileError(error);
+      return;
     }
 
-    setFileError('')
+    setFileError('');
 
     // Generate preview URLs for new files
-    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file))
-    setPreviewUrls(prev => [...prev, ...newPreviewUrls])
+    const newPreviewUrls = validFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
 
-    setFormData(prev => ({ ...prev, files: [...prev.files, ...validFiles] }))
-    setIsDraft(false)
-  }
+    setFormData((prev) => ({ ...prev, files: [...prev.files, ...validFiles] }));
+    setIsDraft(false);
+  };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files && files.length > 0) {
-      handleFilesSelect(Array.from(files))
+      handleFilesSelect(Array.from(files));
     }
-  }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
+    e.preventDefault();
+    setIsDragging(false);
 
-    const files = e.dataTransfer.files
+    const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFilesSelect(Array.from(files))
+      handleFilesSelect(Array.from(files));
     }
-  }
+  };
 
   const handleRemoveFile = (index: number) => {
-    URL.revokeObjectURL(previewUrls[index])
+    URL.revokeObjectURL(previewUrls[index]);
 
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
-    setFormData(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }))
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    setFormData((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
 
     if (formData.files.length === 1) {
-      setFileError('')
+      setFileError('');
       // Reset file input if all files removed
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = '';
       }
     }
-  }
+  };
 
   const handleUploadAreaClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitError('')
+    e.preventDefault();
+    setSubmitError('');
 
     // Check if user is logged in via Redux state
     const isAuth = isAuthenticated;
@@ -202,21 +208,21 @@ const UploadProjectForm = ({
       // User is logged in, proceed normally
       if (onSubmit) {
         // If onSubmit is provided, use it (override behavior)
-        onSubmit(formData)
+        onSubmit(formData);
       } else {
         // Default behavior: Submit to API
-        await handleInternalSubmit()
+        await handleInternalSubmit();
       }
     } else {
       // User is not logged in, save form and redirect to registration
-      handleAnonymousSubmit()
+      handleAnonymousSubmit();
     }
-  }
+  };
 
   const handleInternalSubmit = async () => {
     try {
       // Create FormData for file upload
-      const submitFormData = new FormData()
+      const submitFormData = new FormData();
 
       // Prepare assignment data
       const assignmentData = {
@@ -228,30 +234,30 @@ const UploadProjectForm = ({
         estimatedCost: formData.budget || 0,
         priority: 'medium',
         status: 'pending',
-        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {})
-      }
+        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {}),
+      };
 
       // Add assignment data to FormData
-      Object.keys(assignmentData).forEach(key => {
+      Object.keys(assignmentData).forEach((key) => {
         if (key === 'topics') {
           // Append each topic separately
           assignmentData.topics.forEach((topic: string) => {
-            submitFormData.append('topics', topic)
-          })
+            submitFormData.append('topics', topic);
+          });
         } else {
-          submitFormData.append(key, (assignmentData as any)[key])
+          submitFormData.append(key, (assignmentData as any)[key]);
         }
-      })
+      });
 
       // Add files if exist
       if (formData.files && formData.files.length > 0) {
         formData.files.forEach((file: File) => {
-          submitFormData.append('attachments', file)
-        })
+          submitFormData.append('attachments', file);
+        });
       }
 
       // Call the mutation
-      const response = await createAssignment(submitFormData).unwrap()
+      const response = await createAssignment(submitFormData).unwrap();
 
       // Reset form
       setFormData({
@@ -261,37 +267,36 @@ const UploadProjectForm = ({
         subject: '',
         topics: [],
         budget: undefined,
-        files: []
-      })
-      setPreviewUrls([])
-      if (fileInputRef.current) fileInputRef.current.value = ''
+        files: [],
+      });
+      setPreviewUrls([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
 
       // Call onSuccess callback if provided
       if (onCreated && response?.data?._id) {
-        onCreated(response.data._id)
+        onCreated(response.data._id);
       }
 
       if (onSuccess) {
-        onSuccess()
+        onSuccess();
       } else if (!onCreated) {
-        alert('Assignment posted successfully!')
+        alert('Assignment posted successfully!');
       }
-
     } catch (error: any) {
-      console.error('Failed to create assignment:', error)
-      setSubmitError(error?.data?.message || 'Failed to post assignment. Please try again.')
+      console.error('Failed to create assignment:', error);
+      setSubmitError(error?.data?.message || 'Failed to post assignment. Please try again.');
     }
-  }
+  };
 
   const handleAnonymousSubmit = async () => {
     try {
       if (!sessionId) {
-        console.error('No session ID available')
-        return
+        console.error('No session ID available');
+        return;
       }
 
       // Create FormData for file upload
-      const submitFormData = new FormData()
+      const submitFormData = new FormData();
 
       // Prepare form data object for assignment
       const assignmentData = {
@@ -303,111 +308,113 @@ const UploadProjectForm = ({
         estimatedCost: formData.budget || 0,
         priority: 'medium',
         status: 'draft',
-        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {})
-      }
+        ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {}),
+      };
 
       // Add assignment data to FormData
-      Object.keys(assignmentData).forEach(key => {
+      Object.keys(assignmentData).forEach((key) => {
         if (key === 'topics') {
           // Append each topic separately so multer parses it as an array (or single value)
           assignmentData.topics.forEach((topic: string) => {
-            submitFormData.append('topics', topic)
-          })
+            submitFormData.append('topics', topic);
+          });
         } else {
-          submitFormData.append(key, (assignmentData as any)[key])
+          submitFormData.append(key, (assignmentData as any)[key]);
         }
-      })
+      });
 
       // Add files if exist
       if (formData.files && formData.files.length > 0) {
-        formData.files.forEach(file => {
-          submitFormData.append('attachments', file)
-        })
+        formData.files.forEach((file) => {
+          submitFormData.append('attachments', file);
+        });
       }
 
       // Save assignment data to backend
       const response = await fetch(`${apiOrigin}/assignments`, {
         method: 'POST',
-        body: submitFormData
-      })
+        body: submitFormData,
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Server error:', errorData)
-        throw new Error(`Failed to save assignment: ${errorData.message || response.statusText}`)
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        throw new Error(`Failed to save assignment: ${errorData.message || response.statusText}`);
       }
 
-      const result = await response.json()
-      console.log('Assignment saved successfully:', result)
+      const result = await response.json();
+      console.log('Assignment saved successfully:', result);
 
       // Store assignment ID in localStorage for retrieval after registration
-      localStorage.setItem('pendingAssignmentId', result.data._id)
-      console.log('Assignment ID stored in localStorage:', result.data._id)
+      localStorage.setItem('pendingAssignmentId', result.data._id);
+      console.log('Assignment ID stored in localStorage:', result.data._id);
 
       // Redirect to registration
-      router.push('/account/register')
-
+      router.push('/account/register');
     } catch (error) {
-      console.error('Failed to save form data:', error)
+      console.error('Failed to save form data:', error);
       // Still redirect to registration even if save fails
-      router.push('/account/register')
+      router.push('/account/register');
     }
-  }
-
+  };
 
   const addTopic = (topic: string) => {
     if (topic && !formData.topics.includes(topic) && formData.topics.length < 12) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        topics: [...prev.topics, topic]
-      }))
+        topics: [...prev.topics, topic],
+      }));
     }
-  }
+  };
 
   const removeTopic = (topicToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      topics: prev.topics.filter(topic => topic !== topicToRemove)
-    }))
-  }
+      topics: prev.topics.filter((topic) => topic !== topicToRemove),
+    }));
+  };
 
   const handleAddNewTopic = () => {
     if (newTopic.trim()) {
-      addTopic(newTopic.trim())
-      setNewTopic('')
+      addTopic(newTopic.trim());
+      setNewTopic('');
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddNewTopic()
+      e.preventDefault();
+      handleAddNewTopic();
     }
-  }
+  };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const isImage = (file: File): boolean => {
-    return file.type.startsWith('image/')
-  }
+    return file.type.startsWith('image/');
+  };
 
   const isVideo = (file: File): boolean => {
-    return file.type.startsWith('video/')
-  }
+    return file.type.startsWith('video/');
+  };
 
   return (
-   <div className={`bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-8 ${maxWidth} w-full ${className}`}>
+    <div
+      className={`bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-8 ${maxWidth} w-full ${className}`}
+    >
       <form onSubmit={handleSubmit}>
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-            {requestedTutorName ? "Request a Proposal" : (
+            {requestedTutorName ? (
+              'Request a Proposal'
+            ) : (
               <>
                 Post a <span className="text-secondary-500">New Project</span>
               </>
@@ -415,15 +422,16 @@ const UploadProjectForm = ({
           </h2>
           <p className="text-gray-600 text-xs sm:text-sm">
             {requestedTutorName
-              ? "Share your assignment details to invite this tutor to send a proposal."
-              : "Please provide the necessary details below"}
+              ? 'Share your assignment details to invite this tutor to send a proposal.'
+              : 'Please provide the necessary details below'}
           </p>
         </div>
 
         {requestedTutorName && (
           <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 text-xs sm:text-sm text-gray-600">
-            Requesting proposal from <span className="font-semibold text-gray-900">{requestedTutorName}</span>.
-            Once submitted, only this tutor will see the request.
+            Requesting proposal from{' '}
+            <span className="font-semibold text-gray-900">{requestedTutorName}</span>. Once
+            submitted, only this tutor will see the request.
           </div>
         )}
 
@@ -436,7 +444,7 @@ const UploadProjectForm = ({
             type="text"
             placeholder="e.g. Calculus Homework Help"
             value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
             className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
             required
           />
@@ -451,7 +459,7 @@ const UploadProjectForm = ({
             placeholder="Explain your project here..."
             rows={4}
             value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent resize-none text-sm sm:text-base"
             required
           />
@@ -460,7 +468,9 @@ const UploadProjectForm = ({
         {/* Deadline */}
         <div className="mb-5 sm:mb-6">
           <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-            <label className="text-gray-900 font-medium text-sm sm:text-base">Assignment Deadline <span className="text-red-500">*</span></label>
+            <label className="text-gray-900 font-medium text-sm sm:text-base">
+              Assignment Deadline <span className="text-red-500">*</span>
+            </label>
             <div className="w-4 h-4 bg-gray-200 rounded-full flex items-center justify-center group relative cursor-help">
               <span className="text-gray-500 text-[10px] sm:text-xs">i</span>
               <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 bg-gray-800 text-white text-[10px] sm:text-xs rounded p-2 z-10">
@@ -471,7 +481,7 @@ const UploadProjectForm = ({
           <input
             type="datetime-local"
             value={formData.deadline}
-            onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, deadline: e.target.value }))}
             className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
             required
             min={new Date().toISOString().slice(0, 16)}
@@ -488,12 +498,14 @@ const UploadProjectForm = ({
               </label>
               <select
                 value={formData.subject}
-                onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, subject: e.target.value }))}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white text-sm sm:text-base"
               >
                 <option value="">Select a Subject</option>
-                {SUBJECTS.map(subject => (
-                  <option key={subject} value={subject}>{subject}</option>
+                {SUBJECTS.map((subject) => (
+                  <option key={subject} value={subject}>
+                    {subject}
+                  </option>
                 ))}
               </select>
             </div>
@@ -502,12 +514,17 @@ const UploadProjectForm = ({
             <div className="mb-6 sm:mb-8">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <label className="text-gray-900 font-medium text-sm sm:text-base">Topics</label>
-                <span className="text-gray-400 text-[10px] sm:text-xs">{12 - formData.topics.length} topics remaining</span>
+                <span className="text-gray-400 text-[10px] sm:text-xs">
+                  {12 - formData.topics.length} topics remaining
+                </span>
               </div>
 
               <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
                 {formData.topics.map((topic, index) => (
-                  <span key={index} className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 bg-gray-900 text-white rounded-full text-[10px] sm:text-sm">
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 bg-gray-900 text-white rounded-full text-[10px] sm:text-sm"
+                  >
                     {topic}
                     <button
                       type="button"
@@ -541,16 +558,19 @@ const UploadProjectForm = ({
 
             {/* File Upload Area */}
             <div className="mb-5 sm:mb-6">
-              <label className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">Upload Files</label>
+              <label className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">
+                Upload Files
+              </label>
 
               {/* File Upload Zone */}
               <div
-                className={`border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-all cursor-pointer relative ${isDragging
-                  ? 'border-primary-400 bg-primary-50'
-                  : fileError
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                  }`}
+                className={`border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-all cursor-pointer relative ${
+                  isDragging
+                    ? 'border-primary-400 bg-primary-50'
+                    : fileError
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -569,7 +589,10 @@ const UploadProjectForm = ({
                   // Files Preview List
                   <div className="grid grid-cols-1 gap-2 sm:gap-4">
                     {formData.files.map((file, index) => (
-                      <div key={index} className="relative bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between group">
+                      <div
+                        key={index}
+                        className="relative bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between group"
+                      >
                         <div className="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
                           {isImage(file) ? (
                             <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
@@ -592,15 +615,19 @@ const UploadProjectForm = ({
                             </div>
                           )}
                           <div className="min-w-0 text-left">
-                            <p className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                            <p className="text-[8px] sm:text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                            <p className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-[8px] sm:text-xs text-gray-500">
+                              {formatFileSize(file.size)}
+                            </p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveFile(index)
+                            e.stopPropagation();
+                            handleRemoveFile(index);
                           }}
                           className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors"
                         >
@@ -609,7 +636,9 @@ const UploadProjectForm = ({
                       </div>
                     ))}
                     <div className="mt-1 sm:mt-2 text-center">
-                      <p className="text-[10px] sm:text-xs text-primary-600">Click to add more files</p>
+                      <p className="text-[10px] sm:text-xs text-primary-600">
+                        Click to add more files
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -624,9 +653,7 @@ const UploadProjectForm = ({
                     <p className="text-gray-400 text-[10px] sm:text-sm mb-1 sm:mb-2">
                       Drag and drop or click to browse
                     </p>
-                    <p className="text-gray-400 text-[8px] sm:text-xs">
-                      Max file size: 10MB each
-                    </p>
+                    <p className="text-gray-400 text-[8px] sm:text-xs">Max file size: 10MB each</p>
                   </>
                 )}
               </div>
@@ -655,7 +682,9 @@ const UploadProjectForm = ({
                   min="0"
                   step="0.01"
                   value={formData.budget || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, budget: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, budget: parseFloat(e.target.value) }))
+                  }
                   className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
@@ -677,24 +706,24 @@ const UploadProjectForm = ({
             onClick={() => {
               if (isAdvanced) {
                 // Clear advanced fields when hiding
-                setFormData(prev => ({
+                setFormData((prev) => ({
                   ...prev,
                   subject: '',
                   topics: [],
                   budget: undefined,
-                  files: []
-                }))
-                setNewTopic('')
-                setFileError('')
+                  files: [],
+                }));
+                setNewTopic('');
+                setFileError('');
                 if (previewUrls.length > 0) {
-                  previewUrls.forEach(url => URL.revokeObjectURL(url))
-                  setPreviewUrls([])
+                  previewUrls.forEach((url) => URL.revokeObjectURL(url));
+                  setPreviewUrls([]);
                 }
                 if (fileInputRef.current) {
-                  fileInputRef.current.value = ''
+                  fileInputRef.current.value = '';
                 }
               }
-              setIsAdvanced(!isAdvanced)
+              setIsAdvanced(!isAdvanced);
             }}
             className="text-primary-600 hover:text-primary-700 text-xs sm:text-sm font-medium hover:underline transition-colors flex items-center"
           >
@@ -728,8 +757,8 @@ const UploadProjectForm = ({
         </div>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default UploadProjectForm
-export type { UploadProjectFormProps, FormData as UploadFormData }
+export default UploadProjectForm;
+export type { UploadProjectFormProps, FormData as UploadFormData };

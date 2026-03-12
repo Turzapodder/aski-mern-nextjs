@@ -1,8 +1,8 @@
-"use client"
+'use client';
 
-import { useEffect, useMemo, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   BookOpen,
@@ -16,64 +16,64 @@ import {
   Settings,
   ShieldCheck,
   Users,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { cn } from "@/lib/utils"
-import useAdminAuth from "@/hooks/useAdminAuth"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useLogoutUserMutation } from "@/lib/services/auth"
-import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { setMobileMenuOpen } from "@/lib/features/ui/uiSlice"
-import { logout as logoutAuthUser } from "@/lib/features/auth/authSlice"
+import { cn } from '@/lib/utils';
+import useAdminAuth from '@/hooks/useAdminAuth';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useLogoutUserMutation } from '@/lib/services/auth';
+import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { setMobileMenuOpen } from '@/lib/features/ui/uiSlice';
+import { logout as logoutAuthUser } from '@/lib/features/auth/authSlice';
 
 const navItems = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Tutors", href: "/admin/tutors", icon: GraduationCap },
-  { label: "Assignments", href: "/admin/assignments", icon: FileText },
-  { label: "Finance", href: "/admin/finance", icon: DollarSign },
-  { label: "Disputes", href: "/admin/reports", icon: AlertTriangle },
-  { label: "Reports", href: "/admin/content-reports", icon: Flag },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-]
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Users', href: '/admin/users', icon: Users },
+  { label: 'Tutors', href: '/admin/tutors', icon: GraduationCap },
+  { label: 'Assignments', href: '/admin/assignments', icon: FileText },
+  { label: 'Finance', href: '/admin/finance', icon: DollarSign },
+  { label: 'Disputes', href: '/admin/reports', icon: AlertTriangle },
+  { label: 'Reports', href: '/admin/content-reports', icon: Flag },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
+];
 
 const getInitials = (name?: string) => {
-  if (!name) return "A"
-  const parts = name.trim().split(" ").filter(Boolean)
-  if (parts.length === 0) return "A"
-  if (parts.length === 1) return parts[0][0].toUpperCase()
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-}
+  if (!name) return 'A';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length === 0) return 'A';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+};
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { user, isAdmin, isLoading } = useAdminAuth()
-  const [logoutUser] = useLogoutUserMutation()
-  const [isNavigating, setIsNavigating] = useState(false)
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, isAdmin, isLoading } = useAdminAuth();
+  const [logoutUser] = useLogoutUserMutation();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
-    setIsNavigating(false)
-  }, [pathname])
+    setIsNavigating(false);
+  }, [pathname]);
 
-  const activePath = useMemo(() => pathname || "/admin", [pathname])
-  const dispatch = useAppDispatch()
-  const mobileOpen = useAppSelector((state) => state.ui.isMobileMenuOpen)
+  const activePath = useMemo(() => pathname || '/admin', [pathname]);
+  const dispatch = useAppDispatch();
+  const mobileOpen = useAppSelector((state) => state.ui.isMobileMenuOpen);
 
   const handleLogout = async () => {
     try {
-      await logoutUser({})
-      dispatch(logoutAuthUser()) 
+      await logoutUser({});
+      dispatch(logoutAuthUser());
     } finally {
-      router.push("/")
+      router.push('/');
     }
-  }
+  };
 
   const handleNavigate = () => {
-    setIsNavigating(true)
-    dispatch(setMobileMenuOpen(false))
-  }
+    setIsNavigating(true);
+    dispatch(setMobileMenuOpen(false));
+  };
 
   if (isLoading) {
     return (
@@ -120,19 +120,19 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user || !isAdmin) {
-    return null
+    return null;
   }
 
-  const renderNavLinks = (variant: "desktop" | "mobile") => (
-    <nav className={cn("space-y-1", variant === "mobile" ? "px-3 py-4" : "px-4 py-6")}>
+  const renderNavLinks = (variant: 'desktop' | 'mobile') => (
+    <nav className={cn('space-y-1', variant === 'mobile' ? 'px-3 py-4' : 'px-4 py-6')}>
       {navItems.map((item) => {
-        const Icon = item.icon
+        const Icon = item.icon;
         const isActive =
-          item.href === "/admin" ? activePath === "/admin" : activePath.startsWith(item.href)
+          item.href === '/admin' ? activePath === '/admin' : activePath.startsWith(item.href);
 
         return (
           <Link
@@ -140,24 +140,24 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             href={item.href}
             onClick={handleNavigate}
             className={cn(
-              "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
               isActive
-                ? "bg-primary-100/70 text-primary-700 shadow-sm"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                ? 'bg-primary-100/70 text-primary-700 shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             )}
           >
             <Icon
               className={cn(
-                "h-4 w-4 transition-colors",
-                isActive ? "text-primary-600" : "text-gray-400 group-hover:text-gray-700"
+                'h-4 w-4 transition-colors',
+                isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-700'
               )}
             />
             <span>{item.label}</span>
           </Link>
-        )
+        );
       })}
     </nav>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
@@ -172,12 +172,12 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <p className="text-xs text-gray-500">Control Center</p>
             </div>
           </div>
-          {renderNavLinks("desktop")}
+          {renderNavLinks('desktop')}
           <div className="mt-auto px-4 pb-6">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <p className="text-xs text-gray-500">Signed in as</p>
-              <p className="text-sm font-semibold">{user?.name || "Admin"}</p>
-              <p className="text-xs text-gray-500">{user?.email || "admin@aski.com"}</p>
+              <p className="text-sm font-semibold">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500">{user?.email || 'admin@aski.com'}</p>
             </div>
           </div>
         </aside>
@@ -205,7 +205,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                         <p className="text-xs text-gray-500">Control Center</p>
                       </div>
                     </div>
-                    {renderNavLinks("mobile")}
+                    {renderNavLinks('mobile')}
                   </SheetContent>
                 </Sheet>
 
@@ -217,8 +217,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
               <div className="flex items-center gap-3">
                 <div className="hidden text-right sm:block">
-                  <p className="text-sm font-semibold">{user?.name || "Admin"}</p>
-                  <p className="text-xs text-gray-500">{user?.email || "admin@aski.com"}</p>
+                  <p className="text-sm font-semibold">{user?.name || 'Admin'}</p>
+                  <p className="text-xs text-gray-500">{user?.email || 'admin@aski.com'}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-white text-sm font-semibold">
                   {getInitials(user?.name)}
@@ -239,7 +239,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminLayout
+export default AdminLayout;

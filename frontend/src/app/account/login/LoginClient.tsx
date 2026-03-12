@@ -1,27 +1,21 @@
-"use client";
+'use client';
 
 /* eslint-disable @next/next/no-img-element */
-import React from "react";
-import Link from "next/link";
-import { useLoginLogic } from "./useLoginLogic";
+import React from 'react';
+import Link from 'next/link';
+import { useLoginLogic } from './useLoginLogic';
 
 export const LoginClient = () => {
-  const {
-    formik,
-    loading,
-    loginRole,
-    isRoleMissing,
-    handleGoogleLogin,
-  } = useLoginLogic();
+  const { formik, loading, loginRole, isRoleMissing, handleGoogleLogin } = useLoginLogic();
 
   const { values, errors, handleChange, handleSubmit } = formik;
 
   const heading =
-    loginRole === "admin"
-      ? "Sign in to admin account"
-      : loginRole === "tutor"
-        ? "Sign in to tutor account"
-        : "Sign in to your account";
+    loginRole === 'admin'
+      ? 'Sign in to admin account'
+      : loginRole === 'tutor'
+        ? 'Sign in to tutor account'
+        : 'Sign in to your account';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-3 sm:p-4">
@@ -37,11 +31,9 @@ export const LoginClient = () => {
             </div>
             <div className="mb-8">
               <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 uppercase">
-                {loginRole ? `${loginRole} account` : "account"}
+                {loginRole ? `${loginRole} account` : 'account'}
               </h2>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
-                {heading}
-              </h1>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">{heading}</h1>
               <p className="text-black text-base sm:text-lg font-regular">
                 Enter your credentials here
               </p>
@@ -49,10 +41,7 @@ export const LoginClient = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-black mb-2"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
                   Email address
                 </label>
                 <input
@@ -64,18 +53,11 @@ export const LoginClient = () => {
                   className="w-full px-4 py-3 rounded-full border text-gray-900 border-gray-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
                   placeholder="Email address"
                 />
-                {errors.email && (
-                  <div className="text-sm text-red-500 mt-1">
-                    {errors.email}
-                  </div>
-                )}
+                {errors.email && <div className="text-sm text-red-500 mt-1">{errors.email}</div>}
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-black mb-2"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
                   Password
                 </label>
                 <input
@@ -88,9 +70,7 @@ export const LoginClient = () => {
                   placeholder="Password"
                 />
                 {errors.password && (
-                  <div className="text-sm text-red-500 mt-1">
-                    {errors.password}
-                  </div>
+                  <div className="text-sm text-red-500 mt-1">{errors.password}</div>
                 )}
                 <div className="flex justify-end mt-2">
                   <Link
@@ -122,11 +102,7 @@ export const LoginClient = () => {
                 disabled={isRoleMissing}
                 className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition duration-200 disabled:opacity-60"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 48 48"
-                  className="w-5 h-5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
                   <path
                     fill="#FFC107"
                     d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
@@ -147,15 +123,13 @@ export const LoginClient = () => {
                 Continue with Google
               </button>
             </form>
-            {loginRole !== "admin" && (
+            {loginRole !== 'admin' && (
               <div className="mt-6">
                 <p className="text-center text-sm text-gray-600">
-                  Don&apos;t have an account?{" "}
+                  Don&apos;t have an account?{' '}
                   <Link
                     href={
-                      loginRole === "tutor"
-                        ? "/account/register?role=tutor"
-                        : "/account/register"
+                      loginRole === 'tutor' ? '/account/register?role=tutor' : '/account/register'
                     }
                     className="text-black hover:text-indigo-700 font-semibold"
                   >
@@ -182,9 +156,7 @@ export const LoginClient = () => {
                       </div>
                       <div>
                         <p className="font-semibold">Welcome Back!</p>
-                        <p className="text-sm text-gray-600">
-                          Accepted a new project Cascade
-                        </p>
+                        <p className="text-sm text-gray-600">Accepted a new project Cascade</p>
                       </div>
                     </div>
                   </div>

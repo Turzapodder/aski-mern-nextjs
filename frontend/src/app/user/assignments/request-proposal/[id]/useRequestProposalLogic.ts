@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useGetUserQuery } from "@/lib/services/auth";
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useGetUserQuery } from '@/lib/services/auth';
 
 export interface PublicTutor {
   _id: string;
@@ -14,7 +14,7 @@ export const useRequestProposalLogic = () => {
 
   const { data: viewerData } = useGetUserQuery();
   const viewer = viewerData?.user;
-  const isTutorViewer = viewer?.roles?.includes("tutor");
+  const isTutorViewer = viewer?.roles?.includes('tutor');
   const [tutor, setTutor] = useState<PublicTutor | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,14 +26,16 @@ export const useRequestProposalLogic = () => {
       }
       setLoading(true);
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await fetch(`${baseUrl}/api/tutors/profile/${encodeURIComponent(tutorId)}`);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(
+          `${baseUrl}/api/tutors/profile/${encodeURIComponent(tutorId)}`
+        );
         if (!response.ok) {
-          throw new Error("Tutor not found");
+          throw new Error('Tutor not found');
         }
         const result = await response.json();
         if (!result?.success) {
-          throw new Error(result?.error || "Tutor not found");
+          throw new Error(result?.error || 'Tutor not found');
         }
         setTutor(result?.data?.tutor || null);
       } catch (error) {
@@ -51,6 +53,6 @@ export const useRequestProposalLogic = () => {
     tutorId,
     isTutorViewer,
     tutor,
-    loading
-  }
-}
+    loading,
+  };
+};

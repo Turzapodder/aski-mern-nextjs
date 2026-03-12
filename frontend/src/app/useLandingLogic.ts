@@ -1,5 +1,5 @@
-import { useRouter } from "next/navigation";
-import { useAppSelector } from "@/lib/hooks";
+import { useRouter } from 'next/navigation';
+import { useAppSelector } from '@/lib/hooks';
 
 export const useLandingLogic = () => {
   const router = useRouter();
@@ -14,6 +14,6 @@ export const useLandingLogic = () => {
   };
 
   return {
-    handleWhatsAppClick
+    handleWhatsAppClick,
   };
 };

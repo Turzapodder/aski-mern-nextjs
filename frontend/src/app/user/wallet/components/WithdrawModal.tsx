@@ -1,183 +1,175 @@
-'use client'
+'use client';
 
-import { useEffect, useMemo, useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useEffect, useMemo, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type BankDetails = {
-  accountName: string
-  accountNumber: string
-  bankName: string
-  branchName: string
-  routingNumber: string
-}
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  branchName: string;
+  routingNumber: string;
+};
 
 type WithdrawModalProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  availableBalance: number
-  bankDetails?: Partial<BankDetails>
-  onSuccess?: () => void
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  availableBalance: number;
+  bankDetails?: Partial<BankDetails>;
+  onSuccess?: () => void;
+};
 
-const MIN_WITHDRAWAL = 100
+const MIN_WITHDRAWAL = 100;
 
-const formatAmount = (amount: number) => `BDT ${amount.toFixed(2)}`
+const formatAmount = (amount: number) => `BDT ${amount.toFixed(2)}`;
 
 const maskAccountNumber = (accountNumber: string) => {
-  const trimmed = accountNumber.trim()
-  if (trimmed.length <= 4) return trimmed
-  return `****${trimmed.slice(-4)}`
-}
+  const trimmed = accountNumber.trim();
+  if (trimmed.length <= 4) return trimmed;
+  return `****${trimmed.slice(-4)}`;
+};
 
 const emptyDetails: BankDetails = {
-  accountName: "",
-  accountNumber: "",
-  bankName: "",
-  branchName: "",
-  routingNumber: ""
-}
+  accountName: '',
+  accountNumber: '',
+  bankName: '',
+  branchName: '',
+  routingNumber: '',
+};
 
 export default function WithdrawModal({
   open,
   onOpenChange,
   availableBalance,
   bankDetails,
-  onSuccess
+  onSuccess,
 }: WithdrawModalProps) {
-  const [step, setStep] = useState(1)
-  const [amount, setAmount] = useState("")
-  const [details, setDetails] = useState<BankDetails>(emptyDetails)
-  const [confirmBank, setConfirmBank] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [step, setStep] = useState(1);
+  const [amount, setAmount] = useState('');
+  const [details, setDetails] = useState<BankDetails>(emptyDetails);
+  const [confirmBank, setConfirmBank] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setStep(1)
-      setAmount("")
-      setDetails({ ...emptyDetails, ...bankDetails })
-      setConfirmBank(false)
-      setError(null)
-      setSubmitting(false)
+      setStep(1);
+      setAmount('');
+      setDetails({ ...emptyDetails, ...bankDetails });
+      setConfirmBank(false);
+      setError(null);
+      setSubmitting(false);
     }
-  }, [open, bankDetails])
+  }, [open, bankDetails]);
 
-  const parsedAmount = useMemo(() => Number(amount), [amount])
+  const parsedAmount = useMemo(() => Number(amount), [amount]);
 
   const validateAmount = () => {
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      return "Amount must be greater than 0"
+      return 'Amount must be greater than 0';
     }
     if (parsedAmount > availableBalance) {
-      return "Amount cannot exceed available balance"
+      return 'Amount cannot exceed available balance';
     }
     if (parsedAmount < MIN_WITHDRAWAL) {
-      return `Minimum withdrawal is ${MIN_WITHDRAWAL} BDT`
+      return `Minimum withdrawal is ${MIN_WITHDRAWAL} BDT`;
     }
-    return null
-  }
+    return null;
+  };
 
   const validateBankDetails = () => {
     const requiredFields: Array<keyof BankDetails> = [
-      "accountName",
-      "accountNumber",
-      "bankName",
-      "branchName",
-      "routingNumber"
-    ]
+      'accountName',
+      'accountNumber',
+      'bankName',
+      'branchName',
+      'routingNumber',
+    ];
 
-    const missingField = requiredFields.find(
-      (field) => !details[field].trim()
-    )
+    const missingField = requiredFields.find((field) => !details[field].trim());
 
     if (missingField) {
-      return "All bank details are required"
+      return 'All bank details are required';
     }
     if (!confirmBank) {
-      return "Please confirm the bank details"
+      return 'Please confirm the bank details';
     }
-    return null
-  }
+    return null;
+  };
 
   const handleNext = async () => {
-    setError(null)
+    setError(null);
 
     if (step === 1) {
-      const amountError = validateAmount()
+      const amountError = validateAmount();
       if (amountError) {
-        setError(amountError)
-        return
+        setError(amountError);
+        return;
       }
-      setStep(2)
-      return
+      setStep(2);
+      return;
     }
 
     if (step === 2) {
-      const bankError = validateBankDetails()
+      const bankError = validateBankDetails();
       if (bankError) {
-        setError(bankError)
-        return
+        setError(bankError);
+        return;
       }
-      setStep(3)
-      return
+      setStep(3);
+      return;
     }
 
     if (step === 3) {
-      setSubmitting(true)
+      setSubmitting(true);
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-        const token = localStorage.getItem("accessToken")
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('accessToken');
 
         const response = await fetch(`${baseUrl}/api/wallet/withdraw`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify({
             amount: parsedAmount,
-            bankDetails: details
-          })
-        })
+            bankDetails: details,
+          }),
+        });
 
-        const result = await response.json()
+        const result = await response.json();
         if (!response.ok || !result?.success) {
-          throw new Error(result?.error || "Withdrawal failed")
+          throw new Error(result?.error || 'Withdrawal failed');
         }
 
-        onSuccess?.()
-        onOpenChange(false)
+        onSuccess?.();
+        onOpenChange(false);
       } catch (submitError: any) {
-        setError(submitError?.message || "Withdrawal failed")
+        setError(submitError?.message || 'Withdrawal failed');
       } finally {
-        setSubmitting(false)
+        setSubmitting(false);
       }
     }
-  }
+  };
 
   const handleBack = () => {
-    setError(null)
-    setStep((prev) => Math.max(1, prev - 1))
-  }
+    setError(null);
+    setStep((prev) => Math.max(1, prev - 1));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 && "Withdraw Balance"}
-            {step === 2 && "Confirm Bank Details"}
-            {step === 3 && "Review & Confirm"}
+            {step === 1 && 'Withdraw Balance'}
+            {step === 2 && 'Confirm Bank Details'}
+            {step === 3 && 'Review & Confirm'}
           </DialogTitle>
         </DialogHeader>
 
@@ -217,7 +209,7 @@ export default function WithdrawModal({
                   onChange={(event) =>
                     setDetails((prev) => ({
                       ...prev,
-                      accountName: event.target.value
+                      accountName: event.target.value,
                     }))
                   }
                 />
@@ -230,7 +222,7 @@ export default function WithdrawModal({
                   onChange={(event) =>
                     setDetails((prev) => ({
                       ...prev,
-                      accountNumber: event.target.value
+                      accountNumber: event.target.value,
                     }))
                   }
                 />
@@ -243,7 +235,7 @@ export default function WithdrawModal({
                   onChange={(event) =>
                     setDetails((prev) => ({
                       ...prev,
-                      bankName: event.target.value
+                      bankName: event.target.value,
                     }))
                   }
                 />
@@ -256,7 +248,7 @@ export default function WithdrawModal({
                   onChange={(event) =>
                     setDetails((prev) => ({
                       ...prev,
-                      branchName: event.target.value
+                      branchName: event.target.value,
                     }))
                   }
                 />
@@ -269,7 +261,7 @@ export default function WithdrawModal({
                   onChange={(event) =>
                     setDetails((prev) => ({
                       ...prev,
-                      routingNumber: event.target.value
+                      routingNumber: event.target.value,
                     }))
                   }
                 />
@@ -292,15 +284,11 @@ export default function WithdrawModal({
             <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Withdrawal amount</span>
-                <span className="font-semibold">
-                  {formatAmount(parsedAmount || 0)}
-                </span>
+                <span className="font-semibold">{formatAmount(parsedAmount || 0)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Account number</span>
-                <span className="font-semibold">
-                  {maskAccountNumber(details.accountNumber)}
-                </span>
+                <span className="font-semibold">{maskAccountNumber(details.accountNumber)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Bank name</span>
@@ -308,8 +296,7 @@ export default function WithdrawModal({
               </div>
             </div>
             <p className="text-xs text-gray-500">
-              This action cannot be undone. The amount will be processed within
-              3-5 business days.
+              This action cannot be undone. The amount will be processed within 3-5 business days.
             </p>
           </div>
         )}
@@ -327,10 +314,10 @@ export default function WithdrawModal({
             </Button>
           )}
           <Button onClick={handleNext} disabled={submitting}>
-            {step === 3 ? "Confirm Withdrawal" : "Next"}
+            {step === 3 ? 'Confirm Withdrawal' : 'Next'}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

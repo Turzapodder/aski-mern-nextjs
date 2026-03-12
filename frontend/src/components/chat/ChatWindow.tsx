@@ -1,7 +1,28 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import Image from "next/image";
-import { ArrowLeft, BadgeDollarSign, Check, ChevronDown, MoreVertical, MoreHorizontal, Paperclip, Phone, Search, Send, X, Pencil, Trash2, Play, Download, Maximize2, Calendar, DollarSign, Clipboard, Info } from 'lucide-react';
+import Image from 'next/image';
+import {
+  ArrowLeft,
+  BadgeDollarSign,
+  Check,
+  ChevronDown,
+  MoreVertical,
+  MoreHorizontal,
+  Paperclip,
+  Phone,
+  Search,
+  Send,
+  X,
+  Pencil,
+  Trash2,
+  Play,
+  Download,
+  Maximize2,
+  Calendar,
+  DollarSign,
+  Clipboard,
+  Info,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -11,19 +32,19 @@ import {
   useDeleteMessageMutation,
   useEditMessageMutation,
   useLeaveChatMutation,
-  useGetChatAssignmentsQuery
+  useGetChatAssignmentsQuery,
 } from '@/lib/services/chat';
 import {
   useAcceptOfferMutation,
   useCreateOfferMutation,
   useDeclineOfferMutation,
-  useGetActiveOfferQuery
+  useGetActiveOfferQuery,
 } from '@/lib/services/customOffers';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -33,7 +54,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -59,7 +80,7 @@ const ChatWindow = () => {
     clearSelectedChat,
     isConnected,
     messagesLoading,
-    messagesError
+    messagesError,
   } = useChatContext();
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
@@ -82,8 +103,14 @@ const ChatWindow = () => {
   const [editingContent, setEditingContent] = useState('');
   const [messageToDelete, setMessageToDelete] = useState<any | null>(null);
   const [chatDeleteOpen, setChatDeleteOpen] = useState(false);
-  const [stagedFiles, setStagedFiles] = useState<{ file: File; preview: string; type: string }[]>([]);
-  const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [stagedFiles, setStagedFiles] = useState<{ file: File; preview: string; type: string }[]>(
+    []
+  );
+  const [mediaViewer, setMediaViewer] = useState<{
+    url: string;
+    type: string;
+    name: string;
+  } | null>(null);
   const [tasksModalOpen, setTasksModalOpen] = useState(false);
   const [selectedAssignmentForEdit, setSelectedAssignmentForEdit] = useState<any>(null);
 
@@ -111,9 +138,7 @@ const ChatWindow = () => {
   const activeAssignments = assignmentsResponse?.data || [];
 
   const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    'http://localhost:8000';
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
   const resolveFileUrl = (url?: string) => {
     if (!url) return '';
@@ -140,13 +165,13 @@ const ChatWindow = () => {
       return;
     }
 
-    const filesToSend = stagedFiles.map(s => s.file);
-    const previewsToClear = stagedFiles.map(s => s.preview);
+    const filesToSend = stagedFiles.map((s) => s.file);
+    const previewsToClear = stagedFiles.map((s) => s.preview);
 
     // Clear instantly for better UX
     setStagedFiles([]);
     setNewMessage('');
-    if (inputRef.current) inputRef.current.style.height = "auto";
+    if (inputRef.current) inputRef.current.style.height = 'auto';
     stopTyping();
 
     try {
@@ -157,7 +182,7 @@ const ChatWindow = () => {
       }
 
       // Cleanup staged previews after sending
-      previewsToClear.forEach(p => URL.revokeObjectURL(p));
+      previewsToClear.forEach((p) => URL.revokeObjectURL(p));
     } catch (error) {
       console.error('Failed to send message:', error);
       // Optional: restoration logic if needed, but per request we show error in message area.
@@ -173,20 +198,20 @@ const ChatWindow = () => {
       return;
     }
 
-    const newStaged = files.map(file => ({
+    const newStaged = files.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
-      type: file.type
+      type: file.type,
     }));
 
-    setStagedFiles(prev => [...prev, ...newStaged]);
+    setStagedFiles((prev) => [...prev, ...newStaged]);
     if (e.target) {
       e.target.value = '';
     }
   };
 
   const removeStagedFile = (index: number) => {
-    setStagedFiles(prev => {
+    setStagedFiles((prev) => {
       const next = [...prev];
       URL.revokeObjectURL(next[index].preview);
       next.splice(index, 1);
@@ -197,7 +222,7 @@ const ChatWindow = () => {
   const handleTyping = (value: string) => {
     setNewMessage(value);
     if (inputRef.current) {
-      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = 'auto';
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 160)}px`;
     }
     if (!selectedChat) return;
@@ -219,7 +244,7 @@ const ChatWindow = () => {
 
   useEffect(() => {
     if (inputRef.current) {
-      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = 'auto';
     }
     // Clear staged files when switching chats.
     setStagedFiles((prev) => {
@@ -231,7 +256,7 @@ const ChatWindow = () => {
   // Cleanup effect
   useEffect(() => {
     return () => {
-      stagedFiles.forEach(s => URL.revokeObjectURL(s.preview));
+      stagedFiles.forEach((s) => URL.revokeObjectURL(s.preview));
     };
   }, [stagedFiles]);
 
@@ -253,13 +278,13 @@ const ChatWindow = () => {
   const resolvedStudentId =
     typeof assignmentStudent === 'string' ? assignmentStudent : assignmentStudent?._id;
   const studentId =
-    resolvedStudentId || selectedChat.participants.find((p: any) => !p.roles?.includes('tutor'))?._id;
+    resolvedStudentId ||
+    selectedChat.participants.find((p: any) => !p.roles?.includes('tutor'))?._id;
   const studentHasMessaged = studentId
     ? messages.some((msg) => {
-      const senderId =
-        typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
-      return senderId === studentId;
-    })
+        const senderId = typeof msg.sender === 'string' ? msg.sender : msg.sender?._id;
+        return senderId === studentId;
+      })
     : true;
   const tutorBlocked = Boolean(isTutor && selectedChat.type === 'direct' && !studentHasMessaged);
   const typingList = typingUsers[selectedChat._id] || [];
@@ -273,7 +298,7 @@ const ChatWindow = () => {
   const isUserOnline = () => {
     if (selectedChat.type === 'group') return false;
     const otherParticipant = selectedChat.participants.find((p: any) => p._id !== currentUserId);
-    return otherParticipant && onlineUsers.some(u => u._id === otherParticipant._id);
+    return otherParticipant && onlineUsers.some((u) => u._id === otherParticipant._id);
   };
 
   const openOfferModal = (mode: 'create' | 'edit' = 'create', assignmentToEdit?: any) => {
@@ -281,8 +306,14 @@ const ChatWindow = () => {
     if (mode === 'edit' && assignmentToEdit) {
       setOfferTitle(assignmentToEdit.title || '');
       setOfferDescription(assignmentToEdit.description || '');
-      setOfferBudget(assignmentToEdit.budget?.toString() || assignmentToEdit.estimatedCost?.toString() || '');
-      setOfferDeadline(assignmentToEdit.deadline ? new Date(assignmentToEdit.deadline).toISOString().split('T')[0] : '');
+      setOfferBudget(
+        assignmentToEdit.budget?.toString() || assignmentToEdit.estimatedCost?.toString() || ''
+      );
+      setOfferDeadline(
+        assignmentToEdit.deadline
+          ? new Date(assignmentToEdit.deadline).toISOString().split('T')[0]
+          : ''
+      );
       setSelectedAssignmentForEdit(assignmentToEdit);
     } else {
       setOfferTitle('');
@@ -425,7 +456,9 @@ const ChatWindow = () => {
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{getChatName()}</h2>
             <div className="flex flex-wrap items-center gap-2 mt-1">
               {isUserOnline() && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
-              <span className="text-xs text-gray-600 font-medium">{isUserOnline() ? 'Online' : 'Offline'}</span>
+              <span className="text-xs text-gray-600 font-medium">
+                {isUserOnline() ? 'Online' : 'Offline'}
+              </span>
               {!isConnected && (
                 <span
                   className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase bg-amber-100 text-amber-700`}
@@ -447,8 +480,12 @@ const ChatWindow = () => {
               Send Custom Offer
             </button>
           )}
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Search size={18} /></button>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Phone size={18} /></button>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <Search size={18} />
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <Phone size={18} />
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -490,10 +527,20 @@ const ChatWindow = () => {
                 <span className="text-[11px] font-semibold text-indigo-600">
                   {activeAssignments.length === 1
                     ? `${formatAmount(activeAssignments[0].budget || activeAssignments[0].estimatedCost)} • ${format(new Date(activeAssignments[0].deadline), 'MMM dd')}`
-                    : format(new Date(Math.max(...activeAssignments.map((a: any) => new Date(a.deadline).getTime()))), 'MMM dd, yyyy')}
+                    : format(
+                        new Date(
+                          Math.max(
+                            ...activeAssignments.map((a: any) => new Date(a.deadline).getTime())
+                          )
+                        ),
+                        'MMM dd, yyyy'
+                      )}
                 </span>
               </div>
-              <ChevronDown size={16} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+              <ChevronDown
+                size={16}
+                className="text-gray-400 group-hover:text-indigo-600 transition-colors"
+              />
             </div>
           </div>
         </div>
@@ -537,266 +584,318 @@ const ChatWindow = () => {
           </div>
         )}
 
-        {!messagesLoading && !Boolean(messagesError) && messages.map((msg, index) => {
-          const sender =
-            typeof msg.sender === "object" && msg.sender
-              ? msg.sender
-              : { _id: msg.sender as string, name: "Unknown", avatar: undefined };
-          const senderId = sender?._id;
-          const isMe = senderId === currentUserId;
-          const prevSender = messages[index - 1]?.sender;
-          const prevSenderId =
-            typeof prevSender === "object" && prevSender
-              ? prevSender?._id
-              : (prevSender as string | undefined);
-          const showAvatar = !isMe && (index === 0 || prevSenderId !== senderId);
-          const isRead = isMe && msg.readBy?.some((entry) => entry.user !== currentUserId);
-          const offerId = msg.meta?.offerId;
-          const canEdit = isMe && msg.type === 'text' && !msg.isDeleted;
-          const canDelete = isMe && !msg.isDeleted;
-          const isEditing = editingMessageId === msg._id;
+        {!messagesLoading &&
+          !Boolean(messagesError) &&
+          messages.map((msg, index) => {
+            const sender =
+              typeof msg.sender === 'object' && msg.sender
+                ? msg.sender
+                : { _id: msg.sender as string, name: 'Unknown', avatar: undefined };
+            const senderId = sender?._id;
+            const isMe = senderId === currentUserId;
+            const prevSender = messages[index - 1]?.sender;
+            const prevSenderId =
+              typeof prevSender === 'object' && prevSender
+                ? prevSender?._id
+                : (prevSender as string | undefined);
+            const showAvatar = !isMe && (index === 0 || prevSenderId !== senderId);
+            const isRead = isMe && msg.readBy?.some((entry) => entry.user !== currentUserId);
+            const offerId = msg.meta?.offerId;
+            const canEdit = isMe && msg.type === 'text' && !msg.isDeleted;
+            const canDelete = isMe && !msg.isDeleted;
+            const isEditing = editingMessageId === msg._id;
 
-          return (
-            <div key={msg._id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-              {!isMe && (
-                <div className="w-10 h-10 flex-shrink-0">
-                  {showAvatar ? (
-                    sender.avatar ? (
-                      <Image
-                        src={sender.avatar}
-                        alt={sender.name}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
+            return (
+              <div key={msg._id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                {!isMe && (
+                  <div className="w-10 h-10 flex-shrink-0">
+                    {showAvatar ? (
+                      sender.avatar ? (
+                        <Image
+                          src={sender.avatar}
+                          alt={sender.name}
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
+                          {(sender.name || 'U').charAt(0)}
+                        </div>
+                      )
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
-                        {(sender.name || "U").charAt(0)}
-                      </div>
-                    )
-                  ) : <div className="w-10" />}
-                </div>
-              )}
-
-              <div className={`flex flex-col max-w-[85%] sm:max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
-                {!isMe && showAvatar && (
-                  <span className="text-sm font-medium text-gray-500 mb-1 ml-1">{sender.name || "Unknown"}</span>
+                      <div className="w-10" />
+                    )}
+                  </div>
                 )}
 
-                {msg.type === 'offer' ? (
-                  <div className={`rounded-2xl border ${isMe ? 'border-primary-200 bg-primary-50' : 'border-gray-200 bg-white'} p-4 text-sm w-full`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="font-semibold text-gray-900">Custom Offer</div>
-                      <span className="text-xs uppercase tracking-wide text-gray-500">{msg.meta?.status || 'pending'}</span>
-                    </div>
-                    <div className="space-y-3 text-gray-700">
-                      {(msg.meta?.title || assignmentTitle) && (
-                        <div className="pb-2 border-b border-gray-100/50">
-                          <span className="text-xs text-gray-400 block mb-1 uppercase tracking-tight font-medium">Assignment</span>
-                          <span className="font-bold text-gray-900 line-clamp-2">{msg.meta?.title || assignmentTitle}</span>
-                        </div>
-                      )}
-                      {msg.meta?.description && (
-                        <p className="text-sm text-gray-600 line-clamp-4 italic leading-snug">{msg.meta.description}</p>
-                      )}
-                      <div className="pt-1 flex flex-col gap-2">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-500 uppercase font-medium">Budget</span>
-                          <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">{formatAmount(msg.meta?.proposedBudget ?? 0)}</span>
-                        </div>
-                        {msg.meta?.proposedDeadline && (
+                <div
+                  className={`flex flex-col max-w-[85%] sm:max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}
+                >
+                  {!isMe && showAvatar && (
+                    <span className="text-sm font-medium text-gray-500 mb-1 ml-1">
+                      {sender.name || 'Unknown'}
+                    </span>
+                  )}
+
+                  {msg.type === 'offer' ? (
+                    <div
+                      className={`rounded-2xl border ${isMe ? 'border-primary-200 bg-primary-50' : 'border-gray-200 bg-white'} p-4 text-sm w-full`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="font-semibold text-gray-900">Custom Offer</div>
+                        <span className="text-xs uppercase tracking-wide text-gray-500">
+                          {msg.meta?.status || 'pending'}
+                        </span>
+                      </div>
+                      <div className="space-y-3 text-gray-700">
+                        {(msg.meta?.title || assignmentTitle) && (
+                          <div className="pb-2 border-b border-gray-100/50">
+                            <span className="text-xs text-gray-400 block mb-1 uppercase tracking-tight font-medium">
+                              Assignment
+                            </span>
+                            <span className="font-bold text-gray-900 line-clamp-2">
+                              {msg.meta?.title || assignmentTitle}
+                            </span>
+                          </div>
+                        )}
+                        {msg.meta?.description && (
+                          <p className="text-sm text-gray-600 line-clamp-4 italic leading-snug">
+                            {msg.meta.description}
+                          </p>
+                        )}
+                        <div className="pt-1 flex flex-col gap-2">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 uppercase font-medium">Deadline</span>
-                            <span className="font-semibold text-gray-900">{format(new Date(msg.meta.proposedDeadline), 'MMM dd, yyyy')}</span>
+                            <span className="text-gray-500 uppercase font-medium">Budget</span>
+                            <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                              {formatAmount(msg.meta?.proposedBudget ?? 0)}
+                            </span>
+                          </div>
+                          {msg.meta?.proposedDeadline && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 uppercase font-medium">Deadline</span>
+                              <span className="font-semibold text-gray-900">
+                                {format(new Date(msg.meta.proposedDeadline), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {msg.meta?.message && (
+                          <div className="mt-3 p-3 bg-gray-50/80 rounded-xl border border-gray-100 relative group">
+                            <p className="text-xs italic text-gray-600 break-words leading-relaxed">
+                              <span className="text-indigo-600 font-bold mr-1">&quot;</span>
+                              {msg.meta.message}
+                              <span className="text-indigo-600 font-bold ml-1">&quot;</span>
+                            </p>
                           </div>
                         )}
                       </div>
-                      {msg.meta?.message && (
-                        <div className="mt-3 p-3 bg-gray-50/80 rounded-xl border border-gray-100 relative group">
-                          <p className="text-xs italic text-gray-600 break-words leading-relaxed">
-                            <span className="text-indigo-600 font-bold mr-1">&quot;</span>
-                            {msg.meta.message}
-                            <span className="text-indigo-600 font-bold ml-1">&quot;</span>
-                          </p>
+                      {isStudent && msg.meta?.status === 'pending' && offerId && (
+                        <div className="mt-4 flex gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                            disabled={offerActionId === offerId}
+                            onClick={() => handleOfferDecision(offerId, 'accept')}
+                          >
+                            <Check className="h-4 w-4 mr-1" /> Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-rose-200 text-rose-600 hover:text-rose-700"
+                            disabled={offerActionId === offerId}
+                            onClick={() => handleOfferDecision(offerId, 'decline')}
+                          >
+                            <X className="h-4 w-4 mr-1" /> Decline
+                          </Button>
                         </div>
                       )}
                     </div>
-                    {isStudent && msg.meta?.status === 'pending' && offerId && (
-                      <div className="mt-4 flex gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700"
-                          disabled={offerActionId === offerId}
-                          onClick={() => handleOfferDecision(offerId, 'accept')}
-                        >
-                          <Check className="h-4 w-4 mr-1" /> Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-rose-200 text-rose-600 hover:text-rose-700"
-                          disabled={offerActionId === offerId}
-                          onClick={() => handleOfferDecision(offerId, 'decline')}
-                        >
-                          <X className="h-4 w-4 mr-1" /> Decline
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative group w-full">
-                    <div
-                      className={`p-2 pl-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap transition-opacity ${isMe
-                        ? 'bg-primary-600 text-white rounded-tr-none shadow-sm'
-                        : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
-                        } ${msg.status === 'sending' ? 'opacity-60 cursor-not-allowed' : ''} ${msg.status === 'error' ? 'border-rose-300' : ''}`}
-                    >
-                      {msg.status === 'error' && (
-                        <div className="absolute inset-0 z-10 bg-rose-50/40 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
-                          <div className="bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                            <X size={10} strokeWidth={3} /> Failed
-                          </div>
-                        </div>
-                      )}
-                      {msg.isDeleted ? (
-                        <span className={isMe ? 'text-white/70 italic' : 'text-gray-400 italic'}>
-                          This message was deleted
-                        </span>
-                      ) : isEditing ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-xs text-gray-400">
-                            <span>Editing message</span>
-                            <span>{editingContent.length}/{MAX_MESSAGE_LENGTH}</span>
-                          </div>
-                          <Textarea
-                            value={editingContent}
-                            onChange={(event) => setEditingContent(event.target.value)}
-                            rows={3}
-                            className="text-gray-900 bg-white"
-                          />
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEditMessage}
-                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                            >
-                              Cancel
-                            </Button>
-                            <Button size="sm" onClick={saveEditedMessage}>
-                              Save changes
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {msg.content}
-                          {msg.attachments && msg.attachments.length > 0 && (
-                            <div className={`flex flex-wrap gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                              {msg.attachments.map((file, idx) => {
-                                const isImage = file.mimetype.startsWith('image/');
-                                const isVideo = file.mimetype.startsWith('video/');
-                                const fileUrl = resolveFileUrl(file.url);
-
-                                if (isImage) {
-                                  return (
-                                    <div
-                                      key={`${msg._id}-${idx}`}
-                                      className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer border border-black/5"
-                                      onClick={() => setMediaViewer({ url: fileUrl, type: file.mimetype, name: file.originalName })}
-                                    >
-                                      <Image src={fileUrl} alt={file.originalName} fill className="object-cover transition-transform hover:scale-105" />
-                                    </div>
-                                  );
-                                }
-
-                                if (isVideo) {
-                                  return (
-                                    <div
-                                      key={`${msg._id}-${idx}`}
-                                      className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer bg-black/90 flex flex-col items-center justify-center border border-black/5"
-                                      onClick={() => setMediaViewer({ url: fileUrl, type: file.mimetype, name: file.originalName })}
-                                    >
-                                      <Play size={40} className="text-white opacity-50" />
-                                      <span className="text-[10px] text-white/50 mt-2 truncate w-32 text-center px-2">{file.originalName}</span>
-                                      <div className="absolute top-2 right-2 p-1 bg-black/30 rounded-full">
-                                        <Maximize2 size={12} className="text-white" />
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <a
-                                    key={`${msg._id}-${idx}`}
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${isMe
-                                      ? 'border-white/10 bg-white/10 text-white/90 hover:bg-white/20'
-                                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                                      }`}
-                                  >
-                                    <Paperclip size={14} />
-                                    <span className="truncate max-w-[120px]">{file.originalName}</span>
-                                    <Download size={14} className="ml-2 opacity-50" />
-                                  </a>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    {(canEdit || canDelete) && !isEditing && !msg.isDeleted && (
+                  ) : (
+                    <div className="relative group w-full">
                       <div
-                        className={`absolute top-1/2 -translate-y-1/2 -left-8 opacity-0 group-hover:opacity-100 transition-opacity`}
+                        className={`p-2 pl-4 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap transition-opacity ${
+                          isMe
+                            ? 'bg-primary-600 text-white rounded-tr-none shadow-sm'
+                            : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
+                        } ${msg.status === 'sending' ? 'opacity-60 cursor-not-allowed' : ''} ${msg.status === 'error' ? 'border-rose-300' : ''}`}
                       >
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
-                              aria-label="Message actions"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-44">
-                            {canEdit && (
-                              <DropdownMenuItem onClick={() => handleEditMessage(msg)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit message
-                              </DropdownMenuItem>
+                        {msg.status === 'error' && (
+                          <div className="absolute inset-0 z-10 bg-rose-50/40 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
+                            <div className="bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <X size={10} strokeWidth={3} /> Failed
+                            </div>
+                          </div>
+                        )}
+                        {msg.isDeleted ? (
+                          <span className={isMe ? 'text-white/70 italic' : 'text-gray-400 italic'}>
+                            This message was deleted
+                          </span>
+                        ) : isEditing ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between text-xs text-gray-400">
+                              <span>Editing message</span>
+                              <span>
+                                {editingContent.length}/{MAX_MESSAGE_LENGTH}
+                              </span>
+                            </div>
+                            <Textarea
+                              value={editingContent}
+                              onChange={(event) => setEditingContent(event.target.value)}
+                              rows={3}
+                              className="text-gray-900 bg-white"
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditMessage}
+                                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                              >
+                                Cancel
+                              </Button>
+                              <Button size="sm" onClick={saveEditedMessage}>
+                                Save changes
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {msg.content}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div
+                                className={`flex flex-wrap gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                              >
+                                {msg.attachments.map((file, idx) => {
+                                  const isImage = file.mimetype.startsWith('image/');
+                                  const isVideo = file.mimetype.startsWith('video/');
+                                  const fileUrl = resolveFileUrl(file.url);
+
+                                  if (isImage) {
+                                    return (
+                                      <div
+                                        key={`${msg._id}-${idx}`}
+                                        className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer border border-black/5"
+                                        onClick={() =>
+                                          setMediaViewer({
+                                            url: fileUrl,
+                                            type: file.mimetype,
+                                            name: file.originalName,
+                                          })
+                                        }
+                                      >
+                                        <Image
+                                          src={fileUrl}
+                                          alt={file.originalName}
+                                          fill
+                                          className="object-cover transition-transform hover:scale-105"
+                                        />
+                                      </div>
+                                    );
+                                  }
+
+                                  if (isVideo) {
+                                    return (
+                                      <div
+                                        key={`${msg._id}-${idx}`}
+                                        className="relative w-40 h-40 rounded-lg overflow-hidden cursor-pointer bg-black/90 flex flex-col items-center justify-center border border-black/5"
+                                        onClick={() =>
+                                          setMediaViewer({
+                                            url: fileUrl,
+                                            type: file.mimetype,
+                                            name: file.originalName,
+                                          })
+                                        }
+                                      >
+                                        <Play size={40} className="text-white opacity-50" />
+                                        <span className="text-[10px] text-white/50 mt-2 truncate w-32 text-center px-2">
+                                          {file.originalName}
+                                        </span>
+                                        <div className="absolute top-2 right-2 p-1 bg-black/30 rounded-full">
+                                          <Maximize2 size={12} className="text-white" />
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <a
+                                      key={`${msg._id}-${idx}`}
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                                        isMe
+                                          ? 'border-white/10 bg-white/10 text-white/90 hover:bg-white/20'
+                                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <Paperclip size={14} />
+                                      <span className="truncate max-w-[120px]">
+                                        {file.originalName}
+                                      </span>
+                                      <Download size={14} className="ml-2 opacity-50" />
+                                    </a>
+                                  );
+                                })}
+                              </div>
                             )}
-                            {canDelete && (
-                              <DropdownMenuItem className="text-rose-600" onClick={() => confirmDeleteMessage(msg)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete message
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          </>
+                        )}
                       </div>
+                      {(canEdit || canDelete) && !isEditing && !msg.isDeleted && (
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 -left-8 opacity-0 group-hover:opacity-100 transition-opacity`}
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                                aria-label="Message actions"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-44">
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => handleEditMessage(msg)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit message
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <DropdownMenuItem
+                                  className="text-rose-600"
+                                  onClick={() => confirmDeleteMessage(msg)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete message
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 mt-1 px-1">
+                    <span className="text-[11px] text-gray-400">
+                      {format(new Date(msg.createdAt), 'hh:mm a')}
+                    </span>
+                    {!msg.isDeleted && msg.editedAt && (
+                      <span className="text-[10px] text-gray-400">Edited</span>
+                    )}
+                    {isMe && (
+                      <span className="text-[10px] text-gray-400">{isRead ? 'Read' : 'Sent'}</span>
                     )}
                   </div>
-                )}
-
-                <div className="flex items-center gap-2 mt-1 px-1">
-                  <span className="text-[11px] text-gray-400">
-                    {format(new Date(msg.createdAt), 'hh:mm a')}
-                  </span>
-                  {!msg.isDeleted && msg.editedAt && (
-                    <span className="text-[10px] text-gray-400">Edited</span>
-                  )}
-                  {isMe && (
-                    <span className="text-[10px] text-gray-400">{isRead ? 'Read' : 'Sent'}</span>
-                  )}
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
         {typingList.length > 0 && (
           <div className="text-xs text-gray-500">
@@ -823,7 +922,10 @@ const ChatWindow = () => {
         {stagedFiles.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
             {stagedFiles.map((staged, index) => (
-              <div key={index} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+              <div
+                key={index}
+                className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center"
+              >
                 {staged.type.startsWith('image/') ? (
                   <Image src={staged.preview} alt="preview" fill className="object-cover" />
                 ) : staged.type.startsWith('video/') ? (
@@ -834,7 +936,9 @@ const ChatWindow = () => {
                 ) : (
                   <div className="flex flex-col items-center">
                     <Paperclip size={20} className="text-gray-400" />
-                    <span className="text-[10px] text-gray-500 truncate w-12 text-center">{staged.file.name}</span>
+                    <span className="text-[10px] text-gray-500 truncate w-12 text-center">
+                      {staged.file.name}
+                    </span>
                   </div>
                 )}
                 <button
@@ -882,7 +986,11 @@ const ChatWindow = () => {
 
             <button
               type="submit"
-              disabled={(!newMessage.trim() && stagedFiles.length === 0) || newMessage.length > MAX_MESSAGE_LENGTH || tutorBlocked}
+              disabled={
+                (!newMessage.trim() && stagedFiles.length === 0) ||
+                newMessage.length > MAX_MESSAGE_LENGTH ||
+                tutorBlocked
+              }
               className="p-2 text-[#2563EB] hover:bg-white rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
@@ -913,10 +1021,14 @@ const ChatWindow = () => {
               {offerModalMode === 'edit' ? (
                 <div className="p-3 bg-gray-100 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Assignment</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Active Assignment
+                    </span>
                   </div>
                   <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{offerTitle}</h4>
-                  {offerDescription && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offerDescription}</p>}
+                  {offerDescription && (
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offerDescription}</p>
+                  )}
                 </div>
               ) : (
                 <>
@@ -952,7 +1064,9 @@ const ChatWindow = () => {
               {assignmentDeadline && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100 text-amber-700">
                   <Info size={14} />
-                  <span className="text-[11px] font-medium">Original deadline: {format(new Date(assignmentDeadline), 'MMM dd, yyyy')}</span>
+                  <span className="text-[11px] font-medium">
+                    Original deadline: {format(new Date(assignmentDeadline), 'MMM dd, yyyy')}
+                  </span>
                 </div>
               )}
             </div>
@@ -1026,14 +1140,21 @@ const ChatWindow = () => {
                 disabled={isSendingOffer}
                 className="flex-[1.5] rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
               >
-                {isSendingOffer ? 'Sending...' : offerModalMode === 'edit' ? 'Send Edit Offer' : 'Send Custom Offer'}
+                {isSendingOffer
+                  ? 'Sending...'
+                  : offerModalMode === 'edit'
+                    ? 'Send Edit Offer'
+                    : 'Send Custom Offer'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(messageToDelete)} onOpenChange={(open) => !open && setMessageToDelete(null)}>
+      <AlertDialog
+        open={Boolean(messageToDelete)}
+        onOpenChange={(open) => !open && setMessageToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete message?</AlertDialogTitle>
@@ -1089,7 +1210,9 @@ const ChatWindow = () => {
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
           <DialogHeader className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/50 to-transparent">
             <div className="flex items-center justify-between text-white">
-              <DialogTitle className="text-sm font-medium truncate pr-8">{mediaViewer?.name}</DialogTitle>
+              <DialogTitle className="text-sm font-medium truncate pr-8">
+                {mediaViewer?.name}
+              </DialogTitle>
               <div className="flex items-center gap-2">
                 <a
                   href={mediaViewer?.url}
@@ -1104,8 +1227,8 @@ const ChatWindow = () => {
           </DialogHeader>
 
           <div className="relative w-full h-[80vh] flex items-center justify-center">
-            {mediaViewer && (
-              mediaViewer.type.startsWith('image/') ? (
+            {mediaViewer &&
+              (mediaViewer.type.startsWith('image/') ? (
                 <div className="relative w-full h-full p-4">
                   <Image
                     src={mediaViewer.url}
@@ -1115,14 +1238,8 @@ const ChatWindow = () => {
                   />
                 </div>
               ) : mediaViewer.type.startsWith('video/') ? (
-                <video
-                  src={mediaViewer.url}
-                  controls
-                  autoPlay
-                  className="max-w-full max-h-full"
-                />
-              ) : null
-            )}
+                <video src={mediaViewer.url} controls autoPlay className="max-w-full max-h-full" />
+              ) : null)}
           </div>
         </DialogContent>
       </Dialog>
@@ -1145,20 +1262,32 @@ const ChatWindow = () => {
           <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto non-scrollbar bg-gray-50">
             {activeAssignments.length > 0 ? (
               activeAssignments.map((assignment: any) => (
-                <div key={assignment._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                <div
+                  key={assignment._id}
+                  className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-gray-900 leading-tight">{assignment.title}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${assignment.status === 'in_progress' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            assignment.status === 'in_progress'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
                           {assignment.status.replace(/_/g, ' ')}
                         </span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-indigo-600 leading-none">{formatAmount(assignment.budget || assignment.estimatedCost)}</p>
-                      <p className="text-[10px] text-gray-400 mt-1 font-medium">{format(new Date(assignment.deadline), 'MMM dd, yyyy')}</p>
+                      <p className="text-lg font-bold text-indigo-600 leading-none">
+                        {formatAmount(assignment.budget || assignment.estimatedCost)}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1 font-medium">
+                        {format(new Date(assignment.deadline), 'MMM dd, yyyy')}
+                      </p>
                     </div>
                   </div>
 
@@ -1182,13 +1311,19 @@ const ChatWindow = () => {
                 <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mb-3">
                   <Clipboard size={20} />
                 </div>
-                <p className="text-sm font-medium text-gray-500 italic">No active assignments found.</p>
+                <p className="text-sm font-medium text-gray-500 italic">
+                  No active assignments found.
+                </p>
               </div>
             )}
           </div>
 
           <div className="p-4 bg-white border-t border-gray-100 flex justify-end">
-            <Button onClick={() => setTasksModalOpen(false)} variant="outline" className="rounded-xl px-6">
+            <Button
+              onClick={() => setTasksModalOpen(false)}
+              variant="outline"
+              className="rounded-xl px-6"
+            >
               Close
             </Button>
           </div>

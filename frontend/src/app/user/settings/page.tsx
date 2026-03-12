@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { SettingsClient } from "./SettingsClient";
+import React, { Suspense } from 'react';
+import { SettingsClient } from './SettingsClient';
 
 export const metadata = {
-  title: "Settings | Aski",
-  description: "Manage your account preferences and settings",
+  title: 'Settings | Aski',
+  description: 'Manage your account preferences and settings',
 };
 
 export default function SettingsPage() {

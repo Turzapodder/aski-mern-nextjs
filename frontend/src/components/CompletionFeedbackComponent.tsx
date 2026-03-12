@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Link as LinkIcon, Star } from "lucide-react";
-import { toast } from "sonner";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FileText, Link as LinkIcon, Star } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Assignment,
   useRequestRevisionMutation,
   useSubmitFeedbackMutation,
-} from "@/lib/services/assignments";
-import { useMarkSubmissionUnderReviewMutation } from "@/lib/services/submissions";
+} from '@/lib/services/assignments';
+import { useMarkSubmissionUnderReviewMutation } from '@/lib/services/submissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,11 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 interface CompletionFeedbackComponentProps {
   assignment: Assignment;
-  submissionStatus?: "submitted" | "under_review" | "completed" | "revision_requested";
+  submissionStatus?: 'submitted' | 'under_review' | 'completed' | 'revision_requested';
   onCompleted?: (assignment: Assignment) => void;
 }
 
@@ -30,22 +30,20 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
   submissionStatus,
   onCompleted,
 }) => {
-  const [rating, setRating] = useState<number | undefined>(
-    assignment.feedback?.rating
-  );
-  const [comments, setComments] = useState(assignment.feedback?.comments || "");
-  const [revisionNote, setRevisionNote] = useState("");
-  const [submitFeedback, { isLoading: feedbackLoading }] =
-    useSubmitFeedbackMutation();
-  const [requestRevision, { isLoading: revisionLoading }] =
-    useRequestRevisionMutation();
+  const [rating, setRating] = useState<number | undefined>(assignment.feedback?.rating);
+  const [comments, setComments] = useState(assignment.feedback?.comments || '');
+  const [revisionNote, setRevisionNote] = useState('');
+  const [submitFeedback, { isLoading: feedbackLoading }] = useSubmitFeedbackMutation();
+  const [requestRevision, { isLoading: revisionLoading }] = useRequestRevisionMutation();
   const [markUnderReview] = useMarkSubmissionUnderReviewMutation();
   const hasMarkedRef = useRef(false);
 
   const latestSubmission = useMemo(() => {
-    if (assignment.submissionDetails?.submissionFiles?.length ||
-        assignment.submissionDetails?.submissionLinks?.length ||
-        assignment.submissionDetails?.submissionNotes) {
+    if (
+      assignment.submissionDetails?.submissionFiles?.length ||
+      assignment.submissionDetails?.submissionLinks?.length ||
+      assignment.submissionDetails?.submissionNotes
+    ) {
       return assignment.submissionDetails;
     }
     if (assignment.submissionHistory && assignment.submissionHistory.length > 0) {
@@ -59,16 +57,14 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
   const submissionNotes = latestSubmission?.submissionNotes;
   const submissionTitle = latestSubmission?.title;
   const submissionDescription = latestSubmission?.description;
-  const isSubmitted = assignment.status === "submitted";
-  const isCompleted = assignment.status === "completed";
+  const isSubmitted = assignment.status === 'submitted';
+  const isCompleted = assignment.status === 'completed';
   const completedRating = assignment.feedback?.rating ?? 0;
   const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const resolveFileUrl = (url?: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
     return `${apiBaseUrl}${url}`;
   };
 
@@ -80,7 +76,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
 
   const handleSubmitFeedback = async () => {
     if (!rating) {
-      toast.error("Please select a star rating to complete the assignment.");
+      toast.error('Please select a star rating to complete the assignment.');
       return;
     }
     try {
@@ -99,7 +95,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
 
   const handleRequestRevision = async () => {
     if (!revisionNote.trim()) {
-      toast.error("Please add a revision note.");
+      toast.error('Please add a revision note.');
       return;
     }
     try {
@@ -107,7 +103,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
         id: assignment._id,
         note: revisionNote.trim(),
       }).unwrap();
-      setRevisionNote("");
+      setRevisionNote('');
     } catch {
       // Error toast handled by centralized middleware
     }
@@ -117,7 +113,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Submission review</h2>
-        {submissionStatus === "under_review" && (
+        {submissionStatus === 'under_review' && (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
             Under review
           </span>
@@ -204,7 +200,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
           <div className="space-y-2">
             {assignment.submissionHistory.map((entry, index) => (
               <div
-                key={`${entry.submittedAt || "submission"}-${index}`}
+                key={`${entry.submittedAt || 'submission'}-${index}`}
                 className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-600"
               >
                 <div className="flex items-center justify-between">
@@ -212,12 +208,12 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                   <span>
                     {entry.submittedAt
                       ? new Date(entry.submittedAt).toLocaleString()
-                      : "Unknown date"}
+                      : 'Unknown date'}
                   </span>
                 </div>
                 <div className="mt-1 text-[11px] text-gray-500">
-                  {(entry.submissionFiles?.length || 0)} files,{" "}
-                  {(entry.submissionLinks?.length || 0)} links
+                  {entry.submissionFiles?.length || 0} files, {entry.submissionLinks?.length || 0}{' '}
+                  links
                 </div>
               </div>
             ))}
@@ -236,7 +232,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                   type="button"
                   onClick={() => setRating(value)}
                   className={`rounded-full p-1 ${
-                    (rating ?? 0) >= value ? "text-amber-500" : "text-gray-300"
+                    (rating ?? 0) >= value ? 'text-amber-500' : 'text-gray-300'
                   }`}
                   aria-label={`Rate ${value} stars`}
                 >
@@ -282,14 +278,15 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                   disabled={revisionLoading}
                   className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
                 >
-                  {revisionLoading ? "Requesting..." : "Request revision"}
+                  {revisionLoading ? 'Requesting...' : 'Request revision'}
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Request revisions?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Let your tutor know what needs to be updated. This will reopen the submission step.
+                    Let your tutor know what needs to be updated. This will reopen the submission
+                    step.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -309,7 +306,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                 disabled={feedbackLoading || !rating}
                 className="w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
               >
-                {feedbackLoading ? "Submitting..." : "Approve & complete"}
+                {feedbackLoading ? 'Submitting...' : 'Approve & complete'}
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -339,7 +336,7 @@ const CompletionFeedbackComponent: React.FC<CompletionFeedbackComponentProps> = 
                 <Star
                   key={`completed-${value}`}
                   className={`h-4 w-4 ${
-                    completedRating >= value ? "fill-current" : "text-amber-200"
+                    completedRating >= value ? 'fill-current' : 'text-amber-200'
                   }`}
                 />
               ))}

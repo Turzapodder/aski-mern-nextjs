@@ -2,8 +2,8 @@ import React, { Suspense } from 'react';
 import { MessagesClient } from './MessagesClient';
 
 export const metadata = {
-  title: "Messages | Aski",
-  description: "Chat with your tutors and clients",
+  title: 'Messages | Aski',
+  description: 'Chat with your tutors and clients',
 };
 
 export default function ChatPage() {

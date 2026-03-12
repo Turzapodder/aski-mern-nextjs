@@ -1,23 +1,28 @@
-import { useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useGetAssignmentsQuery } from "@/lib/services/assignments";
-import { useGetUserQuery } from "@/lib/services/auth";
-import { skipToken } from "@reduxjs/toolkit/query";
-import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
-import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useGetAssignmentsQuery } from '@/lib/services/assignments';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from '@/lib/services/submissions';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 export const useProjectsLogic = () => {
   const router = useRouter();
   const { data: userData, isLoading: userLoading } = useGetUserQuery();
   const user = userData?.user;
-  const isTutor = user?.roles?.includes("tutor");
+  const isTutor = user?.roles?.includes('tutor');
   const currency = user?.wallet?.currency || DEFAULT_CURRENCY;
   const formatAmount = (value?: number) => formatCurrency(value, currency);
 
-  const { data: assignmentsData, isLoading, error } = useGetAssignmentsQuery({
-    status: "proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue",
-    sortBy: "updatedAt",
-    sortOrder: "desc",
+  const {
+    data: assignmentsData,
+    isLoading,
+    error,
+  } = useGetAssignmentsQuery({
+    status:
+      'proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue',
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     limit: 50,
   });
 
@@ -32,11 +37,11 @@ export const useProjectsLogic = () => {
     () => activeAssignments.map((assignment) => assignment._id),
     [activeAssignments]
   );
-  
+
   const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
     assignmentIds.length > 0 ? { assignmentIds } : skipToken
   );
-  
+
   const latestStatuses = latestStatusesData?.data || {};
 
   return {
@@ -47,6 +52,6 @@ export const useProjectsLogic = () => {
     isLoading,
     error,
     activeAssignments,
-    latestStatuses
+    latestStatuses,
   };
 };

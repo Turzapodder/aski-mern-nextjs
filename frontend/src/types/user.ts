@@ -14,7 +14,7 @@ export interface RegisterUser {
   tc?: boolean;
 }
 
-export type LoginRole = "user" | "tutor" | "admin";
+export type LoginRole = 'user' | 'tutor' | 'admin';
 
 export interface LoginPayload {
   email: string;
@@ -38,7 +38,7 @@ export interface ChangePassword {
 
 export interface StudentProfile {
   institutionName?: string;
-  institutionType?: "College" | "University" | "High School" | "Other";
+  institutionType?: 'College' | 'University' | 'High School' | 'Other';
   department?: string;
   degree?: string;
   yearOfStudy?: string;
@@ -66,7 +66,7 @@ export interface TutorProfile {
   availableDays?: string[];
   availableTimeSlots?: Array<string | { day: string; slots: string[] }>;
   hourlyRate?: number;
-  teachingMode?: "Online" | "Offline" | "Hybrid";
+  teachingMode?: 'Online' | 'Offline' | 'Hybrid';
   achievements?: string;
   bio?: string;
   documents?: Array<{
@@ -76,7 +76,7 @@ export interface TutorProfile {
     mimetype: string;
     size: number;
   }>;
-  verificationStatus?: "Pending" | "Verified" | "Rejected";
+  verificationStatus?: 'Pending' | 'Verified' | 'Rejected';
 }
 
 export interface UserProfile {
@@ -84,7 +84,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
-  gender?: "Male" | "Female" | "Other";
+  gender?: 'Male' | 'Female' | 'Other';
   dateOfBirth?: string;
   country?: string;
   city?: string;
@@ -106,7 +106,7 @@ export interface UserProfile {
 export interface ProfileUpdatePayload {
   name?: string;
   phone?: string;
-  gender?: "Male" | "Female" | "Other";
+  gender?: 'Male' | 'Female' | 'Other';
   dateOfBirth?: string;
   country?: string;
   city?: string;

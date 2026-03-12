@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useVerifyEmailLogic } from "./useVerifyEmailLogic";
+import Link from 'next/link';
+import { useVerifyEmailLogic } from './useVerifyEmailLogic';
 
 export const VerifyEmailClient = () => {
   const {
@@ -40,13 +40,11 @@ export const VerifyEmailClient = () => {
           </div>
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">
-          Verify your email
-        </h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">Verify your email</h2>
         <p className="text-sm text-center mb-8 text-gray-500">
-          We sent a code to{" "}
+          We sent a code to{' '}
           <span className="font-medium text-gray-700">
-            {values.email || urlEmail || "your email"}
+            {values.email || urlEmail || 'your email'}
           </span>
         </p>
 
@@ -77,10 +75,8 @@ export const VerifyEmailClient = () => {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Didn&apos;t receive the email?{" "}
-            <button className="text-black font-semibold hover:underline">
-              Click to resend
-            </button>
+            Didn&apos;t receive the email?{' '}
+            <button className="text-black font-semibold hover:underline">Click to resend</button>
           </p>
         </div>
 

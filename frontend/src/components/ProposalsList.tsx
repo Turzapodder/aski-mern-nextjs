@@ -1,5 +1,5 @@
-"use client";
-import { useMemo } from "react";
+'use client';
+import { useMemo } from 'react';
 import {
   Clock,
   DollarSign,
@@ -9,17 +9,17 @@ import {
   CheckCircle,
   X,
   MessageSquare,
-  Calendar
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSocket } from "@/lib/hooks/useSocket";
+  Calendar,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSocket } from '@/lib/hooks/useSocket';
 import {
   useGetProposalsByAssignmentQuery,
   useAcceptProposalMutation,
-  useRejectProposalMutation
-} from "@/lib/services/proposals";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+  useRejectProposalMutation,
+} from '@/lib/services/proposals';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 interface ProposalsListProps {
   assignmentId: string;
@@ -36,7 +36,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
     data: proposalsData,
     isLoading,
     error,
-    refetch
+    refetch,
   } = useGetProposalsByAssignmentQuery(assignmentId, {
     pollingInterval: 15000,
     refetchOnFocus: true,
@@ -51,8 +51,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
   useSocket({
     onNotification: (payload) => {
       const incoming = payload?.notification || payload;
-      const incomingAssignmentId =
-        incoming?.data?.assignmentId || incoming?.assignmentId;
+      const incomingAssignmentId = incoming?.data?.assignmentId || incoming?.assignmentId;
       if (incomingAssignmentId === assignmentId) {
         refetch();
       }
@@ -88,7 +87,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -144,9 +143,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Proposals ({proposals.length})
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Proposals ({proposals.length})</h3>
       </div>
 
       {proposals.length === 0 ? (
@@ -156,8 +153,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
           <p className="text-gray-600">
             {isStudent
               ? "Tutors haven't submitted any proposals for this assignment yet."
-              : "You haven't submitted any proposals for this assignment yet."
-            }
+              : "You haven't submitted any proposals for this assignment yet."}
           </p>
         </div>
       ) : (
@@ -175,14 +171,14 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900">{proposal.tutor.name}</h4>
-                    {typeof proposal.tutor.publicStats?.averageRating === "number" ? (
+                    {typeof proposal.tutor.publicStats?.averageRating === 'number' ? (
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <Star className="h-4 w-4 text-yellow-400" />
                         <span>
                           {proposal.tutor.publicStats.averageRating.toFixed(1)}
                           {proposal.tutor.publicStats.totalReviews
                             ? ` (${proposal.tutor.publicStats.totalReviews} reviews)`
-                            : ""}
+                            : ''}
                         </span>
                       </div>
                     ) : (
@@ -194,7 +190,9 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
                   <div className="text-2xl font-bold text-gray-900">
                     {formatAmount(proposal.proposedPrice)}
                   </div>
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
+                  <div
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}
+                  >
                     {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
                   </div>
                 </div>
@@ -203,9 +201,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
               {/* Proposal Details */}
               <div className="mb-4">
                 <h5 className="font-medium text-gray-900 mb-2">{proposal.title}</h5>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {proposal.description}
-                </p>
+                <p className="text-gray-600 text-sm leading-relaxed">{proposal.description}</p>
               </div>
 
               {/* Cover Letter */}
@@ -213,9 +209,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
                 <div className="mb-4">
                   <h6 className="font-medium text-gray-900 mb-2">Cover Letter</h6>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {proposal.coverLetter}
-                    </p>
+                    <p className="text-gray-700 text-sm leading-relaxed">{proposal.coverLetter}</p>
                   </div>
                 </div>
               )}
@@ -269,9 +263,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
               {proposal.studentResponse && (
                 <div className="mb-4 bg-blue-50 rounded-lg p-3">
                   <h6 className="font-medium text-blue-900 mb-2">Student Response</h6>
-                  <p className="text-blue-800 text-sm">
-                    {proposal.studentResponse.message}
-                  </p>
+                  <p className="text-blue-800 text-sm">{proposal.studentResponse.message}</p>
                 </div>
               )}
 
@@ -299,7 +291,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
                   <button
                     onClick={() => {
                       const conversationId =
-                        typeof proposal.conversation === "string"
+                        typeof proposal.conversation === 'string'
                           ? proposal.conversation
                           : proposal.conversation?._id;
                       if (conversationId) {

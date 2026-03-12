@@ -9,7 +9,6 @@ import type { AppDispatch } from '@/lib/store';
 import { chatApi } from '@/lib/services/chat';
 import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
-
 interface SendProposalModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,7 +28,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
   isOpen,
   onClose,
   assignment,
-  currency
+  currency,
 }) => {
   const activeCurrency = currency || DEFAULT_CURRENCY;
   const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
@@ -41,18 +40,16 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
     description: '',
     proposedPrice: assignment.budget ?? assignment.estimatedCost ?? 0,
     estimatedDeliveryTime: 24,
-    relevantExperience: ''
+    relevantExperience: '',
   });
 
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof ProposalFormData, string>>
-  >({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ProposalFormData, string>>>({});
 
   const handleInputChange = (field: keyof ProposalFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -62,18 +59,19 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
       return;
     }
 
-    const validFiles = files.filter(file => {
-      if (file.size > 25 * 1024 * 1024) { // 25MB limit
+    const validFiles = files.filter((file) => {
+      if (file.size > 25 * 1024 * 1024) {
+        // 25MB limit
         return false;
       }
       return true;
     });
 
-    setAttachments(prev => [...prev, ...validFiles]);
+    setAttachments((prev) => [...prev, ...validFiles]);
   };
 
   const removeFile = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = (): boolean => {
@@ -94,8 +92,6 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
     if (formData.estimatedDeliveryTime <= 0) {
       newErrors.estimatedDeliveryTime = 'Delivery time must be greater than 0';
     }
-
-
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -132,7 +128,7 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
         description: '',
         proposedPrice: assignment.budget ?? assignment.estimatedCost ?? 0,
         estimatedDeliveryTime: 24,
-        relevantExperience: ''
+        relevantExperience: '',
       });
       setAttachments([]);
       setErrors({});
@@ -191,15 +187,14 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Proposal Title *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Proposal Title *</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'
-                }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.title ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Enter a compelling title for your proposal"
             />
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -214,11 +209,14 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? 'border-red-500' : 'border-gray-300'
-                }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Describe your approach to completing this assignment"
             />
-            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+            {errors.description && (
+              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+            )}
           </div>
 
           {/* Price and Delivery Time */}
@@ -232,12 +230,17 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 min="1"
                 step="0.01"
                 value={formData.proposedPrice}
-                onChange={(e) => handleInputChange('proposedPrice', parseFloat(e.target.value) || 0)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                onChange={(e) =>
+                  handleInputChange('proposedPrice', parseFloat(e.target.value) || 0)
+                }
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="0.00"
               />
-              {errors.proposedPrice && <p className="text-red-500 text-sm mt-1">{errors.proposedPrice}</p>}
+              {errors.proposedPrice && (
+                <p className="text-red-500 text-sm mt-1">{errors.proposedPrice}</p>
+              )}
             </div>
 
             <div>
@@ -248,12 +251,17 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 type="number"
                 min="1"
                 value={formData.estimatedDeliveryTime}
-                onChange={(e) => handleInputChange('estimatedDeliveryTime', parseInt(e.target.value) || 0)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                onChange={(e) =>
+                  handleInputChange('estimatedDeliveryTime', parseInt(e.target.value) || 0)
+                }
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="24"
               />
-              {errors.estimatedDeliveryTime && <p className="text-red-500 text-sm mt-1">{errors.estimatedDeliveryTime}</p>}
+              {errors.estimatedDeliveryTime && (
+                <p className="text-red-500 text-sm mt-1">{errors.estimatedDeliveryTime}</p>
+              )}
             </div>
           </div>
 
@@ -286,7 +294,10 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
             {attachments.length > 0 && (
               <div className="mt-4 space-y-2">
                 {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-3">
                       <FileText className="w-5 h-5 text-gray-500" />
                       <div>

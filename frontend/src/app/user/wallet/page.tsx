@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { WalletClient } from "./WalletClient";
+import React, { Suspense } from 'react';
+import { WalletClient } from './WalletClient';
 
 export const metadata = {
-  title: "Wallet | Aski",
-  description: "Your earnings dashboard and wallet",
+  title: 'Wallet | Aski',
+  description: 'Your earnings dashboard and wallet',
 };
 
 export default function WalletPage() {

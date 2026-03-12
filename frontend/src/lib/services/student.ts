@@ -1,18 +1,16 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import type { StudentFormData, StudentResponse } from '@/types/student'
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import type { StudentFormData, StudentResponse } from '@/types/student';
 
 const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const studentApiBaseUrl = `${apiBaseUrl}/api/student/`;
 
 export const studentApi = createApi({
   reducerPath: 'studentApi',
-  baseQuery: fetchBaseQuery({ 
+  baseQuery: fetchBaseQuery({
     baseUrl: studentApiBaseUrl,
-    credentials: 'include'
+    credentials: 'include',
   }),
   tagTypes: ['StudentForm'],
   endpoints: (builder) => ({
@@ -20,33 +18,36 @@ export const studentApi = createApi({
     generateSessionId: builder.query<StudentResponse, void>({
       query: () => ({
         url: 'session/generate',
-        method: 'GET'
-      })
+        method: 'GET',
+      }),
     }),
 
     // Save student form data
-    saveStudentForm: builder.mutation<StudentResponse, {
-      sessionId: string;
-      formData: StudentFormData;
-    }>({
+    saveStudentForm: builder.mutation<
+      StudentResponse,
+      {
+        sessionId: string;
+        formData: StudentFormData;
+      }
+    >({
       query: ({ sessionId, formData }) => ({
         url: 'form/save',
         method: 'POST',
         body: { sessionId, formData },
         headers: {
-          'Content-type': 'application/json'
-        }
+          'Content-type': 'application/json',
+        },
       }),
-      invalidatesTags: ['StudentForm']
+      invalidatesTags: ['StudentForm'],
     }),
 
     // Get student form data
     getStudentForm: builder.query<StudentResponse, string>({
       query: (sessionId) => ({
         url: `form/${sessionId}`,
-        method: 'GET'
+        method: 'GET',
       }),
-      providesTags: ['StudentForm']
+      providesTags: ['StudentForm'],
     }),
 
     // Convert form to assignment (after login)
@@ -56,17 +57,17 @@ export const studentApi = createApi({
         method: 'POST',
         body: { sessionId },
         headers: {
-          'Content-type': 'application/json'
-        }
+          'Content-type': 'application/json',
+        },
       }),
-      invalidatesTags: ['StudentForm']
-    })
-  })
+      invalidatesTags: ['StudentForm'],
+    }),
+  }),
 });
 
 export const {
   useGenerateSessionIdQuery,
   useSaveStudentFormMutation,
   useGetStudentFormQuery,
-  useConvertFormToAssignmentMutation
+  useConvertFormToAssignmentMutation,
 } = studentApi;

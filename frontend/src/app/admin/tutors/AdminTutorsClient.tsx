@@ -1,29 +1,49 @@
-"use client"
+'use client';
 
-import { useRouter } from "next/navigation"
-import { Eye, MoreHorizontal, UserMinus, UserX } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Textarea } from "@/components/ui/textarea"
-import BanUserModal from "@/components/admin/BanUserModal"
-import AdminSectionNav from "@/components/admin/AdminSectionNav"
-import AdminPagination from "@/components/admin/AdminPagination"
-import { TutorRow, statusTone, useAdminTutorsLogic } from "./useAdminTutorsLogic"
+import { useRouter } from 'next/navigation';
+import { Eye, MoreHorizontal, UserMinus, UserX } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import BanUserModal from '@/components/admin/BanUserModal';
+import AdminSectionNav from '@/components/admin/AdminSectionNav';
+import AdminPagination from '@/components/admin/AdminPagination';
+import { TutorRow, statusTone, useAdminTutorsLogic } from './useAdminTutorsLogic';
 
 export const AdminTutorsClient = () => {
-  const router = useRouter()
+  const router = useRouter();
   const {
-    search, setSearch,
-    minRating, setMinRating,
-    page, setPage,
-    banModalOpen, setBanModalOpen,
+    search,
+    setSearch,
+    minRating,
+    setMinRating,
+    page,
+    setPage,
+    banModalOpen,
+    setBanModalOpen,
     selectedTutor,
-    demoteOpen, setDemoteOpen,
-    demoteReason, setDemoteReason,
+    demoteOpen,
+    setDemoteOpen,
+    demoteReason,
+    setDemoteReason,
     isSubmitting,
     filtered,
     paginatedTutors,
@@ -33,7 +53,7 @@ export const AdminTutorsClient = () => {
     openDemote,
     handleDemote,
     isLoading,
-    error
+    error,
   } = useAdminTutorsLogic();
 
   return (
@@ -44,8 +64,8 @@ export const AdminTutorsClient = () => {
         <div className="mt-3">
           <AdminSectionNav
             items={[
-              { label: "Active tutors", href: "/admin/tutors" },
-              { label: "Verification queue", href: "/admin/tutors/verification" },
+              { label: 'Active tutors', href: '/admin/tutors' },
+              { label: 'Verification queue', href: '/admin/tutors/verification' },
             ]}
           />
         </div>
@@ -117,8 +137,11 @@ export const AdminTutorsClient = () => {
                           </button>
                         </td>
                         <td className="py-4 pr-4">
-                          <Badge variant="secondary" className="font-medium bg-gray-100 text-gray-700">
-                            {tutor.tutorProfile?.verificationStatus || "Pending"}
+                          <Badge
+                            variant="secondary"
+                            className="font-medium bg-gray-100 text-gray-700"
+                          >
+                            {tutor.tutorProfile?.verificationStatus || 'Pending'}
                           </Badge>
                         </td>
                         <td className="py-4 pr-4 text-gray-700">
@@ -127,9 +150,13 @@ export const AdminTutorsClient = () => {
                             {tutor.publicStats?.averageRating || 0}
                           </div>
                         </td>
-                        <td className="py-4 pr-4 font-semibold text-gray-900">৳{tutor.wallet?.totalEarnings || 0}</td>
+                        <td className="py-4 pr-4 font-semibold text-gray-900">
+                          ৳{tutor.wallet?.totalEarnings || 0}
+                        </td>
                         <td className="py-4 pr-4">
-                          <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase ${statusTone(tutor.status)}`}>
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase ${statusTone(tutor.status)}`}
+                          >
                             {tutor.status}
                           </span>
                         </td>
@@ -148,11 +175,17 @@ export const AdminTutorsClient = () => {
                                 <Eye className="h-4 w-4 text-gray-400" />
                                 View details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openDemote(tutor)} className="text-amber-600 cursor-pointer gap-2">
+                              <DropdownMenuItem
+                                onClick={() => openDemote(tutor)}
+                                className="text-amber-600 cursor-pointer gap-2"
+                              >
                                 <UserMinus className="h-4 w-4" />
                                 Demote tutor
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openBan(tutor)} className="text-rose-600 cursor-pointer gap-2">
+                              <DropdownMenuItem
+                                onClick={() => openBan(tutor)}
+                                className="text-rose-600 cursor-pointer gap-2"
+                              >
                                 <UserX className="h-4 w-4" />
                                 Ban tutor
                               </DropdownMenuItem>
@@ -168,7 +201,10 @@ export const AdminTutorsClient = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
                 {paginatedTutors.map((tutor: TutorRow) => (
-                  <div key={tutor._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-primary-100">
+                  <div
+                    key={tutor._id}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-primary-100"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 font-bold text-base shadow-inner">
@@ -198,11 +234,17 @@ export const AdminTutorsClient = () => {
                             <Eye className="h-4 w-4" />
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openDemote(tutor)} className="text-amber-600 text-xs">
+                          <DropdownMenuItem
+                            onClick={() => openDemote(tutor)}
+                            className="text-amber-600 text-xs"
+                          >
                             <UserMinus className="h-3.5 w-3.5" />
                             Demote tutor
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openBan(tutor)} className="text-rose-600 text-xs">
+                          <DropdownMenuItem
+                            onClick={() => openBan(tutor)}
+                            className="text-rose-600 text-xs"
+                          >
                             <UserX className="h-3.5 w-3.5" />
                             Ban tutor
                           </DropdownMenuItem>
@@ -212,25 +254,40 @@ export const AdminTutorsClient = () => {
 
                     <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-gray-50 pt-4">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Total Earnings</p>
-                        <p className="text-sm font-bold text-gray-900">৳{tutor.wallet?.totalEarnings || 0}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                          Total Earnings
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                          ৳{tutor.wallet?.totalEarnings || 0}
+                        </p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Rating</p>
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                          Rating
+                        </p>
                         <div className="flex items-center justify-end gap-1 text-sm font-bold text-amber-600">
                           <span>★</span>
                           {tutor.publicStats?.averageRating || 0}
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Verification</p>
-                        <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-semibold">
-                          {tutor.tutorProfile?.verificationStatus || "Pending"}
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                          Verification
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className="px-1.5 py-0 text-[10px] font-semibold"
+                        >
+                          {tutor.tutorProfile?.verificationStatus || 'Pending'}
                         </Badge>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Status</p>
-                        <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${statusTone(tutor.status)}`}>
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                          Status
+                        </p>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${statusTone(tutor.status)}`}
+                        >
                           {tutor.status}
                         </span>
                       </div>
@@ -264,7 +321,8 @@ export const AdminTutorsClient = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Demote tutor</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the tutor role. Active assignments and pending withdrawals are checked before demotion.
+              This removes the tutor role. Active assignments and pending withdrawals are checked
+              before demotion.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Textarea
@@ -275,12 +333,15 @@ export const AdminTutorsClient = () => {
           />
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDemote} disabled={isSubmitting || demoteReason.trim().length === 0}>
+            <AlertDialogAction
+              onClick={handleDemote}
+              disabled={isSubmitting || demoteReason.trim().length === 0}
+            >
               Confirm demotion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
-}
+  );
+};

@@ -1,8 +1,8 @@
-import React from "react";
-import { CreditCard, Shield } from "lucide-react";
-import { Assignment, useProcessPaymentMutation } from "@/lib/services/assignments";
-import { toast } from "sonner";
-import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+import React from 'react';
+import { CreditCard, Shield } from 'lucide-react';
+import { Assignment, useProcessPaymentMutation } from '@/lib/services/assignments';
+import { toast } from 'sonner';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 interface PaymentComponentProps {
   assignment: Assignment;
@@ -19,13 +19,13 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
   const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
   const paymentAmount =
     assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0;
-  const isPaid = assignment.paymentStatus === "paid";
-  const [paymentMethod, setPaymentMethod] = React.useState("bkash");
+  const isPaid = assignment.paymentStatus === 'paid';
+  const [paymentMethod, setPaymentMethod] = React.useState('bkash');
   const [processPayment, { isLoading }] = useProcessPaymentMutation();
 
   const handlePayNow = async () => {
     if (!paymentAmount || paymentAmount <= 0) {
-      toast.error("Invalid payment amount");
+      toast.error('Invalid payment amount');
       return;
     }
 
@@ -38,7 +38,7 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
 
       const checkoutUrl = result?.data?.checkoutUrl;
       if (!checkoutUrl) {
-        toast.error("Payment link not available. Please try again.");
+        toast.error('Payment link not available. Please try again.');
         return;
       }
 
@@ -104,7 +104,7 @@ const PaymentComponent: React.FC<PaymentComponentProps> = ({
         className="w-full mt-6 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <CreditCard size={18} />
-        <span>{isLoading ? "Initializing..." : "Continue to Payment"}</span>
+        <span>{isLoading ? 'Initializing...' : 'Continue to Payment'}</span>
       </button>
     </div>
   );

@@ -1,29 +1,40 @@
-"use client"
+'use client';
 
-import { CheckCircle2 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminSectionNav from "@/components/admin/AdminSectionNav"
-import { WithdrawalRow, useAdminWithdrawalsLogic } from "./useAdminWithdrawalsLogic"
+import { CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminSectionNav from '@/components/admin/AdminSectionNav';
+import { WithdrawalRow, useAdminWithdrawalsLogic } from './useAdminWithdrawalsLogic';
 
 export const AdminWithdrawalsClient = () => {
   const {
     withdrawals,
     processed,
     selected,
-    confirmOpen, setConfirmOpen,
-    checked, setChecked,
+    confirmOpen,
+    setConfirmOpen,
+    checked,
+    setChecked,
     isSubmitting,
-    payoutReference, setPayoutReference,
-    gateway, setGateway,
-    note, setNote,
+    payoutReference,
+    setPayoutReference,
+    gateway,
+    setGateway,
+    note,
+    setNote,
     openConfirm,
     handleProcess,
     isLoading,
-    error
+    error,
   } = useAdminWithdrawalsLogic();
 
   return (
@@ -34,9 +45,9 @@ export const AdminWithdrawalsClient = () => {
         <div className="mt-3">
           <AdminSectionNav
             items={[
-              { label: "Transactions", href: "/admin/finance" },
-              { label: "Withdrawals", href: "/admin/finance/withdrawals" },
-              { label: "Analytics", href: "/admin/finance/analytics" },
+              { label: 'Transactions', href: '/admin/finance' },
+              { label: 'Withdrawals', href: '/admin/finance/withdrawals' },
+              { label: 'Analytics', href: '/admin/finance/analytics' },
             ]}
           />
         </div>
@@ -87,7 +98,7 @@ export const AdminWithdrawalsClient = () => {
                         <td className="py-3 pr-4 text-gray-600">
                           {row.withdrawal?.requestedAt
                             ? new Date(row.withdrawal.requestedAt).toLocaleDateString()
-                            : "N/A"}
+                            : 'N/A'}
                         </td>
                         <td className="py-3 pr-4">
                           <div className="font-medium text-gray-900">{row.name}</div>
@@ -96,7 +107,8 @@ export const AdminWithdrawalsClient = () => {
                         <td className="py-3 pr-4 text-gray-700">{row.withdrawal?.amount || 0}</td>
                         <td className="py-3 pr-4 text-gray-700">{row.availableBalance || 0}</td>
                         <td className="py-3 pr-4 text-gray-600">
-                          {row.bankDetails?.bankName || "N/A"} - {row.bankDetails?.accountNumber?.slice(-4) || "----"}
+                          {row.bankDetails?.bankName || 'N/A'} -{' '}
+                          {row.bankDetails?.accountNumber?.slice(-4) || '----'}
                         </td>
                         <td className="py-3 text-right">
                           <Button variant="secondary" onClick={() => openConfirm(row)}>
@@ -112,43 +124,65 @@ export const AdminWithdrawalsClient = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
                 {withdrawals.map((row: WithdrawalRow) => (
-                  <div key={row.withdrawal?.transactionId} className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm transition-all hover:border-amber-200">
+                  <div
+                    key={row.withdrawal?.transactionId}
+                    className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm transition-all hover:border-amber-200"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
                         <p className="font-bold text-gray-900 text-sm truncate">{row.name}</p>
                         <p className="text-xs text-gray-500 truncate">{row.email}</p>
                       </div>
-                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 text-[10px] font-bold uppercase tracking-wider">
+                      <Badge
+                        variant="outline"
+                        className="text-amber-600 border-amber-200 bg-amber-50 text-[10px] font-bold uppercase tracking-wider"
+                      >
                         Pending
                       </Badge>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Request Date</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Request Date
+                        </p>
                         <p className="text-xs font-medium text-gray-700">
-                          {row.withdrawal?.requestedAt ? new Date(row.withdrawal.requestedAt).toLocaleDateString() : "N/A"}
+                          {row.withdrawal?.requestedAt
+                            ? new Date(row.withdrawal.requestedAt).toLocaleDateString()
+                            : 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
-                        <p className="text-sm font-bold text-emerald-600">৳{row.withdrawal?.amount || 0}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Amount
+                        </p>
+                        <p className="text-sm font-bold text-emerald-600">
+                          ৳{row.withdrawal?.amount || 0}
+                        </p>
                       </div>
                       <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Bank Details</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Bank Details
+                        </p>
                         <p className="text-xs text-gray-600">
-                          {row.bankDetails?.bankName || "N/A"} (****{row.bankDetails?.accountNumber?.slice(-4) || "----"})
+                          {row.bankDetails?.bankName || 'N/A'} (****
+                          {row.bankDetails?.accountNumber?.slice(-4) || '----'})
                         </p>
                       </div>
                     </div>
 
-                    <Button variant="secondary" className="mt-4 w-full rounded-xl" onClick={() => openConfirm(row)}>
+                    <Button
+                      variant="secondary"
+                      className="mt-4 w-full rounded-xl"
+                      onClick={() => openConfirm(row)}
+                    >
                       Process Payout
                     </Button>
                   </div>
                 ))}
               </div>
-            </div>)}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -177,9 +211,9 @@ export const AdminWithdrawalsClient = () => {
                         <td className="py-3 pr-4 text-gray-600">
                           {new Date(entry.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="py-3 pr-4 text-gray-700">{entry.userId?.name || "N/A"}</td>
+                        <td className="py-3 pr-4 text-gray-700">{entry.userId?.name || 'N/A'}</td>
                         <td className="py-3 pr-4 text-gray-700">{entry.amount}</td>
-                        <td className="py-3 pr-4 text-gray-500">{entry.gatewayId || "-"}</td>
+                        <td className="py-3 pr-4 text-gray-500">{entry.gatewayId || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -189,34 +223,51 @@ export const AdminWithdrawalsClient = () => {
               {/* Mobile Card View for Processed */}
               <div className="md:hidden space-y-4">
                 {processed.map((entry: any) => (
-                  <div key={entry._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-emerald-100">
+                  <div
+                    key={entry._id}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-emerald-100"
+                  >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-bold text-gray-900 text-sm">{entry.userId?.name || "N/A"}</p>
-                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-none text-[9px] font-bold uppercase tracking-wider">
+                      <p className="font-bold text-gray-900 text-sm">
+                        {entry.userId?.name || 'N/A'}
+                      </p>
+                      <Badge
+                        variant="secondary"
+                        className="bg-emerald-50 text-emerald-700 border-none text-[9px] font-bold uppercase tracking-wider"
+                      >
                         Paid
                       </Badge>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Paid On</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Paid On
+                        </p>
                         <p className="text-xs font-medium text-gray-700">
                           {new Date(entry.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Amount
+                        </p>
                         <p className="text-sm font-bold text-gray-900">৳{entry.amount}</p>
                       </div>
                       <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Transaction ID</p>
-                        <p className="text-[10px] text-gray-500 font-mono truncate">{entry.gatewayId || "N/A"}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Transaction ID
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-mono truncate">
+                          {entry.gatewayId || 'N/A'}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>)}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -224,7 +275,9 @@ export const AdminWithdrawalsClient = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Process withdrawal</DialogTitle>
-            <DialogDescription>Confirm the transfer before marking the request as completed.</DialogDescription>
+            <DialogDescription>
+              Confirm the transfer before marking the request as completed.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             {selected && (
@@ -236,7 +289,8 @@ export const AdminWithdrawalsClient = () => {
                   Amount: <span className="font-medium">{selected.withdrawal?.amount || 0}</span>
                 </p>
                 <p className="text-gray-700">
-                  Bank: <span className="font-medium">{selected.bankDetails?.bankName || "N/A"}</span>
+                  Bank:{' '}
+                  <span className="font-medium">{selected.bankDetails?.bankName || 'N/A'}</span>
                 </p>
               </>
             )}
@@ -299,5 +353,5 @@ export const AdminWithdrawalsClient = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

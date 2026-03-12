@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { ProjectsClient } from "./ProjectsClient";
+import React, { Suspense } from 'react';
+import { ProjectsClient } from './ProjectsClient';
 
 export const metadata = {
-  title: "Projects | Aski",
-  description: "Your ongoing projects",
+  title: 'Projects | Aski',
+  description: 'Your ongoing projects',
 };
 
 export default function ProjectsPage() {

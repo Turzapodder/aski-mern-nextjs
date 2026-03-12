@@ -1,15 +1,15 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { apiBaseUrl } from '../apiConfig'
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { apiBaseUrl } from '../apiConfig';
 import type {
   AuthResponse,
   RegisterUser as User,
   LoginPayload,
   PasswordReset,
   ChangePassword,
-} from '@/types/user'
-import type { QuizRequest, QuizResponse } from '@/types/quiz'
+} from '@/types/user';
+import type { QuizRequest, QuizResponse } from '@/types/quiz';
 
-const authApiBaseUrl = `${apiBaseUrl}/user/`
+const authApiBaseUrl = `${apiBaseUrl}/user/`;
 
 export const authApi = createApi({
   reducerPath: 'authApi',
@@ -21,20 +21,20 @@ export const authApi = createApi({
         method: 'POST',
         body: user,
         headers: {
-          'Content-type': 'application/json'
-        }
-      })
+          'Content-type': 'application/json',
+        },
+      }),
     }),
-    verifyEmail: builder.mutation<AuthResponse, {email: string, otp: string }>({
+    verifyEmail: builder.mutation<AuthResponse, { email: string; otp: string }>({
       query: (data) => ({
         url: `verify-email`,
         method: 'POST',
         body: data,
         headers: {
-          'Content-type': 'application/json'
+          'Content-type': 'application/json',
         },
-        credentials: 'include'
-      })
+        credentials: 'include',
+      }),
     }),
     loginUser: builder.mutation<AuthResponse, LoginPayload>({
       query: (user) => ({
@@ -42,24 +42,24 @@ export const authApi = createApi({
         method: 'POST',
         body: user,
         headers: {
-          'Content-type': 'application/json'
+          'Content-type': 'application/json',
         },
-        credentials: 'include'
-      })
+        credentials: 'include',
+      }),
     }),
     getUser: builder.query<any, void>({
       query: () => ({
         url: `profile`,
         method: 'GET',
-        credentials: 'include'
-      })
+        credentials: 'include',
+      }),
     }),
     getMe: builder.query<any, void>({
       query: () => ({
         url: 'me',
         method: 'GET',
-        credentials: 'include'
-      })
+        credentials: 'include',
+      }),
     }),
     logoutUser: builder.mutation({
       query: () => {
@@ -67,9 +67,9 @@ export const authApi = createApi({
           url: `logout`,
           method: 'POST',
           body: {},
-          credentials: 'include'
-        }
-      }
+          credentials: 'include',
+        };
+      },
     }),
     resetPasswordLink: builder.mutation({
       query: (user) => {
@@ -79,23 +79,23 @@ export const authApi = createApi({
           body: user,
           headers: {
             'Content-type': 'application/json',
-          }
-        }
-      }
+          },
+        };
+      },
     }),
     resetPassword: builder.mutation({
       query: (data) => {
-        const { id, token, ...values } = data
-        const actualData = { ...values }
+        const { id, token, ...values } = data;
+        const actualData = { ...values };
         return {
           url: `/reset-password/${id}/${token}`,
           method: 'POST',
           body: actualData,
           headers: {
             'Content-type': 'application/json',
-          }
-        }
-      }
+          },
+        };
+      },
     }),
     changePassword: builder.mutation({
       query: (actualData) => {
@@ -103,9 +103,9 @@ export const authApi = createApi({
           url: 'change-password',
           method: 'POST',
           body: actualData,
-          credentials: 'include'
-        }
-      }
+          credentials: 'include',
+        };
+      },
     }),
     generateQuiz: builder.mutation<QuizResponse, QuizRequest>({
       query: (quizData) => ({
@@ -114,21 +114,21 @@ export const authApi = createApi({
         body: quizData,
         headers: {
           'Content-type': 'application/json',
-        }
-      })
+        },
+      }),
     }),
     updateUser: builder.mutation<any, Partial<any>>({
       query: (data) => ({
         url: 'profile',
         method: 'PUT',
         body: data,
-        credentials: 'include'
-      })
+        credentials: 'include',
+      }),
     }),
   }),
-})
+});
 
-export const { 
+export const {
   useCreateUserMutation,
   useVerifyEmailMutation,
   useLoginUserMutation,
@@ -139,5 +139,5 @@ export const {
   useResetPasswordMutation,
   useChangePasswordMutation,
   useGenerateQuizMutation,
-  useUpdateUserMutation
-} = authApi
+  useUpdateUserMutation,
+} = authApi;

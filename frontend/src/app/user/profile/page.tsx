@@ -1,9 +1,9 @@
-import React, { Suspense } from 'react'
+import React, { Suspense } from 'react';
 import { ProfileClient } from './ProfileClient';
 
 export const metadata = {
-  title: "Profile | Aski",
-  description: "View and edit your profile",
+  title: 'Profile | Aski',
+  description: 'View and edit your profile',
 };
 
 export default function ProfilePage() {

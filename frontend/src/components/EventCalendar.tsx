@@ -1,6 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Calendar as CalendarIcon, Clock, Users, X } from 'lucide-react';
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  addWeeks,
+  subWeeks,
+  isSameDay,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+} from 'date-fns';
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Calendar as CalendarIcon,
+  Clock,
+  Users,
+  X,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
@@ -33,9 +53,9 @@ const EventCalendar = () => {
       team: [
         { id: '1', name: 'John Doe', avatar: '👨‍💻' },
         { id: '2', name: 'Jane Smith', avatar: '👩‍🎨' },
-        { id: '3', name: 'Mike Johnson', avatar: '👨‍🔬' }
+        { id: '3', name: 'Mike Johnson', avatar: '👨‍🔬' },
       ],
-      progress: 75
+      progress: 75,
     },
     {
       id: '2',
@@ -46,9 +66,9 @@ const EventCalendar = () => {
       status: 'progress',
       team: [
         { id: '4', name: 'Sarah Wilson', avatar: '👩‍💼' },
-        { id: '5', name: 'Tom Brown', avatar: '👨‍💻' }
+        { id: '5', name: 'Tom Brown', avatar: '👨‍💻' },
       ],
-      progress: 60
+      progress: 60,
     },
     {
       id: '3',
@@ -60,9 +80,9 @@ const EventCalendar = () => {
       team: [
         { id: '6', name: 'Emma Davis', avatar: '👩‍💻' },
         { id: '7', name: 'Alex Johnson', avatar: '👨‍🎨' },
-        { id: '8', name: 'Lisa Chen', avatar: '👩‍🔬' }
+        { id: '8', name: 'Lisa Chen', avatar: '👩‍🔬' },
       ],
-      progress: 100
+      progress: 100,
     },
     {
       id: '4',
@@ -73,9 +93,9 @@ const EventCalendar = () => {
       status: 'progress',
       team: [
         { id: '9', name: 'Chris Wilson', avatar: '👨‍💻' },
-        { id: '10', name: 'Amy Taylor', avatar: '👩‍🎨' }
+        { id: '10', name: 'Amy Taylor', avatar: '👩‍🎨' },
       ],
-      progress: 45
+      progress: 45,
     },
     {
       id: '5',
@@ -87,9 +107,9 @@ const EventCalendar = () => {
       team: [
         { id: '11', name: 'Ryan Miller', avatar: '👨‍💼' },
         { id: '12', name: 'Sophie Anderson', avatar: '👩‍💻' },
-        { id: '13', name: 'Alex Chen', avatar: '👨‍🎨' }
+        { id: '13', name: 'Alex Chen', avatar: '👨‍🎨' },
       ],
-      progress: 65
+      progress: 65,
     },
     {
       id: '6',
@@ -100,21 +120,22 @@ const EventCalendar = () => {
       status: 'pending',
       team: [
         { id: '13', name: 'David Lee', avatar: '👨‍🔬' },
-        { id: '14', name: 'Maria Garcia', avatar: '👩‍💼' }
-      ]
+        { id: '14', name: 'Maria Garcia', avatar: '👩‍💼' },
+      ],
     },
     {
       id: '7',
       title: 'Dashboard UI Exploration',
-      description: 'Create an exploration design dashboard UI that helps users navigate efficiently.',
+      description:
+        'Create an exploration design dashboard UI that helps users navigate efficiently.',
       startDate: new Date(2025, 8, 6),
       endDate: new Date(2025, 8, 12), // Spans 7 days
       status: 'progress',
       team: [
         { id: '15', name: 'Kevin Zhang', avatar: '👨‍💻' },
-        { id: '16', name: 'Rachel Green', avatar: '👩‍🎨' }
+        { id: '16', name: 'Rachel Green', avatar: '👩‍🎨' },
       ],
-      progress: 30
+      progress: 30,
     },
     {
       id: '8',
@@ -126,8 +147,8 @@ const EventCalendar = () => {
       team: [
         { id: '17', name: 'James White', avatar: '👨‍🔬' },
         { id: '18', name: 'Nicole Brown', avatar: '👩‍💼' },
-        { id: '19', name: 'Sam Taylor', avatar: '👨‍💻' }
-      ]
+        { id: '19', name: 'Sam Taylor', avatar: '👨‍💻' },
+      ],
     },
     {
       id: '9',
@@ -140,23 +161,23 @@ const EventCalendar = () => {
         { id: '20', name: 'Lisa Wang', avatar: '👩‍💻' },
         { id: '21', name: 'Mark Johnson', avatar: '👨‍💼' },
         { id: '22', name: 'Anna Kim', avatar: '👩‍🎨' },
-        { id: '23', name: 'Carlos Rodriguez', avatar: '👨‍🔬' }
+        { id: '23', name: 'Carlos Rodriguez', avatar: '👨‍🔬' },
       ],
-      progress: 55
+      progress: 55,
     },
     {
       id: '10',
       title: 'Backend API Integration',
       description: 'Integrate all frontend components with backend services and APIs.',
       startDate: new Date(2025, 8, 11),
-      endDate: new Date(2025, 8, 20), // Spans 10 days  
+      endDate: new Date(2025, 8, 20), // Spans 10 days
       status: 'progress',
       team: [
         { id: '24', name: 'Michael Brown', avatar: '👨‍💻' },
-        { id: '25', name: 'Sarah Johnson', avatar: '👩‍💼' }
+        { id: '25', name: 'Sarah Johnson', avatar: '👩‍💼' },
       ],
-      progress: 40
-    }
+      progress: 40,
+    },
   ];
 
   const getDaysInView = useMemo(() => {
@@ -174,7 +195,7 @@ const EventCalendar = () => {
   };
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => {
+    return events.filter((event) => {
       const eventStart = new Date(event.startDate);
       const eventEnd = new Date(event.endDate);
       eventStart.setHours(0, 0, 0, 0);
@@ -185,18 +206,20 @@ const EventCalendar = () => {
   };
 
   const getEventSpanDays = (event: CalendarEvent) => {
-    if(getDaysInView) {
+    if (getDaysInView) {
       const start = new Date(Math.max(event.startDate.getTime(), getDaysInView[0].getTime()));
-      const end = new Date(Math.min(event.endDate.getTime(), getDaysInView[getDaysInView.length - 1].getTime()));
-      
-      return eachDayOfInterval({ start, end }).filter(day => 
-        getDaysInView.some(viewDay => isSameDay(day, viewDay))
+      const end = new Date(
+        Math.min(event.endDate.getTime(), getDaysInView[getDaysInView.length - 1].getTime())
+      );
+
+      return eachDayOfInterval({ start, end }).filter((day) =>
+        getDaysInView.some((viewDay) => isSameDay(day, viewDay))
       );
     }
   };
 
   const isEventStartDay = (event: CalendarEvent, day: Date) => {
-    if(getDaysInView) {
+    if (getDaysInView) {
       return isSameDay(event.startDate, day) || isSameDay(getDaysInView[0], day);
     }
   };
@@ -232,7 +255,7 @@ const EventCalendar = () => {
             </Button>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => navigateCalendar('prev')}>
@@ -266,11 +289,13 @@ const EventCalendar = () => {
                 <div className="text-xs font-medium text-calendar-text-muted uppercase">
                   {format(day, 'EEE')}
                 </div>
-                <div className={`text-sm font-semibold mt-1 ${
-                  isToday(day) 
-                    ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
-                    : 'text-calendar-text-primary'
-                }`}>
+                <div
+                  className={`text-sm font-semibold mt-1 ${
+                    isToday(day)
+                      ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto'
+                      : 'text-calendar-text-primary'
+                  }`}
+                >
                   {format(day, 'dd')}
                 </div>
               </div>
@@ -289,24 +314,24 @@ const EventCalendar = () => {
                     {/* Group events by their vertical position to handle overlaps */}
                     {(() => {
                       const dayEvents = getEventsForDay(day);
-                      
+
                       // Sort events by start date and then by duration (shorter events first)
                       const sortedEvents = [...dayEvents].sort((a, b) => {
                         // First sort by start date
                         const dateCompare = a.startDate.getTime() - b.startDate.getTime();
                         if (dateCompare !== 0) return dateCompare;
-                        
+
                         // Then by duration (shorter events first)
                         const aDuration = a.endDate.getTime() - a.startDate.getTime();
                         const bDuration = b.endDate.getTime() - b.startDate.getTime();
                         return aDuration - bDuration;
                       });
-                      
+
                       return sortedEvents.map((event, eventIndex) => {
                         const spanDays = getEventSpanDays(event);
                         const isStartDay = isEventStartDay(event, day);
                         const daySpan = spanDays?.length;
-                        console.log(eventIndex)
+                        console.log(eventIndex);
                         return (
                           <EventCard
                             key={`${event.id}-${dayIndex}`}
@@ -318,7 +343,7 @@ const EventCalendar = () => {
                           />
                         );
                       });
-                    })()} 
+                    })()}
                   </div>
                 </div>
               ))}
@@ -333,7 +358,9 @@ const EventCalendar = () => {
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <DialogTitle className="flex items-center gap-2 text-sm font-medium text-calendar-text-muted">
               <div className="w-3 h-3 rounded-full bg-primary"></div>
-              Odatask / {selectedEvent && selectedEvent.status.charAt(0).toUpperCase() + selectedEvent.status.slice(1)}
+              Odatask /{' '}
+              {selectedEvent &&
+                selectedEvent.status.charAt(0).toUpperCase() + selectedEvent.status.slice(1)}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -344,28 +371,27 @@ const EventCalendar = () => {
               <X className="h-4 w-4" />
             </Button>
           </DialogHeader>
-          
+
           {selectedEvent && (
             <div className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-calendar-text-primary mb-2">
                   {selectedEvent.title}
                 </h2>
-                <p className="text-sm text-calendar-text-secondary">
-                  {selectedEvent.description}
-                </p>
+                <p className="text-sm text-calendar-text-secondary">{selectedEvent.description}</p>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-calendar-text-secondary">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {format(selectedEvent.startDate, 'EEE, dd')} - {format(selectedEvent.endDate, 'EEE, dd')}
+                  {format(selectedEvent.startDate, 'EEE, dd')} -{' '}
+                  {format(selectedEvent.endDate, 'EEE, dd')}
                 </span>
               </div>
 
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-calendar-text-primary">Task Progress</h3>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
@@ -375,20 +401,18 @@ const EventCalendar = () => {
                       Competitor research marketplace mobile
                     </span>
                   </div>
-                  
+
                   <div className="ml-7 text-xs text-calendar-text-muted">
                     Build wireframe with UX Designer
                   </div>
-                  
-                  <div className="ml-7 text-xs text-calendar-text-muted">
-                    High Fidelity Design
-                  </div>
+
+                  <div className="ml-7 text-xs text-calendar-text-muted">High Fidelity Design</div>
                 </div>
 
                 {selectedEvent.progress && (
                   <div className="ml-7 mt-2">
                     <div className="w-full h-1.5 bg-calendar-border-light rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-primary rounded-full transition-all duration-300"
                         style={{ width: `${selectedEvent.progress}%` }}
                       />

@@ -1,40 +1,54 @@
-"use client"
+'use client';
 
-import { CheckCircle2, FileText, UserX } from "lucide-react"
+import { CheckCircle2, FileText, UserX } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminSectionNav from "@/components/admin/AdminSectionNav"
-import { TutorApplication, formatDate, useAdminTutorVerificationLogic } from "./useAdminTutorVerificationLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminSectionNav from '@/components/admin/AdminSectionNav';
+import {
+  TutorApplication,
+  formatDate,
+  useAdminTutorVerificationLogic,
+} from './useAdminTutorVerificationLogic';
 
 export const AdminTutorVerificationClient = () => {
   const {
     applications,
     selected,
-    reviewOpen, setReviewOpen,
-    rejectReason, setRejectReason,
+    reviewOpen,
+    setReviewOpen,
+    rejectReason,
+    setRejectReason,
     isSubmitting,
     openReview,
     handleApprove,
     handleReject,
     isLoading,
-    error
+    error,
   } = useAdminTutorVerificationLogic();
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Tutor Verification</h1>
-        <p className="text-sm text-gray-500">Review pending applications and approve qualified tutors.</p>
+        <p className="text-sm text-gray-500">
+          Review pending applications and approve qualified tutors.
+        </p>
         <div className="mt-3">
           <AdminSectionNav
             items={[
-              { label: "Active tutors", href: "/admin/tutors" },
-              { label: "Verification queue", href: "/admin/tutors/verification" },
+              { label: 'Active tutors', href: '/admin/tutors' },
+              { label: 'Verification queue', href: '/admin/tutors/verification' },
             ]}
           />
         </div>
@@ -66,7 +80,7 @@ export const AdminTutorVerificationClient = () => {
             <Card key={application._id} className="border border-gray-200/70 bg-white/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">
-                  {application.user?.name || application.personalInfo?.name || "Tutor"}
+                  {application.user?.name || application.personalInfo?.name || 'Tutor'}
                 </CardTitle>
                 <p className="text-xs text-gray-500">Applied {formatDate(application.createdAt)}</p>
               </CardHeader>
@@ -131,13 +145,13 @@ export const AdminTutorVerificationClient = () => {
                     <div>
                       <p className="text-xs text-gray-500">University</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selected.personalInfo?.university || "N/A"}
+                        {selected.personalInfo?.university || 'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Degree</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selected.personalInfo?.degree || "N/A"}
+                        {selected.personalInfo?.degree || 'N/A'}
                       </p>
                     </div>
                   </CardContent>
@@ -156,13 +170,14 @@ export const AdminTutorVerificationClient = () => {
                     <div>
                       <p className="text-xs text-gray-500">Correct answers</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selected.quizResult?.correctAnswers || 0} / {selected.quizResult?.totalQuestions || 0}
+                        {selected.quizResult?.correctAnswers || 0} /{' '}
+                        {selected.quizResult?.totalQuestions || 0}
                       </p>
                     </div>
                     <div className="sm:col-span-2">
                       <p className="text-xs text-gray-500">Subject</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selected.quizResult?.subject || "N/A"}
+                        {selected.quizResult?.subject || 'N/A'}
                       </p>
                     </div>
                   </CardContent>
@@ -232,5 +247,5 @@ export const AdminTutorVerificationClient = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

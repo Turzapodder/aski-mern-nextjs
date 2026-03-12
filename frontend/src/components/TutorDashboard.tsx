@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
+import React from 'react';
+import Link from 'next/link';
 import {
   MoreVertical,
   ArrowUpRight,
@@ -12,10 +12,10 @@ import {
   DollarSign,
   ChevronRight,
   TrendingUp,
-} from "lucide-react";
-import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
-import { format } from "date-fns";
-import useCurrency from "@/lib/hooks/useCurrency";
+} from 'lucide-react';
+import { useGetAssignmentsQuery, Assignment } from '@/lib/services/assignments';
+import { format } from 'date-fns';
+import useCurrency from '@/lib/hooks/useCurrency';
 
 const TutorDashboard = ({ user }: { user: any }) => {
   // 1. Fetch Assignments
@@ -24,15 +24,16 @@ const TutorDashboard = ({ user }: { user: any }) => {
   // or pass params if the API supports it. We'll try passing status.
 
   const { data: ongoingData, isLoading: ongoingLoading } = useGetAssignmentsQuery({
-    status: "proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue",
-    sortBy: "updatedAt",
-    sortOrder: "desc",
+    status:
+      'proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue',
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     limit: 20,
   });
   const { data: availableData, isLoading: availableLoading } = useGetAssignmentsQuery({
-    status: "pending,created,proposal_received",
-    sortBy: "createdAt",
-    sortOrder: "desc",
+    status: 'pending,created,proposal_received',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
     limit: 20,
   });
 
@@ -87,22 +88,22 @@ const TutorDashboard = ({ user }: { user: any }) => {
     </div>
   );
 
-  const getProgressPercent = (status: Assignment["status"]) => {
+  const getProgressPercent = (status: Assignment['status']) => {
     switch (status) {
-      case "proposal_accepted":
+      case 'proposal_accepted':
         return 20;
-      case "in_progress":
-      case "assigned":
+      case 'in_progress':
+      case 'assigned':
         return 40;
-      case "submission_pending":
+      case 'submission_pending':
         return 55;
-      case "revision_requested":
+      case 'revision_requested':
         return 50;
-      case "submitted":
+      case 'submitted':
         return 80;
-      case "completed":
+      case 'completed':
         return 100;
-      case "overdue":
+      case 'overdue':
         return 65;
       default:
         return 10;
@@ -112,45 +113,45 @@ const TutorDashboard = ({ user }: { user: any }) => {
   const ProjectCard = ({ assignment }: { assignment: Assignment }) => {
     const progress = getProgressPercent(assignment.status);
     return (
-    <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-            {assignment.title.substring(0, 2).toUpperCase()}
+      <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+              {assignment.title.substring(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">{assignment.title}</h4>
+              <p className="text-xs text-gray-500">{assignment.subject}</p>
+            </div>
           </div>
+          <button className="p-1 text-gray-400 hover:text-gray-600">
+            <MoreVertical size={18} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h4 className="font-bold text-gray-900">{assignment.title}</h4>
-            <p className="text-xs text-gray-500">{assignment.subject}</p>
+            <p className="text-xs text-gray-400">Budget</p>
+            <p className="font-bold text-gray-900">
+              {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Deadline</p>
+            <p className="font-bold text-gray-900 text-sm">
+              {format(new Date(assignment.deadline), 'MMM d, yyyy')}
+            </p>
           </div>
         </div>
-        <button className="p-1 text-gray-400 hover:text-gray-600">
-          <MoreVertical size={18} />
-        </button>
-      </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-xs text-gray-400">Budget</p>
-          <p className="font-bold text-gray-900">
-            {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
-          </p>
+        <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400">Deadline</p>
-          <p className="font-bold text-gray-900 text-sm">
-            {format(new Date(assignment.deadline), 'MMM d, yyyy')}
-          </p>
+        <div className="flex justify-between items-center text-xs text-gray-500">
+          <span>Progress</span>
+          <span>{progress}%</span>
         </div>
       </div>
-
-      <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
-      </div>
-      <div className="flex justify-between items-center text-xs text-gray-500">
-        <span>Progress</span>
-        <span>{progress}%</span>
-      </div>
-    </div>
     );
   };
 
@@ -190,11 +191,11 @@ const TutorDashboard = ({ user }: { user: any }) => {
               subtitle={`Active budget ${formatAmount(activeBudgetTotal)}`}
               colorClass="bg-[#E3F2FD]"
               iconClass="bg-blue-500 text-blue-500"
-              trend={ongoingProjects.length > 0 ? "Active now" : undefined}
+              trend={ongoingProjects.length > 0 ? 'Active now' : undefined}
             />
 
             {/* Dynamic Project Cards */}
-            {ongoingProjects.slice(0, 2).map(assignment => (
+            {ongoingProjects.slice(0, 2).map((assignment) => (
               <ProjectCard key={assignment._id} assignment={assignment} />
             ))}
 
@@ -210,7 +211,9 @@ const TutorDashboard = ({ user }: { user: any }) => {
                   <Briefcase className="text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">No ongoing projects</p>
-                <p className="text-sm text-gray-400">Start bidding on assignments to get simplified!</p>
+                <p className="text-sm text-gray-400">
+                  Start bidding on assignments to get simplified!
+                </p>
               </div>
             )}
           </div>
@@ -224,8 +227,12 @@ const TutorDashboard = ({ user }: { user: any }) => {
               <p className="text-sm text-gray-500">Latest opportunities for you</p>
             </div>
             <div className="flex gap-2">
-              <button className="px-4 py-2 bg-black text-white rounded-xl text-sm font-medium">Top Gainers</button>
-              <button className="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-medium">Recent</button>
+              <button className="px-4 py-2 bg-black text-white rounded-xl text-sm font-medium">
+                Top Gainers
+              </button>
+              <button className="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-medium">
+                Recent
+              </button>
             </div>
           </div>
 
@@ -234,11 +241,21 @@ const TutorDashboard = ({ user }: { user: any }) => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assignment</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Subject</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Budget</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Deadline</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Assignment
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Subject
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Budget
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Deadline
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -250,13 +267,19 @@ const TutorDashboard = ({ user }: { user: any }) => {
                             {assignment.title.substring(0, 1).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-gray-900">{assignment.title}</div>
-                            <div className="text-xs text-gray-500">{assignment.priority} Priority</div>
+                            <div className="text-sm font-bold text-gray-900">
+                              {assignment.title}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {assignment.priority} Priority
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-700">{assignment.subject}</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {assignment.subject}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-bold text-green-600">
@@ -270,7 +293,10 @@ const TutorDashboard = ({ user }: { user: any }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Link href={`/user/assignments/view-details/${assignment._id}`} className="text-gray-400 hover:text-black transition-colors inline-block">
+                        <Link
+                          href={`/user/assignments/view-details/${assignment._id}`}
+                          className="text-gray-400 hover:text-black transition-colors inline-block"
+                        >
                           <ArrowUpRight size={20} />
                         </Link>
                       </td>

@@ -1,27 +1,45 @@
-"use client"
+'use client';
 
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react"
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 
-import { QuizQuestion } from "@/types/admin"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useAdminQuizLogic } from "./useAdminQuizLogic"
+import { QuizQuestion } from '@/types/admin';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminQuizLogic } from './useAdminQuizLogic';
 
 export const AdminQuizClient = () => {
   const {
-    search, setSearch,
-    difficulty, setDifficulty,
-    status, setStatus,
-    page, setPage,
-    editorOpen, setEditorOpen,
+    search,
+    setSearch,
+    difficulty,
+    setDifficulty,
+    status,
+    setStatus,
+    page,
+    setPage,
+    editorOpen,
+    setEditorOpen,
     editing,
-    form, setForm,
+    form,
+    setForm,
     isSubmitting,
     questions,
     pagination,
@@ -31,7 +49,7 @@ export const AdminQuizClient = () => {
     handleDelete,
     handleDuplicate,
     isLoading,
-    error
+    error,
   } = useAdminQuizLogic();
 
   return (
@@ -119,15 +137,21 @@ export const AdminQuizClient = () => {
                   {questions.map((question: QuizQuestion) => (
                     <tr key={question._id} className="hover:bg-gray-50/60">
                       <td className="py-3 pr-4 text-gray-700">{question.question}</td>
-                      <td className="py-3 pr-4 text-gray-600">{question.category || "N/A"}</td>
+                      <td className="py-3 pr-4 text-gray-600">{question.category || 'N/A'}</td>
                       <td className="py-3 pr-4 text-gray-600">{question.difficulty}</td>
-                      <td className="py-3 pr-4 text-gray-600">{question.isActive ? "Yes" : "No"}</td>
+                      <td className="py-3 pr-4 text-gray-600">
+                        {question.isActive ? 'Yes' : 'No'}
+                      </td>
                       <td className="py-3 text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => openEditor(question)}>
                           <Pencil className="h-3.5 w-3.5" />
                           Edit
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDuplicate(question._id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDuplicate(question._id)}
+                        >
                           <Copy className="h-3.5 w-3.5" />
                           Duplicate
                         </Button>
@@ -150,7 +174,7 @@ export const AdminQuizClient = () => {
 
           {!isLoading && pagination && pagination.pages > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-               <span>
+              <span>
                 Page {pagination.page} of {pagination.pages}
               </span>
               <div className="flex gap-2">
@@ -177,8 +201,10 @@ export const AdminQuizClient = () => {
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit question" : "Add question"}</DialogTitle>
-            <DialogDescription>Provide a multiple choice question with 4 options.</DialogDescription>
+            <DialogTitle>{editing ? 'Edit question' : 'Add question'}</DialogTitle>
+            <DialogDescription>
+              Provide a multiple choice question with 4 options.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Textarea
@@ -227,7 +253,9 @@ export const AdminQuizClient = () => {
               />
               <Input
                 value={form.points}
-                onChange={(event) => setForm((prev) => ({ ...prev, points: Number(event.target.value) }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, points: Number(event.target.value) }))
+                }
                 placeholder="Points"
               />
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -239,16 +267,20 @@ export const AdminQuizClient = () => {
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setEditorOpen(false)} disabled={isSubmitting}>
+              <Button
+                variant="outline"
+                onClick={() => setEditorOpen(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save question"}
+                {isSubmitting ? 'Saving...' : 'Save question'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

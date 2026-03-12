@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import Link from "next/link"
+import Link from 'next/link';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useAdminSettingsLogic } from "./useAdminSettingsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminSettingsLogic } from './useAdminSettingsLogic';
 
 export const AdminSettingsClient = () => {
   const {
@@ -20,7 +20,7 @@ export const AdminSettingsClient = () => {
     handleRegistrationChange,
     handleSave,
     isLoading,
-    error
+    error,
   } = useAdminSettingsLogic();
 
   return (
@@ -55,16 +55,16 @@ export const AdminSettingsClient = () => {
                 <p className="text-xs text-gray-500 mb-2">Platform fee rate (0-1)</p>
                 <Input
                   type="number"
-                  value={form.platformFeeRate ?? ""}
-                  onChange={(event) => handleChange("platformFeeRate", event.target.value)}
+                  value={form.platformFeeRate ?? ''}
+                  onChange={(event) => handleChange('platformFeeRate', event.target.value)}
                 />
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-2">Minimum transaction fee</p>
                 <Input
                   type="number"
-                  value={form.minTransactionFee ?? ""}
-                  onChange={(event) => handleChange("minTransactionFee", event.target.value)}
+                  value={form.minTransactionFee ?? ''}
+                  onChange={(event) => handleChange('minTransactionFee', event.target.value)}
                 />
               </div>
             </CardContent>
@@ -76,21 +76,25 @@ export const AdminSettingsClient = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <Textarea
-                value={form.announcement?.message || ""}
-                onChange={(event) => handleAnnouncementChange("message", event.target.value)}
+                value={form.announcement?.message || ''}
+                onChange={(event) => handleAnnouncementChange('message', event.target.value)}
                 placeholder="Write announcement text"
                 rows={3}
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <Input
                   type="date"
-                  value={form.announcement?.expiresAt ? String(form.announcement?.expiresAt).slice(0, 10) : ""}
-                  onChange={(event) => handleAnnouncementChange("expiresAt", event.target.value)}
+                  value={
+                    form.announcement?.expiresAt
+                      ? String(form.announcement?.expiresAt).slice(0, 10)
+                      : ''
+                  }
+                  onChange={(event) => handleAnnouncementChange('expiresAt', event.target.value)}
                 />
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Switch
                     checked={Boolean(form.announcement?.isActive)}
-                    onCheckedChange={(value) => handleAnnouncementChange("isActive", value)}
+                    onCheckedChange={(value) => handleAnnouncementChange('isActive', value)}
                   />
                   Publish announcement
                 </div>
@@ -106,18 +110,22 @@ export const AdminSettingsClient = () => {
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Switch
                   checked={Boolean(form.maintenance?.enabled)}
-                  onCheckedChange={(value) => handleMaintenanceChange("enabled", value)}
+                  onCheckedChange={(value) => handleMaintenanceChange('enabled', value)}
                 />
                 Maintenance mode
               </div>
               <Input
                 type="datetime-local"
-                value={form.maintenance?.scheduledFor ? String(form.maintenance?.scheduledFor).slice(0, 16) : ""}
-                onChange={(event) => handleMaintenanceChange("scheduledFor", event.target.value)}
+                value={
+                  form.maintenance?.scheduledFor
+                    ? String(form.maintenance?.scheduledFor).slice(0, 16)
+                    : ''
+                }
+                onChange={(event) => handleMaintenanceChange('scheduledFor', event.target.value)}
               />
               <Textarea
-                value={form.maintenance?.message || ""}
-                onChange={(event) => handleMaintenanceChange("message", event.target.value)}
+                value={form.maintenance?.message || ''}
+                onChange={(event) => handleMaintenanceChange('message', event.target.value)}
                 placeholder="Maintenance message"
                 rows={2}
               />
@@ -132,13 +140,13 @@ export const AdminSettingsClient = () => {
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Switch
                   checked={Boolean(form.registration?.disabled)}
-                  onCheckedChange={(value) => handleRegistrationChange("disabled", value)}
+                  onCheckedChange={(value) => handleRegistrationChange('disabled', value)}
                 />
                 Disable new registrations
               </div>
               <Textarea
-                value={form.registration?.reason || ""}
-                onChange={(event) => handleRegistrationChange("reason", event.target.value)}
+                value={form.registration?.reason || ''}
+                onChange={(event) => handleRegistrationChange('reason', event.target.value)}
                 placeholder="Reason shown to users"
                 rows={2}
               />
@@ -147,7 +155,7 @@ export const AdminSettingsClient = () => {
 
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save settings"}
+              {isSubmitting ? 'Saving...' : 'Save settings'}
             </Button>
           </div>
 
@@ -189,5 +197,5 @@ export const AdminSettingsClient = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

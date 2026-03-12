@@ -1,30 +1,18 @@
-"use client"
+'use client';
 
+import { ArrowUpRight, BadgeCheck, ChevronRight, Clock, Sparkles, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import WithdrawModal from './components/WithdrawModal';
 import {
-  ArrowUpRight,
-  BadgeCheck,
-  ChevronRight,
-  Clock,
-  Sparkles,
-  Wallet
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "@/components/ui/tooltip"
-import WithdrawModal from "./components/WithdrawModal"
-import { 
-  useWalletLogic, 
-  formatAmount, 
-  formatDate, 
-  statusClasses, 
-  weekLabels 
-} from "./useWalletLogic"
+  useWalletLogic,
+  formatAmount,
+  formatDate,
+  statusClasses,
+  weekLabels,
+} from './useWalletLogic';
 
 export const WalletClient = () => {
   const {
@@ -43,7 +31,7 @@ export const WalletClient = () => {
     earningsBars,
     depositsBars,
     snapshotBars,
-    canWithdraw
+    canWithdraw,
   } = useWalletLogic();
 
   if (isLoading) {
@@ -69,34 +57,26 @@ export const WalletClient = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isTutor) {
     return (
-      <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
-        Access Denied
-      </div>
-    )
+      <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">Access Denied</div>
+    );
   }
 
   return (
     <div className="min-h-screen">
-      <div
-        className="relative overflow-hidden"
-      >
+      <div className="relative overflow-hidden">
         <div className="relative w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 xl:px-14 2xl:px-20">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-gray-400">
-                Wallet
-              </p>
+              <p className="text-xs uppercase tracking-[0.25em] text-gray-400">Wallet</p>
               <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl lg:text-4xl">
                 Earnings Dashboard
               </h1>
-              <p className="text-sm text-gray-500">
-                Track balances, payouts, and recent activity.
-              </p>
+              <p className="text-sm text-gray-500">Track balances, payouts, and recent activity.</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="w-full rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-500 shadow-sm sm:w-auto">
@@ -119,8 +99,7 @@ export const WalletClient = () => {
                       Invite your friend
                     </div>
                     <p className="mt-2 text-sm text-gray-600">
-                      Share the platform and earn rewards on every successful
-                      referral.
+                      Share the platform and earn rewards on every successful referral.
                     </p>
                   </div>
                   <Button className="w-full rounded-full bg-gray-900 px-6 text-sm text-white hover:bg-black sm:w-auto">
@@ -133,9 +112,7 @@ export const WalletClient = () => {
               <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
-                      Statistics
-                    </p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Statistics</p>
                     <div className="mt-2 flex items-center gap-3">
                       <p className="text-2xl font-semibold text-gray-900">
                         {formatAmount(wallet.availableBalance)}
@@ -157,10 +134,7 @@ export const WalletClient = () => {
 
                 <div className="mt-6 flex items-end justify-between gap-2 sm:gap-3">
                   {weekLabels.map((label, index) => (
-                    <div
-                      key={label}
-                      className="flex flex-1 flex-col items-center gap-2"
-                    >
+                    <div key={label} className="flex flex-1 flex-col items-center gap-2">
                       <div className="flex h-24 w-5 flex-col items-center justify-end gap-1 rounded-full bg-[#f4f6fb] p-1 sm:h-28 sm:w-6">
                         <span
                           className="w-full rounded-full bg-[#9edb68]"
@@ -171,9 +145,7 @@ export const WalletClient = () => {
                           style={{ height: `${earningsBars[index]}px` }}
                         />
                       </div>
-                      <span className="text-[11px] text-gray-400">
-                        {label}
-                      </span>
+                      <span className="text-[11px] text-gray-400">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -196,9 +168,7 @@ export const WalletClient = () => {
 
               <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Last transactions
-                  </h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Last transactions</h2>
                   <Button
                     variant="ghost"
                     className="rounded-full text-xs font-semibold text-gray-500 hover:text-gray-800"
@@ -209,14 +179,12 @@ export const WalletClient = () => {
                 </div>
 
                 {sortedHistory.length === 0 ? (
-                  <p className="mt-4 text-sm text-gray-500">
-                    No transactions yet.
-                  </p>
+                  <p className="mt-4 text-sm text-gray-500">No transactions yet.</p>
                 ) : (
                   <div className="mt-4 space-y-4">
                     <div className="space-y-3 sm:hidden">
                       {pagedHistory.map((item) => {
-                        const status = item.status || "PENDING"
+                        const status = item.status || 'PENDING';
                         return (
                           <div
                             key={item.transactionId || item._id}
@@ -232,10 +200,7 @@ export const WalletClient = () => {
                                 </p>
                               </div>
                               <Badge
-                                className={
-                                  statusClasses[status] ||
-                                  "bg-gray-100 text-gray-700"
-                                }
+                                className={statusClasses[status] || 'bg-gray-100 text-gray-700'}
                               >
                                 {status}
                               </Badge>
@@ -243,11 +208,9 @@ export const WalletClient = () => {
                             <div className="mt-3 text-xs text-gray-500">
                               {formatDate(item.requestedAt)}
                             </div>
-                            <p className="mt-2 text-xs text-gray-600">
-                              Withdrawal to bank
-                            </p>
+                            <p className="mt-2 text-xs text-gray-600">Withdrawal to bank</p>
                           </div>
-                        )
+                        );
                       })}
                     </div>
 
@@ -257,17 +220,13 @@ export const WalletClient = () => {
                           <tr className="text-left text-gray-400">
                             <th className="py-2 font-medium">Date</th>
                             <th className="py-2 font-medium">Description</th>
-                            <th className="py-2 text-right font-medium">
-                              Amount
-                            </th>
-                            <th className="py-2 text-right font-medium">
-                              Status
-                            </th>
+                            <th className="py-2 text-right font-medium">Amount</th>
+                            <th className="py-2 text-right font-medium">Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           {pagedHistory.map((item) => {
-                            const status = item.status || "PENDING"
+                            const status = item.status || 'PENDING';
                             return (
                               <tr
                                 key={item.transactionId || item._id}
@@ -276,26 +235,21 @@ export const WalletClient = () => {
                                 <td className="py-3 text-gray-600">
                                   {formatDate(item.requestedAt)}
                                 </td>
-                                <td className="py-3 text-gray-700">
-                                  Withdrawal to bank
-                                </td>
+                                <td className="py-3 text-gray-700">Withdrawal to bank</td>
                                 <td className="py-3 text-right text-gray-900">
                                   - {formatAmount(Number(item.amount) || 0)}
                                 </td>
-                            <td className="py-3 text-right">
-                              <Badge
-                                className={
-                                  statusClasses[status] ||
-                                  "bg-gray-100 text-gray-700"
-                                }
-                              >
-                                {status}
-                              </Badge>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
+                                <td className="py-3 text-right">
+                                  <Badge
+                                    className={statusClasses[status] || 'bg-gray-100 text-gray-700'}
+                                  >
+                                    {status}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
                       </table>
                     </div>
 
@@ -304,24 +258,17 @@ export const WalletClient = () => {
                         <Button
                           variant="outline"
                           disabled={currentPage === 1}
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(1, prev - 1))
-                          }
+                          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         >
                           Previous
                         </Button>
                         <span className="text-xs text-gray-500">
-                          Page {Math.min(currentPage, totalPages)} of{" "}
-                          {totalPages}
+                          Page {Math.min(currentPage, totalPages)} of {totalPages}
                         </span>
                         <Button
                           variant="outline"
                           disabled={currentPage === totalPages}
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(totalPages, prev + 1)
-                            )
-                          }
+                          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                         >
                           Next
                         </Button>
@@ -345,9 +292,7 @@ export const WalletClient = () => {
                         {formatAmount(wallet.availableBalance)}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      Ready for withdrawal
-                    </p>
+                    <p className="text-xs text-gray-500">Ready for withdrawal</p>
                   </div>
                   <TooltipProvider>
                     <Tooltip>
@@ -362,9 +307,7 @@ export const WalletClient = () => {
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      {!canWithdraw && (
-                        <TooltipContent>No balance available</TooltipContent>
-                      )}
+                      {!canWithdraw && <TooltipContent>No balance available</TooltipContent>}
                     </Tooltip>
                   </TooltipProvider>
                 </div>
@@ -377,9 +320,7 @@ export const WalletClient = () => {
                     <p className="mt-2 text-lg font-semibold text-gray-900">
                       {formatAmount(wallet.escrowBalance)}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      Held for active projects
-                    </p>
+                    <p className="text-xs text-gray-500">Held for active projects</p>
                   </div>
                   <div className="rounded-2xl bg-[#f6f7fb] p-4">
                     <p className="text-xs uppercase tracking-[0.15em] text-gray-400">
@@ -395,9 +336,7 @@ export const WalletClient = () => {
 
               <div className="rounded-3xl bg-white p-5 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] sm:p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Withdrawals in progress
-                  </h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Withdrawals in progress</h2>
                   <span className="text-xs font-semibold text-gray-400">
                     {pendingWithdrawals.length}
                   </span>
@@ -438,9 +377,7 @@ export const WalletClient = () => {
                     <p className="text-xs uppercase tracking-[0.2em] text-white/60">
                       Earnings snapshot
                     </p>
-                    <h3 className="mt-2 text-lg font-semibold">
-                      Weekly cashflow
-                    </h3>
+                    <h3 className="mt-2 text-lg font-semibold">Weekly cashflow</h3>
                   </div>
                   <Button
                     variant="ghost"
@@ -454,27 +391,22 @@ export const WalletClient = () => {
                 <div className="mt-6 overflow-x-auto">
                   <div className="flex min-w-[280px] items-end justify-between gap-2 sm:min-w-0">
                     {weekLabels.map((label, index) => {
-                      const height = snapshotBars[index]
-                      const isAccent = index % 2 === 0
+                      const height = snapshotBars[index];
+                      const isAccent = index % 2 === 0;
                       return (
-                        <div
-                          key={label}
-                          className="flex flex-1 flex-col items-center gap-2"
-                        >
+                        <div key={label} className="flex flex-1 flex-col items-center gap-2">
                           <div className="flex h-24 w-5 flex-col items-center justify-end gap-1 rounded-full bg-white/10 p-1 sm:h-28 sm:w-6">
                             <span
                               className={`w-full rounded-full ${
-                                isAccent ? "bg-[#c8ff6d]" : "bg-[#9aa7ff]"
+                                isAccent ? 'bg-[#c8ff6d]' : 'bg-[#9aa7ff]'
                               }`}
                               style={{ height: `${height}px` }}
                             />
                             <span className="h-3 w-full rounded-full bg-white" />
                           </div>
-                          <span className="text-[11px] text-white/50">
-                            {label}
-                          </span>
+                          <span className="text-[11px] text-white/50">{label}</span>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -505,9 +437,9 @@ export const WalletClient = () => {
         availableBalance={wallet.availableBalance}
         bankDetails={wallet.bankDetails}
         onSuccess={() => {
-          refetch()
+          refetch();
         }}
       />
     </div>
   );
-}
+};

@@ -12,22 +12,22 @@ export const useMessagesLogic = () => {
 
     const chatId = searchParams.get('chatId');
     if (chatId) {
-        if (selectedChat?._id === chatId) return;
-        const target = chats.find((chat) => chat._id === chatId);
-        if (target) {
-            selectChat(target);
-        }
-        return;
+      if (selectedChat?._id === chatId) return;
+      const target = chats.find((chat) => chat._id === chatId);
+      if (target) {
+        selectChat(target);
+      }
+      return;
     }
 
     if (!selectedChat) {
-        selectChat(chats[0]);
+      selectChat(chats[0]);
     }
   }, [chats, searchParams, selectChat, selectedChat]);
 
   return {
     showRightSidebar,
     setShowRightSidebar,
-    selectedChat
-  }
-}
+    selectedChat,
+  };
+};

@@ -45,11 +45,16 @@ const eventColors: Record<string, string> = {};
 // Function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'progress': return 'bg-status-progress';
-    case 'completed': return 'bg-status-completed';
-    case 'pending': return 'bg-status-pending';
-    case 'cancelled': return 'bg-status-cancelled';
-    default: return 'bg-status-progress';
+    case 'progress':
+      return 'bg-status-progress';
+    case 'completed':
+      return 'bg-status-completed';
+    case 'pending':
+      return 'bg-status-pending';
+    case 'cancelled':
+      return 'bg-status-cancelled';
+    default:
+      return 'bg-status-progress';
   }
 };
 
@@ -59,7 +64,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, daySpan, isStartDay, index
     eventColors[event.id] = getRandomPastelColor();
   }
   const backgroundColor = eventColors[event.id];
-  
+
   // If this isn't the start day of the event and we're in a multi-day view, don't render
   if (!isStartDay) return null;
 
@@ -70,9 +75,13 @@ const EventCard: React.FC<EventCardProps> = ({ event, daySpan, isStartDay, index
     <div
       className={`relative rounded-lg border border-calendar-border-light shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group ${spanDays > 1 ? 'mr-2' : ''}`}
       style={{
-        width: spanDays ? (spanDays > 1 ? `calc(${spanDays * 100}% + ${(spanDays - 1) * 8}px)` : '100%') : '100%',
+        width: spanDays
+          ? spanDays > 1
+            ? `calc(${spanDays * 100}% + ${(spanDays - 1) * 8}px)`
+            : '100%'
+          : '100%',
         backgroundColor,
-        marginTop: `${(index * 128)+(index*10)}px`, // Add vertical offset for overlapping events
+        marginTop: `${index * 128 + index * 10}px`, // Add vertical offset for overlapping events
         zIndex: 10 - index, // Higher index = lower z-index
       }}
       onClick={() => onClick(event)}
@@ -101,9 +110,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, daySpan, isStartDay, index
             <h3 className="font-semibold text-sm text-calendar-text-primary line-clamp-1 mb-1">
               {event.title}
             </h3>
-            <p className="text-xs text-calendar-text-secondary line-clamp-2">
-              {event.description}
-            </p>
+            <p className="text-xs text-calendar-text-secondary line-clamp-2">{event.description}</p>
           </div>
           <Button
             variant="ghost"
@@ -113,26 +120,24 @@ const EventCard: React.FC<EventCardProps> = ({ event, daySpan, isStartDay, index
             <MoreHorizontal className="w-3 h-3" />
           </Button>
         </div>
-        
+
         <div className="flex items-center justify-between mt-3">
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className={`text-xs px-2 py-1 ${getStatusColor(event.status)} text-white border-0`}
           >
             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
           </Badge>
-          
+
           {event.progress !== undefined && (
             <div className="flex items-center gap-1">
               <div className="w-12 h-1.5 bg-calendar-border-light rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-primary rounded-full transition-all duration-300"
                   style={{ width: `${event.progress}%` }}
                 />
               </div>
-              <span className="text-xs text-calendar-text-muted">
-                {event.progress}%
-              </span>
+              <span className="text-xs text-calendar-text-muted">{event.progress}%</span>
             </div>
           )}
         </div>

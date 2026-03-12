@@ -1,12 +1,12 @@
-'use client'
-import React, { useEffect } from 'react'
-import DashboardNavbar from './DashboardNavbar'
-import { useGetUserQuery } from '@/lib/services/auth'
-import { useRouter } from 'next/navigation'
-import { Skeleton } from '@/components/ui/skeleton'
+'use client';
+import React, { useEffect } from 'react';
+import DashboardNavbar from './DashboardNavbar';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
@@ -51,17 +51,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 container mx-auto">
       <DashboardNavbar />
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
     </div>
-  )
-}
+  );
+};
 
-export default DashboardLayout
+export default DashboardLayout;

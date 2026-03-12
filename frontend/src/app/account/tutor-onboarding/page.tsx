@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { TutorOnboardingClient } from "./TutorOnboardingClient";
+import React, { Suspense } from 'react';
+import { TutorOnboardingClient } from './TutorOnboardingClient';
 
 export const metadata = {
-  title: "Tutor Onboarding | Aski",
-  description: "Apply to become a tutor",
+  title: 'Tutor Onboarding | Aski',
+  description: 'Apply to become a tutor',
 };
 
 export default function TutorOnboardingPage() {

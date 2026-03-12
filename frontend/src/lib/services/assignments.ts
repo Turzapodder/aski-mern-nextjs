@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   Assignment,
   AssignmentsResponse,
@@ -6,21 +6,24 @@ import type {
   PaymentCheckoutResponse,
   CreateAssignmentRequest,
   AssignmentFilters,
-} from '@/types/assignment'
+} from '@/types/assignment';
 
 // Re-export types for backward compatibility
-export type { Assignment, AssignmentsResponse, AssignmentResponse, PaymentCheckoutResponse, CreateAssignmentRequest, AssignmentFilters }
+export type {
+  Assignment,
+  AssignmentsResponse,
+  AssignmentResponse,
+  PaymentCheckoutResponse,
+  CreateAssignmentRequest,
+  AssignmentFilters,
+};
 
 // Define the assignments API
 const resolveApiRoot = () => {
   const rawBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    'http://localhost:8000';
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const normalizedBaseUrl = rawBaseUrl.replace(/\/+$/, '');
-  return /\/api$/i.test(normalizedBaseUrl)
-    ? normalizedBaseUrl
-    : `${normalizedBaseUrl}/api`;
+  return /\/api$/i.test(normalizedBaseUrl) ? normalizedBaseUrl : `${normalizedBaseUrl}/api`;
 };
 
 const assignmentsApiBaseUrl = `${resolveApiRoot()}/assignments`;
@@ -72,16 +75,16 @@ export const assignmentsApi = createApi({
     }),
 
     // Update assignment
-    updateAssignment: builder.mutation<AssignmentResponse, { id: string; data: Partial<Assignment> }>({
+    updateAssignment: builder.mutation<
+      AssignmentResponse,
+      { id: string; data: Partial<Assignment> }
+    >({
       query: ({ id, data }) => ({
         url: `/${id}`,
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Delete assignment
@@ -90,23 +93,20 @@ export const assignmentsApi = createApi({
         url: `/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Submit assignment solution
-    submitAssignmentSolution: builder.mutation<AssignmentResponse, { id: string; formData: FormData }>({
+    submitAssignmentSolution: builder.mutation<
+      AssignmentResponse,
+      { id: string; formData: FormData }
+    >({
       query: ({ id, formData }) => ({
         url: `/${id}/submit`,
         method: 'POST',
         body: formData,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Assign tutor to assignment
@@ -123,29 +123,29 @@ export const assignmentsApi = createApi({
     }),
 
     // Submit feedback for assignment
-    submitFeedback: builder.mutation<AssignmentResponse, { id: string; rating?: number; comments?: string }>({
+    submitFeedback: builder.mutation<
+      AssignmentResponse,
+      { id: string; rating?: number; comments?: string }
+    >({
       query: ({ id, rating, comments }) => ({
         url: `/${id}/feedback`,
         method: 'POST',
         body: { rating, comments },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Initialize gateway payment for assignment
-    processPayment: builder.mutation<PaymentCheckoutResponse, { id: string; amount?: number; method?: string }>({
+    processPayment: builder.mutation<
+      PaymentCheckoutResponse,
+      { id: string; amount?: number; method?: string }
+    >({
       query: ({ id, amount, method }) => ({
         url: `/${id}/payment`,
         method: 'POST',
         body: { amount, method },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Request revision
@@ -155,24 +155,24 @@ export const assignmentsApi = createApi({
         method: 'POST',
         body: { note },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Assignment', id },
-        'Assignments',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
     // Get assignment statistics
-    getAssignmentStats: builder.query<{
-      status: string;
-      data: {
-        totalAssignments: number;
-        pendingAssignments: number;
-        completedAssignments: number;
-        assignedAssignments: number;
-        averageRating: number;
-        totalEarnings: number;
-      };
-    }, void>({
+    getAssignmentStats: builder.query<
+      {
+        status: string;
+        data: {
+          totalAssignments: number;
+          pendingAssignments: number;
+          completedAssignments: number;
+          assignedAssignments: number;
+          averageRating: number;
+          totalEarnings: number;
+        };
+      },
+      void
+    >({
       query: () => ({
         url: '/stats',
         method: 'GET',

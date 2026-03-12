@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { VerifyEmailClient } from "./VerifyEmailClient";
+import React, { Suspense } from 'react';
+import { VerifyEmailClient } from './VerifyEmailClient';
 
 export const metadata = {
-  title: "Verify Email | Aski",
-  description: "Verify your email address",
+  title: 'Verify Email | Aski',
+  description: 'Verify your email address',
 };
 
 export default function VerifyEmailPage() {

@@ -1,71 +1,75 @@
-import { useState } from "react"
-import useSWR from "swr"
-import { toast } from "sonner"
-import { adminApi } from "@/lib/adminApi"
-import { AdminAccount } from "@/types/admin"
+import { useState } from 'react';
+import useSWR from 'swr';
+import { toast } from 'sonner';
+import { adminApi } from '@/lib/adminApi';
+import { AdminAccount } from '@/types/admin';
 
 export const useAdminAccountsLogic = () => {
-  const { data, error, isLoading, mutate } = useSWR("admin-accounts", () => adminApi.admins.getAll())
-  const admins = data?.data ?? []
-  const [email, setEmail] = useState("")
-  const [role, setRole] = useState("admin")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { data, error, isLoading, mutate } = useSWR('admin-accounts', () =>
+    adminApi.admins.getAll()
+  );
+  const admins = data?.data ?? [];
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('admin');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAdd = async () => {
     if (!email.trim()) {
-      toast.error("Provide an email address")
-      return
+      toast.error('Provide an email address');
+      return;
     }
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      await adminApi.admins.add({ email: email.trim(), role })
-      toast.success("Admin added")
-      setEmail("")
-      mutate()
+      await adminApi.admins.add({ email: email.trim(), role });
+      toast.success('Admin added');
+      setEmail('');
+      mutate();
     } catch (submitError: any) {
-      toast.error(submitError?.message || "Unable to add admin")
+      toast.error(submitError?.message || 'Unable to add admin');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleRoleChange = async (admin: AdminAccount, nextRole: string) => {
-    if (!admin._id) return
-    setIsSubmitting(true)
+    if (!admin._id) return;
+    setIsSubmitting(true);
     try {
-      await adminApi.admins.updateRole(admin._id, nextRole)
-      toast.success("Role updated")
-      mutate()
+      await adminApi.admins.updateRole(admin._id, nextRole);
+      toast.success('Role updated');
+      mutate();
     } catch (submitError: any) {
-      toast.error(submitError?.message || "Unable to update role")
+      toast.error(submitError?.message || 'Unable to update role');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleRevoke = async (admin: AdminAccount) => {
-    if (!admin._id) return
-    setIsSubmitting(true)
+    if (!admin._id) return;
+    setIsSubmitting(true);
     try {
-      await adminApi.admins.revoke(admin._id)
-      toast.success("Admin access revoked")
-      mutate()
+      await adminApi.admins.revoke(admin._id);
+      toast.success('Admin access revoked');
+      mutate();
     } catch (submitError: any) {
-      toast.error(submitError?.message || "Unable to revoke access")
+      toast.error(submitError?.message || 'Unable to revoke access');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return {
     admins,
-    email, setEmail,
-    role, setRole,
+    email,
+    setEmail,
+    role,
+    setRole,
     isSubmitting,
     handleAdd,
     handleRoleChange,
     handleRevoke,
     isLoading,
-    error
-  }
-}
+    error,
+  };
+};

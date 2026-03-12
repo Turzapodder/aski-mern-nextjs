@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { Calendar, ArrowUpRight, AlertCircle, Clock } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useProjectsLogic } from "./useProjectsLogic";
+import { Calendar, ArrowUpRight, AlertCircle, Clock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useProjectsLogic } from './useProjectsLogic';
 
 const statusStyles: Record<string, string> = {
-  proposal_accepted: "bg-indigo-100 text-indigo-800",
-  in_progress: "bg-blue-100 text-blue-800",
-  submission_pending: "bg-amber-100 text-amber-800",
-  revision_requested: "bg-orange-100 text-orange-800",
-  assigned: "bg-blue-100 text-blue-800",
-  submitted: "bg-amber-100 text-amber-800",
-  overdue: "bg-rose-100 text-rose-800",
-  completed: "bg-emerald-100 text-emerald-800",
+  proposal_accepted: 'bg-indigo-100 text-indigo-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  submission_pending: 'bg-amber-100 text-amber-800',
+  revision_requested: 'bg-orange-100 text-orange-800',
+  assigned: 'bg-blue-100 text-blue-800',
+  submitted: 'bg-amber-100 text-amber-800',
+  overdue: 'bg-rose-100 text-rose-800',
+  completed: 'bg-emerald-100 text-emerald-800',
 };
 
 export const ProjectsClient = () => {
@@ -24,7 +24,7 @@ export const ProjectsClient = () => {
     isLoading,
     error,
     activeAssignments,
-    latestStatuses
+    latestStatuses,
   } = useProjectsLogic();
 
   if (userLoading) {
@@ -75,18 +75,16 @@ export const ProjectsClient = () => {
             <Clock className="h-5 w-5 text-gray-400" />
           </div>
           <h2 className="text-lg font-semibold text-gray-900">No ongoing projects</h2>
-          <p className="text-sm text-gray-500">
-            Accept a proposal to start your first project.
-          </p>
+          <p className="text-sm text-gray-500">Accept a proposal to start your first project.</p>
         </div>
       )}
 
       {!isLoading && !error && activeAssignments.length > 0 && (
         <div className="grid gap-4">
           {activeAssignments.map((assignment) => {
-            const statusLabel = assignment.status || "assigned";
-            const statusClass = statusStyles[statusLabel] || "bg-gray-100 text-gray-700";
-            const isUnderReview = latestStatuses[assignment._id]?.status === "under_review";
+            const statusLabel = assignment.status || 'assigned';
+            const statusClass = statusStyles[statusLabel] || 'bg-gray-100 text-gray-700';
+            const isUnderReview = latestStatuses[assignment._id]?.status === 'under_review';
 
             return (
               <div
@@ -96,7 +94,9 @@ export const ProjectsClient = () => {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusClass}`}
+                    >
                       {statusLabel}
                     </span>
                     {isUnderReview && (
@@ -130,4 +130,4 @@ export const ProjectsClient = () => {
       )}
     </div>
   );
-}
+};

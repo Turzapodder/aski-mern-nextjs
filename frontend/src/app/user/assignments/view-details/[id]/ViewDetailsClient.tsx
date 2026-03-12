@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   MapPin,
   Clock,
@@ -16,16 +16,16 @@ import {
   Award,
   AlertCircle,
   User as UserIcon,
-} from "lucide-react";
-import SendProposalModal from "@/components/SendProposalModal";
-import ProposalsList from "@/components/ProposalsList";
-import PaymentComponent from "@/components/PaymentComponent";
-import CompletionFeedbackComponent from "@/components/CompletionFeedbackComponent";
-import TutorSubmissionPanel from "@/components/assignments/TutorSubmissionPanel";
-import SubmissionReviewSummary from "@/components/assignments/SubmissionReviewSummary";
-import ReportModal from "@/components/ReportModal";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useViewDetailsLogic, getWorkflowStep } from "./useViewDetailsLogic";
+} from 'lucide-react';
+import SendProposalModal from '@/components/SendProposalModal';
+import ProposalsList from '@/components/ProposalsList';
+import PaymentComponent from '@/components/PaymentComponent';
+import CompletionFeedbackComponent from '@/components/CompletionFeedbackComponent';
+import TutorSubmissionPanel from '@/components/assignments/TutorSubmissionPanel';
+import SubmissionReviewSummary from '@/components/assignments/SubmissionReviewSummary';
+import ReportModal from '@/components/ReportModal';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useViewDetailsLogic, getWorkflowStep } from './useViewDetailsLogic';
 
 export const ViewDetailsClient = () => {
   const {
@@ -47,7 +47,7 @@ export const ViewDetailsClient = () => {
     currency,
     formatAmount,
     handleSendProposal,
-    handleRequestedTutorProfile
+    handleRequestedTutorProfile,
   } = useViewDetailsLogic();
 
   if (isLoading) {
@@ -75,9 +75,9 @@ export const ViewDetailsClient = () => {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">
-            {error && "data" in error
-              ? (error.data as any)?.message || "Failed to load assignment details"
-              : "Failed to load assignment details"}
+            {error && 'data' in error
+              ? (error.data as any)?.message || 'Failed to load assignment details'
+              : 'Failed to load assignment details'}
           </p>
           <button
             onClick={() => router.back()}
@@ -112,9 +112,9 @@ export const ViewDetailsClient = () => {
 
   const isAssignmentStudent = assignment.student?._id === currentUser?._id;
   const isAssignmentTutor = assignment.assignedTutor?._id === currentUser?._id;
-  const reporterType = isTutorRole ? "tutor" : "user";
+  const reporterType = isTutorRole ? 'tutor' : 'user';
 
-  const openStatuses = ["pending", "created", "proposal_received"];
+  const openStatuses = ['pending', 'created', 'proposal_received'];
   const canTutorSubmitProposal =
     Boolean(isTutorRole) &&
     openStatuses.includes(assignment.status) &&
@@ -123,39 +123,37 @@ export const ViewDetailsClient = () => {
 
   const canTutorSubmitWork =
     Boolean(isAssignmentTutor) &&
-    assignment.paymentStatus === "paid" &&
+    assignment.paymentStatus === 'paid' &&
     [
-      "in_progress",
-      "submission_pending",
-      "revision_requested",
-      "assigned",
-      "proposal_accepted",
-      "overdue",
+      'in_progress',
+      'submission_pending',
+      'revision_requested',
+      'assigned',
+      'proposal_accepted',
+      'overdue',
     ].includes(assignment.status);
 
   const showPaymentSection =
     Boolean(isAssignmentStudent) &&
     Boolean(assignment.assignedTutor) &&
-    assignment.paymentStatus !== "paid" &&
-    !["cancelled", "disputed", "resolved", "completed"].includes(assignment.status);
+    assignment.paymentStatus !== 'paid' &&
+    !['cancelled', 'disputed', 'resolved', 'completed'].includes(assignment.status);
 
-  const showPaymentComplete =
-    Boolean(isAssignmentStudent) && assignment.paymentStatus === "paid";
+  const showPaymentComplete = Boolean(isAssignmentStudent) && assignment.paymentStatus === 'paid';
 
   const showCompletionFeedback =
-    Boolean(isAssignmentStudent) &&
-    ["submitted", "completed"].includes(assignment.status);
+    Boolean(isAssignmentStudent) && ['submitted', 'completed'].includes(assignment.status);
 
   const workflowSteps = [
-    { id: "details", label: "Details", icon: CheckCircle },
-    { id: "proposals", label: "Proposals", icon: MessageSquare },
-    { id: "payment", label: "Payment", icon: CreditCard },
-    { id: "submission", label: "Submission", icon: Send },
-    { id: "review", label: "Review", icon: Award },
+    { id: 'details', label: 'Details', icon: CheckCircle },
+    { id: 'proposals', label: 'Proposals', icon: MessageSquare },
+    { id: 'payment', label: 'Payment', icon: CreditCard },
+    { id: 'submission', label: 'Submission', icon: Send },
+    { id: 'review', label: 'Review', icon: Award },
   ];
 
   const currentStep = getWorkflowStep(assignment);
-  const isAssignmentCompleted = assignment.status === "completed";
+  const isAssignmentCompleted = assignment.status === 'completed';
   const currentStepIndex = Math.max(
     0,
     workflowSteps.findIndex((step) => step.id === currentStep)
@@ -165,7 +163,7 @@ export const ViewDetailsClient = () => {
   const formatDeadline = (deadline: string, showCountdown: boolean) => {
     const date = new Date(deadline);
     if (Number.isNaN(date.getTime())) {
-      return "Deadline unavailable";
+      return 'Deadline unavailable';
     }
     if (!showCountdown) {
       return `Deadline scheduled: ${date.toLocaleDateString()}`;
@@ -183,34 +181,34 @@ export const ViewDetailsClient = () => {
         parts.push(`${days}d`);
         if (hours > 0) parts.push(`${hours}h`);
         if (minutes > 0) parts.push(`${minutes}m`);
-        return parts.join(" ");
+        return parts.join(' ');
       }
       if (hours > 0) parts.push(`${hours}h`);
       if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
       parts.push(`${seconds}s`);
-      return parts.join(" ");
+      return parts.join(' ');
     };
 
     if (diffSeconds > 0) {
       return `Time remaining: ${formatParts(diffSeconds)}`;
     }
     if (diffSeconds === 0) {
-      return "Due now";
+      return 'Due now';
     }
     return `Overdue by ${formatParts(Math.abs(diffSeconds))}`;
   };
 
   const timerActiveStatuses = [
-    "proposal_accepted",
-    "in_progress",
-    "submission_pending",
-    "revision_requested",
-    "assigned",
-    "submitted",
-    "completed",
-    "overdue",
-    "disputed",
-    "resolved",
+    'proposal_accepted',
+    'in_progress',
+    'submission_pending',
+    'revision_requested',
+    'assigned',
+    'submitted',
+    'completed',
+    'overdue',
+    'disputed',
+    'resolved',
   ];
   const showDeadlineCountdown = timerActiveStatuses.includes(assignment.status);
 
@@ -221,10 +219,8 @@ export const ViewDetailsClient = () => {
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  {assignment.title}
-                </h1>
-                {assignment.status === "completed" && (
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
+                {assignment.status === 'completed' && (
                   <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                     Assignment completed
                   </span>
@@ -236,7 +232,7 @@ export const ViewDetailsClient = () => {
                   </div>
                   <div className="flex items-center space-x-1">
                     <MapPin size={16} />
-                    <span>{assignment.student?.name || "Student"}</span>
+                    <span>{assignment.student?.name || 'Student'}</span>
                   </div>
                 </div>
               </div>
@@ -248,7 +244,7 @@ export const ViewDetailsClient = () => {
             </div>
 
             <div className="text-sm text-gray-600 mb-4 flex items-center">
-              <span className="text-primary-300 font-medium">Report assignment issue</span>{" "}
+              <span className="text-primary-300 font-medium">Report assignment issue</span>{' '}
               <button
                 onClick={() => setReportOpen(true)}
                 className="text-gray-400 hover:text-gray-600 p-2"
@@ -259,9 +255,7 @@ export const ViewDetailsClient = () => {
 
             {!isTutorRole && (
               <div className="mt-6 pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                  Assignment Progress
-                </h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
                 <div className="relative overflow-x-auto">
                   <div className="min-w-[640px]">
                     <div className="absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0">
@@ -273,29 +267,27 @@ export const ViewDetailsClient = () => {
 
                     <div className="relative z-10 flex justify-between">
                       {workflowSteps.map((step, index) => {
-                        const isComplete = isAssignmentCompleted
-                          ? true
-                          : index < currentStepIndex;
+                        const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
                         const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
                         const StepIcon = step.icon;
                         const circleClass = isComplete
-                          ? "bg-primary-500 text-white"
+                          ? 'bg-primary-500 text-white'
                           : isCurrent
-                          ? "bg-white border-2 border-primary-500 text-primary-500"
-                          : "bg-white border border-gray-200 text-gray-400";
+                            ? 'bg-white border-2 border-primary-500 text-primary-500'
+                            : 'bg-white border border-gray-200 text-gray-400';
                         const labelClass =
-                          isAssignmentCompleted || isCurrent ? "text-gray-900" : "text-gray-700";
+                          isAssignmentCompleted || isCurrent ? 'text-gray-900' : 'text-gray-700';
                         const statusClass =
                           isAssignmentCompleted || isComplete || isCurrent
-                            ? "text-primary-300 font-medium"
-                            : "text-gray-400";
+                            ? 'text-primary-300 font-medium'
+                            : 'text-gray-400';
                         const statusText = isAssignmentCompleted
-                          ? "Completed"
+                          ? 'Completed'
                           : isComplete
-                          ? "Completed"
-                          : isCurrent
-                          ? "In Progress"
-                          : "Pending";
+                            ? 'Completed'
+                            : isCurrent
+                              ? 'In Progress'
+                              : 'Pending';
 
                         return (
                           <div key={step.id} className="flex flex-col items-center w-24">
@@ -319,12 +311,8 @@ export const ViewDetailsClient = () => {
           </div>
 
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Assignment Description
-            </h2>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              {assignment.description}
-            </p>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Assignment Description</h2>
+            <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
           </div>
 
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
@@ -349,29 +337,27 @@ export const ViewDetailsClient = () => {
                   <div className="text-lg font-semibold text-gray-900 capitalize">
                     {assignment.priority} Priority
                   </div>
-                  <div className="text-sm text-gray-600 capitalize">
-                    {assignment.subject}
-                  </div>
+                  <div className="text-sm text-gray-600 capitalize">{assignment.subject}</div>
                 </div>
               </div>
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">Status:</span>{" "}
+                <span className="font-medium">Status:</span>{' '}
                 <span className="capitalize">{assignment.status}</span>
               </div>
-              {latestSubmissionStatus === "under_review" && (
+              {latestSubmissionStatus === 'under_review' && (
                 <div className="text-sm text-amber-700 mt-1">
                   <span className="font-medium">Review status:</span> Under review
                 </div>
               )}
               <div className="text-sm text-gray-600 mt-1">
-                <span className="font-medium">Created:</span>{" "}
+                <span className="font-medium">Created:</span>{' '}
                 {new Date(assignment.createdAt).toLocaleDateString()}
               </div>
               <div className="text-sm text-gray-600 mt-1">
-                <span className="font-medium">Payment:</span>{" "}
+                <span className="font-medium">Payment:</span>{' '}
                 <span className="capitalize">{assignment.paymentStatus}</span>
               </div>
             </div>
@@ -448,12 +434,15 @@ export const ViewDetailsClient = () => {
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
               <p className="text-sm text-gray-600">
-                Paid amount: {formatAmount(assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0)}
+                Paid amount:{' '}
+                {formatAmount(
+                  assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
+                )}
               </p>
             </div>
           )}
 
-          {isAssignmentTutor && assignment.paymentStatus !== "paid" && (
+          {isAssignmentTutor && assignment.paymentStatus !== 'paid' && (
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Awaiting payment</h2>
               <p className="text-sm text-gray-600">
@@ -462,21 +451,22 @@ export const ViewDetailsClient = () => {
             </div>
           )}
 
-          {isAssignmentTutor && assignment.paymentStatus === "paid" && canTutorSubmitWork && (
+          {isAssignmentTutor && assignment.paymentStatus === 'paid' && canTutorSubmitWork && (
             <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
           )}
 
-          {isAssignmentTutor && assignment.status === "submitted" && (
+          {isAssignmentTutor && assignment.status === 'submitted' && (
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Submission sent</h2>
               <p className="text-sm text-gray-600">
-                Your submission is with the student for review. You will be notified if revisions are requested.
+                Your submission is with the student for review. You will be notified if revisions
+                are requested.
               </p>
             </div>
           )}
 
           {isAssignmentTutor &&
-            ["submitted", "completed", "revision_requested"].includes(assignment.status) && (
+            ['submitted', 'completed', 'revision_requested'].includes(assignment.status) && (
               <SubmissionReviewSummary
                 assignment={assignment}
                 submissionStatus={latestSubmissionStatus}
@@ -485,14 +475,19 @@ export const ViewDetailsClient = () => {
 
           {isAssignmentStudent &&
             assignment.assignedTutor &&
-            assignment.paymentStatus === "paid" &&
-            ["in_progress", "submission_pending", "revision_requested", "assigned", "overdue"].includes(
-              assignment.status
-            ) && (
+            assignment.paymentStatus === 'paid' &&
+            [
+              'in_progress',
+              'submission_pending',
+              'revision_requested',
+              'assigned',
+              'overdue',
+            ].includes(assignment.status) && (
               <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Work in progress</h2>
                 <p className="text-sm text-gray-600">
-                  Your tutor is working on the assignment. We will notify you when the submission is ready.
+                  Your tutor is working on the assignment. We will notify you when the submission is
+                  ready.
                 </p>
               </div>
             )}
@@ -515,11 +510,7 @@ export const ViewDetailsClient = () => {
 
           {isAssignmentStudent && (
             <div className="mt-6">
-              <ProposalsList
-                assignmentId={assignment._id}
-                isStudent={true}
-                currency={currency}
-              />
+              <ProposalsList assignmentId={assignment._id} isStudent={true} currency={currency} />
             </div>
           )}
         </div>
@@ -538,22 +529,20 @@ export const ViewDetailsClient = () => {
           </div>
 
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Student Information
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
 
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
                 <span className="text-sm text-gray-600">
-                  {assignment.student?.name || "Student Name"}
+                  {assignment.student?.name || 'Student Name'}
                 </span>
               </div>
 
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
                 <span className="text-sm text-gray-600">
-                  Email: {assignment.student?.email || "student@example.com"}
+                  Email: {assignment.student?.email || 'student@example.com'}
                 </span>
               </div>
 
@@ -574,9 +563,7 @@ export const ViewDetailsClient = () => {
               </div>
               {assignment.requestedTutor && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm font-medium text-gray-900 mb-2">
-                    Requested Tutor
-                  </div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Requested Tutor</div>
                   <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <UserIcon size={16} className="text-gray-400" />

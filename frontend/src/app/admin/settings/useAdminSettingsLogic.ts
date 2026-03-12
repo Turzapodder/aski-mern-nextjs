@@ -1,35 +1,35 @@
-import { useEffect, useState } from "react"
-import useSWR from "swr"
-import { toast } from "sonner"
+import { useEffect, useState } from 'react';
+import useSWR from 'swr';
+import { toast } from 'sonner';
 
-import { adminApi } from "@/lib/adminApi"
-import { PlatformSettings } from "@/types/admin"
+import { adminApi } from '@/lib/adminApi';
+import { PlatformSettings } from '@/types/admin';
 
-export type SettingsForm = Omit<PlatformSettings, "platformFeeRate" | "minTransactionFee"> & {
-  platformFeeRate?: string | number
-  minTransactionFee?: string | number
-}
+export type SettingsForm = Omit<PlatformSettings, 'platformFeeRate' | 'minTransactionFee'> & {
+  platformFeeRate?: string | number;
+  minTransactionFee?: string | number;
+};
 
 export const useAdminSettingsLogic = () => {
-  const { data, error, isLoading, mutate } = useSWR("admin-settings", () =>
+  const { data, error, isLoading, mutate } = useSWR('admin-settings', () =>
     adminApi.settings.get()
-  )
+  );
 
-  const [form, setForm] = useState<SettingsForm>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [form, setForm] = useState<SettingsForm>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (data?.data) {
-      setForm(data.data)
+      setForm(data.data);
     }
-  }, [data])
+  }, [data]);
 
   const handleChange = (key: keyof PlatformSettings, value: any) => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
-    }))
-  }
+    }));
+  };
 
   const handleAnnouncementChange = (key: string, value: any) => {
     setForm((prev) => ({
@@ -38,8 +38,8 @@ export const useAdminSettingsLogic = () => {
         ...prev.announcement,
         [key]: value,
       },
-    }))
-  }
+    }));
+  };
 
   const handleMaintenanceChange = (key: string, value: any) => {
     setForm((prev) => ({
@@ -48,8 +48,8 @@ export const useAdminSettingsLogic = () => {
         ...prev.maintenance,
         [key]: value,
       },
-    }))
-  }
+    }));
+  };
 
   const handleRegistrationChange = (key: string, value: any) => {
     setForm((prev) => ({
@@ -58,36 +58,36 @@ export const useAdminSettingsLogic = () => {
         ...prev.registration,
         [key]: value,
       },
-    }))
-  }
+    }));
+  };
 
   const handleSave = async () => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const parsedFee =
-        form.platformFeeRate === "" || form.platformFeeRate === undefined
+        form.platformFeeRate === '' || form.platformFeeRate === undefined
           ? undefined
-          : Number(form.platformFeeRate)
+          : Number(form.platformFeeRate);
       const parsedMinFee =
-        form.minTransactionFee === "" || form.minTransactionFee === undefined
+        form.minTransactionFee === '' || form.minTransactionFee === undefined
           ? undefined
-          : Number(form.minTransactionFee)
+          : Number(form.minTransactionFee);
 
       const payload: PlatformSettings = {
         ...form,
         platformFeeRate: parsedFee,
         minTransactionFee: parsedMinFee,
-      }
+      };
 
-      await adminApi.settings.update(payload)
-      toast.success("Settings updated")
-      mutate()
+      await adminApi.settings.update(payload);
+      toast.success('Settings updated');
+      mutate();
     } catch (submitError: any) {
-      toast.error(submitError?.message || "Unable to update settings")
+      toast.error(submitError?.message || 'Unable to update settings');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return {
     form,
@@ -98,6 +98,6 @@ export const useAdminSettingsLogic = () => {
     handleRegistrationChange,
     handleSave,
     isLoading,
-    error
-  }
-}
+    error,
+  };
+};

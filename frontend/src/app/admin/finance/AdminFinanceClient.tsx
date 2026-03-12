@@ -1,19 +1,28 @@
-"use client"
+'use client';
 
-import { Download, FileText, Search } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminSectionNav from "@/components/admin/AdminSectionNav"
-import AdminPagination from "@/components/admin/AdminPagination"
-import { statusTone, useAdminFinanceLogic } from "./useAdminFinanceLogic"
+import { Download, FileText, Search } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminSectionNav from '@/components/admin/AdminSectionNav';
+import AdminPagination from '@/components/admin/AdminPagination';
+import { statusTone, useAdminFinanceLogic } from './useAdminFinanceLogic';
 
 export const AdminFinanceClient = () => {
   const {
-    type, setType,
-    status, setStatus,
-    search, setSearch,
+    type,
+    setType,
+    status,
+    setStatus,
+    search,
+    setSearch,
     setPage,
     summary,
     summaryLoading,
@@ -23,7 +32,7 @@ export const AdminFinanceClient = () => {
     filtered,
     pagination,
     handleExportCsv,
-    handleExportPdf
+    handleExportPdf,
   } = useAdminFinanceLogic();
 
   return (
@@ -35,9 +44,9 @@ export const AdminFinanceClient = () => {
           <div className="mt-3">
             <AdminSectionNav
               items={[
-                { label: "Transactions", href: "/admin/finance" },
-                { label: "Withdrawals", href: "/admin/finance/withdrawals" },
-                { label: "Analytics", href: "/admin/finance/analytics" },
+                { label: 'Transactions', href: '/admin/finance' },
+                { label: 'Withdrawals', href: '/admin/finance/withdrawals' },
+                { label: 'Analytics', href: '/admin/finance/analytics' },
               ]}
             />
           </div>
@@ -73,7 +82,9 @@ export const AdminFinanceClient = () => {
           <>
             <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-500">Platform Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500">
+                  Platform Revenue
+                </CardTitle>
               </CardHeader>
               <CardContent className="text-2xl font-semibold text-gray-900">
                 {summary?.platformRevenue || 0}
@@ -97,11 +108,17 @@ export const AdminFinanceClient = () => {
             </Card>
             <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-500">Pending Withdrawals</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500">
+                  Pending Withdrawals
+                </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-gray-600">
-                <p className="text-2xl font-semibold text-gray-900">{summary?.pendingWithdrawals.totalCount || 0}</p>
-                <p className="text-xs text-gray-500">Amount: {summary?.pendingWithdrawals.totalAmount || 0}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {summary?.pendingWithdrawals.totalCount || 0}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Amount: {summary?.pendingWithdrawals.totalAmount || 0}
+                </p>
               </CardContent>
             </Card>
           </>
@@ -193,20 +210,28 @@ export const AdminFinanceClient = () => {
                           {new Date(transaction.createdAt).toLocaleString()}
                         </td>
                         <td className="py-3 pr-4 text-gray-700">
-                          {transaction.userId?.name || "N/A"}
+                          {transaction.userId?.name || 'N/A'}
                         </td>
                         <td className="py-3 pr-4 text-gray-700 capitalize">
-                          {transaction.type.replace(/_/g, " ")}
+                          {transaction.type.replace(/_/g, ' ')}
                         </td>
                         <td className="py-3 pr-4 text-gray-700">
-                          ৳{Number.isFinite(transaction.amount) ? transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : transaction.amount}
+                          ৳
+                          {Number.isFinite(transaction.amount)
+                            ? transaction.amount.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })
+                            : transaction.amount}
                         </td>
                         <td className="py-3 pr-4">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(transaction.status)}`}>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(transaction.status)}`}
+                          >
                             {transaction.status}
                           </span>
                         </td>
-                        <td className="py-3 pr-4 text-gray-500">{transaction.gatewayId || "-"}</td>
+                        <td className="py-3 pr-4 text-gray-500">{transaction.gatewayId || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -216,33 +241,53 @@ export const AdminFinanceClient = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
                 {filtered.map((transaction: any) => (
-                  <div key={transaction._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-100">
+                  <div
+                    key={transaction._id}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-100"
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div className="space-y-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">{transaction.userId?.name || "N/A"}</p>
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {transaction.userId?.name || 'N/A'}
+                        </p>
                         <p className="text-[10px] text-gray-500">
                           {new Date(transaction.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusTone(transaction.status)}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusTone(transaction.status)}`}
+                      >
                         {transaction.status}
                       </span>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Type</p>
-                        <p className="text-xs font-medium text-gray-700 capitalize">{transaction.type.replace(/_/g, " ")}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Type
+                        </p>
+                        <p className="text-xs font-medium text-gray-700 capitalize">
+                          {transaction.type.replace(/_/g, ' ')}
+                        </p>
                       </div>
                       <div className="space-y-1 text-right min-w-0">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Amount</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Amount
+                        </p>
                         <p className="text-sm font-bold text-gray-900 truncate">
-                          ৳{typeof transaction.amount === 'number' ? transaction.amount.toFixed(2) : transaction.amount}
+                          ৳
+                          {typeof transaction.amount === 'number'
+                            ? transaction.amount.toFixed(2)
+                            : transaction.amount}
                         </p>
                       </div>
                       <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Gateway</p>
-                        <p className="text-xs text-gray-500 truncate">{transaction.gatewayId || "Internal System"}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Gateway
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {transaction.gatewayId || 'Internal System'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -261,5 +306,5 @@ export const AdminFinanceClient = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};

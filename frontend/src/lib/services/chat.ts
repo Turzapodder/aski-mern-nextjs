@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   ChatUser as User,
   Chat,
@@ -8,77 +8,72 @@ import type {
   SendMessageRequest,
   GetMessagesRequest,
   MarkAsReadRequest,
-} from "@/types/chat";
+} from '@/types/chat';
 
 const chatApiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const chatApiServiceBaseUrl = `${chatApiBaseUrl}/api/chat/`;
 
 export const chatApi = createApi({
-  reducerPath: "chatApi",
+  reducerPath: 'chatApi',
   baseQuery: fetchBaseQuery({
     baseUrl: chatApiServiceBaseUrl,
-    credentials: "include",
+    credentials: 'include',
   }),
-  tagTypes: ["Chat", "Message", "User"],
+  tagTypes: ['Chat', 'Message', 'User'],
   endpoints: (builder) => ({
     // Get user's chats
-    getUserChats: builder.query<
-      ChatResponse,
-      { page?: number; limit?: number }
-    >({
+    getUserChats: builder.query<ChatResponse, { page?: number; limit?: number }>({
       query: ({ page = 1, limit = 20 } = {}) => ({
         url: `list?page=${page}&limit=${limit}`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Chat"],
+      providesTags: ['Chat'],
     }),
 
     // Create a new chat
     createChat: builder.mutation<ChatResponse, CreateChatRequest>({
       query: (chatData) => ({
-        url: "create",
-        method: "POST",
+        url: 'create',
+        method: 'POST',
         body: chatData,
         headers: {
-          "Content-type": "application/json",
+          'Content-type': 'application/json',
         },
       }),
-      invalidatesTags: ["Chat"],
+      invalidatesTags: ['Chat'],
     }),
 
     // Get chat details
     getChatDetails: builder.query<ChatResponse, string>({
       query: (chatId) => ({
         url: `${chatId}`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Chat"],
+      providesTags: ['Chat'],
     }),
 
     // Get messages for a chat
     getChatMessages: builder.query<ChatResponse, GetMessagesRequest>({
       query: ({ chatId, page = 1, limit = 50 }) => ({
         url: `${chatId}/messages?page=${page}&limit=${limit}`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Message"],
+      providesTags: ['Message'],
     }),
 
     // Send a text message
     sendMessage: builder.mutation<ChatResponse, SendMessageRequest>({
       query: ({ chatId, ...messageData }) => ({
         url: `${chatId}/messages`,
-        method: "POST",
+        method: 'POST',
         body: messageData,
         headers: {
-          "Content-type": "application/json",
+          'Content-type': 'application/json',
         },
       }),
-      invalidatesTags: ["Message", "Chat"],
+      invalidatesTags: ['Message', 'Chat'],
     }),
 
     // Send a message with file attachments
@@ -89,25 +84,25 @@ export const chatApi = createApi({
       query: ({ chatId, files, content, replyTo }) => {
         const formData = new FormData();
         files.forEach((file) => {
-          formData.append("files", file);
+          formData.append('files', file);
         });
-        if (content) formData.append("content", content);
-        if (replyTo) formData.append("replyTo", replyTo);
+        if (content) formData.append('content', content);
+        if (replyTo) formData.append('replyTo', replyTo);
 
         return {
           url: `${chatId}/messages/file`,
-          method: "POST",
+          method: 'POST',
           body: formData,
         };
       },
-      invalidatesTags: ["Message", "Chat"],
+      invalidatesTags: ['Message', 'Chat'],
     }),
 
     // Mark message as read
     markMessageAsRead: builder.mutation<ChatResponse, MarkAsReadRequest>({
       query: ({ chatId }) => ({
         url: `${chatId}/messages/read`,
-        method: "POST",
+        method: 'POST',
       }),
     }),
 
@@ -115,71 +110,62 @@ export const chatApi = createApi({
     deleteMessage: builder.mutation<ChatResponse, { messageId: string }>({
       query: ({ messageId }) => ({
         url: `messages/${messageId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Message", "Chat"],
+      invalidatesTags: ['Message', 'Chat'],
     }),
 
     // Edit a message
-    editMessage: builder.mutation<
-      ChatResponse,
-      { messageId: string; content: string }
-    >({
+    editMessage: builder.mutation<ChatResponse, { messageId: string; content: string }>({
       query: ({ messageId, content }) => ({
         url: `messages/${messageId}`,
-        method: "PUT",
+        method: 'PUT',
         body: { content },
         headers: {
-          "Content-type": "application/json",
+          'Content-type': 'application/json',
         },
       }),
-      invalidatesTags: ["Message"],
+      invalidatesTags: ['Message'],
     }),
 
     // Add participant to chat
-    addParticipant: builder.mutation<
-      ChatResponse,
-      { chatId: string; userId: string }
-    >({
+    addParticipant: builder.mutation<ChatResponse, { chatId: string; userId: string }>({
       query: ({ chatId, userId }) => ({
         url: `${chatId}/participants`,
-        method: "POST",
+        method: 'POST',
         body: { userId },
         headers: {
-          "Content-type": "application/json",
+          'Content-type': 'application/json',
         },
       }),
-      invalidatesTags: ["Chat"],
+      invalidatesTags: ['Chat'],
     }),
 
     // Remove participant from chat
-    removeParticipant: builder.mutation<
-      ChatResponse,
-      { chatId: string; userId: string }
-    >({
+    removeParticipant: builder.mutation<ChatResponse, { chatId: string; userId: string }>({
       query: ({ chatId, userId }) => ({
         url: `${chatId}/participants/${userId}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Chat"],
+      invalidatesTags: ['Chat'],
     }),
 
     // Leave chat
     leaveChat: builder.mutation<ChatResponse, string>({
       query: (chatId) => ({
         url: `${chatId}/leave`,
-        method: "POST",
+        method: 'POST',
       }),
-      invalidatesTags: ["Chat"],
+      invalidatesTags: ['Chat'],
     }),
 
     // Get active assignments for a chat
     getChatAssignments: builder.query<ChatResponse, string>({
       query: (chatId) => ({
         url: `${chatId}/assignments`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Chat"],
+      providesTags: ['Chat'],
     }),
   }),
 });

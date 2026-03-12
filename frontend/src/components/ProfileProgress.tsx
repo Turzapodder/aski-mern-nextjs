@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 interface Props {
   value: number; // 0-100
