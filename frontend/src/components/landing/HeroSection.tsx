@@ -1,5 +1,5 @@
 import React from 'react';
-import UploadProjectForm from '@/components/UploadProjectForm';
+import UploadProjectForm from '@/components/uploadForm';
 
 export const HeroSection = () => {
   return (

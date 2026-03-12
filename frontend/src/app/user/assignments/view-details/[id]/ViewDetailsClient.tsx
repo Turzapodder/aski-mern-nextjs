@@ -20,12 +20,12 @@ import {
 import SendProposalModal from '@/components/SendProposalModal';
 import ProposalsList from '@/components/ProposalsList';
 import PaymentComponent from '@/components/PaymentComponent';
-import CompletionFeedbackComponent from '@/components/CompletionFeedbackComponent';
 import TutorSubmissionPanel from '@/components/assignments/TutorSubmissionPanel';
 import SubmissionReviewSummary from '@/components/assignments/SubmissionReviewSummary';
 import ReportModal from '@/components/ReportModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewDetailsLogic, getWorkflowStep } from './useViewDetailsLogic';
+import CompletionFeedback from '@/components/completionFeedback/CompletionFeedback';
 
 export const ViewDetailsClient = () => {
   const {
@@ -493,7 +493,7 @@ export const ViewDetailsClient = () => {
             )}
 
           {showCompletionFeedback && (
-            <CompletionFeedbackComponent
+            <CompletionFeedback
               assignment={assignment}
               submissionStatus={latestSubmissionStatus}
             />
