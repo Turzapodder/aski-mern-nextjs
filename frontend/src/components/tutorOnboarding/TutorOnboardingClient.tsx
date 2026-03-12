@@ -6,7 +6,7 @@ import { QuizStep } from './QuizStep';
 import { ApprovalSummaryStep } from './ApprovalSummaryStep';
 import { useTutorOnboardingLogic } from './hooks/useTutorOnboardingLogic';
 import { STEPS } from './steps';
-import type { QuizSummary } from './types';
+import type { QuizSummary } from '../../types/tutorOnboarding';
 
 export const TutorOnboardingClient = () => {
   const {

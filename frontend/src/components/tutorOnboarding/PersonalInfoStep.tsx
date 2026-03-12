@@ -4,7 +4,7 @@ import MultiSelect from '@/components/MultiSelect';
 import { subjectTopics } from '@/constants/subjectTopics';
 import { ProfilePictureUpload } from './ProfilePictureUpload';
 import { CertificateUpload } from './CertificateUpload';
-import type { OnboardingFormData } from './types';
+import type { OnboardingFormData } from '../../types/tutorOnboarding';
 
 const countryList = Object.values(countries)
   .map((c) => (c as { name: string }).name)

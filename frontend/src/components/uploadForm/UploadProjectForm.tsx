@@ -8,7 +8,7 @@ import { FormActions } from './FormActions';
 import { useFileUpload } from './hooks/useFileUpload';
 import { useTopics } from './hooks/useTopics';
 import { useFormSubmit } from './hooks/useFormSubmit';
-import type { UploadProjectFormProps, AssignmentFormData } from './types';
+import type { UploadProjectFormProps, AssignmentFormData } from '../../types/uploadForm';
 
 const UploadProjectForm = ({
   onSubmit,

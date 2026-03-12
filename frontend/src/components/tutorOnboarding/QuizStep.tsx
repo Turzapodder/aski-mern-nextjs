@@ -1,6 +1,6 @@
 import Quiz from '@/components/Quiz';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { QuizQuestion, QuizSummary } from './types';
+import type { QuizQuestion, QuizSummary } from '../../types/tutorOnboarding';
 
 interface QuizStepProps {
   isSubmitting: boolean;

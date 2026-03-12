@@ -7,7 +7,7 @@ import {
   useGetTutorApplicationStatusQuery,
 } from '@/lib/services/tutor';
 import { useRouter } from 'next/navigation';
-import type { User, QuizQuestion, QuizSummary, OnboardingFormData } from '../types';
+import type { User, QuizQuestion, QuizSummary, OnboardingFormData } from '../../../types/tutorOnboarding';
 
 const validationSchema = [
   Yup.object({
