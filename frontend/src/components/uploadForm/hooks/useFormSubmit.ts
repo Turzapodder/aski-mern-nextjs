@@ -4,7 +4,7 @@ import { useCreateAssignmentMutation } from '@/lib/services/assignments';
 import { useGenerateSessionIdQuery } from '@/lib/services/student';
 import { useAppSelector } from '@/lib/hooks';
 import { apiOrigin } from '@/lib/apiConfig';
-import type { AssignmentFormData, UploadProjectFormProps } from '../types';
+import type { AssignmentFormData, UploadProjectFormProps } from '../../../types/uploadForm';
 
 type UseFormSubmitOptions = Pick<
   UploadProjectFormProps,
