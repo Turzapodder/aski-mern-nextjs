@@ -1,6 +1,76 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Class-based dark mode (replaces darkMode: ['class'] from tailwind.config.js) */
+@variant dark (&:is(.dark *));
+
+/* ─── Theme: migrated from tailwind.config.js theme.extend ─── */
+@theme {
+  /* Font families */
+  --font-sans: var(--font-poppins), sans-serif;
+  --font-display: var(--font-space-grotesk), sans-serif;
+  --font-orbitron: var(--font-orbitron);
+  --font-cursive: var(--font-dancing-script);
+
+  /* Base colors */
+  --color-black: #121212;
+  --color-grey: #636363;
+  --color-white: #ffffff;
+
+  /* Primary purple palette */
+  --color-primary-100: #dec8fe;
+  --color-primary-200: #9d84ee;
+  --color-primary-300: #343238ff;
+  --color-primary-500: #7c5cff;
+  --color-primary-600: #6b4eff;
+  --color-primary-700: #5a40ff;
+  --color-primary-800: #4932ff;
+  --color-primary-900: #3824ff;
+
+  /* Secondary yellow palette */
+  --color-secondary-100: #ffdb25;
+  --color-secondary-200: #ffbe17;
+  --color-secondary-300: #ffb802;
+  --color-secondary-500: #ffbe17;
+
+  /* Accent */
+  --color-accent-500: #7c5cff;
+
+  /* Calendar */
+  --color-calendar-bg: #f8fafc;
+  --color-calendar-card: #ffffff;
+  --color-calendar-border-light: #e2e8f0;
+  --color-calendar-text-primary: #1e293b;
+  --color-calendar-text-secondary: #64748b;
+  --color-calendar-text-muted: #94a3b8;
+
+  /* Status */
+  --color-status-progress: #3b82f6;
+  --color-status-completed: #10b981;
+  --color-status-pending: #f59e0b;
+  --color-status-cancelled: #ef4444;
+
+  /* Shadcn/Radix UI design tokens — resolve at runtime via CSS vars */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+}
 
 @layer base {
   :root {
