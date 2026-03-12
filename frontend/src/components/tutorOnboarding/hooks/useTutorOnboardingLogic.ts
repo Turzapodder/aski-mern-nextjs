@@ -7,48 +7,9 @@ import {
   useGetTutorApplicationStatusQuery,
 } from '@/lib/services/tutor';
 import { useRouter } from 'next/navigation';
+import type { User, QuizQuestion, QuizSummary, OnboardingFormData } from '../types';
 
-export interface User {
-  name: string;
-  email: string;
-  is_verified: boolean;
-}
-
-export interface QuizQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-  topic: string;
-}
-
-export interface QuizSummary {
-  score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  timeSpent: number;
-  topicPerformance: Record<string, any>;
-  answers?: any[];
-}
-
-export interface FormData {
-  name: string;
-  email: string;
-  phoneNumber: string;
-  university: string;
-  degree: string;
-  gpa: string;
-  country: string;
-  subject: string;
-  topics: string[];
-  quizSummary: QuizSummary | null;
-  certificate: File | null;
-  profilePicture: File | null;
-}
-
-export const validationSchema = [
+const validationSchema = [
   Yup.object({
     name: Yup.string().required('Full name is required'),
     email: Yup.string().email('Invalid email').required('Email is required'),
@@ -67,21 +28,17 @@ export const validationSchema = [
 
 export const useTutorOnboardingLogic = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User>({
-    name: '',
-    email: '',
-    is_verified: false,
-  });
+  const [user, setUser] = useState<User>({ name: '', email: '', is_verified: false });
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizLoading, setQuizLoading] = useState(false);
-  const [tempFormData, setTempFormData] = useState<FormData | null>(null);
+  const [tempFormData, setTempFormData] = useState<OnboardingFormData | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [showSubmit, setShowSubmit] = useState(true);
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [existingApplication, setExistingApplication] = useState<unknown>(null);
 
   const [generateQuiz] = useGenerateQuizMutation();
   const [submitApplication] = useSubmitTutorApplicationMutation();
@@ -89,10 +46,9 @@ export const useTutorOnboardingLogic = () => {
   const {
     data: applicationData,
     isSuccess: applicationSuccess,
-    isLoading: applicationLoading,
   } = useGetTutorApplicationStatusQuery();
 
-  const formik = useFormik<FormData>({
+  const formik = useFormik<OnboardingFormData>({
     enableReinitialize: true,
     initialValues: {
       name: user?.name || '',
@@ -115,23 +71,15 @@ export const useTutorOnboardingLogic = () => {
 
       try {
         if (currentStep === 1) {
-          // Check if user can apply for this subject
           if (values.subject) {
             try {
               const canApplyResponse = await fetch(
                 `${
                   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
                 }/api/tutor/can-apply/${encodeURIComponent(values.subject)}`,
-                {
-                  credentials: 'include',
-                  headers: {
-                    Accept: 'application/json',
-                  },
-                }
+                { credentials: 'include', headers: { Accept: 'application/json' } }
               );
-
               const canApplyData = await canApplyResponse.json();
-
               if (!canApplyData.canApply) {
                 setErrorMessage(canApplyData.message);
                 setIsSubmitting(false);
@@ -139,14 +87,11 @@ export const useTutorOnboardingLogic = () => {
               }
             } catch (error) {
               console.error('Error checking application eligibility:', error);
-              // Continue with the process if check fails
             }
           }
 
           setTempFormData(values);
           setQuizLoading(true);
-
-          console.log('Generating quiz for:', values.subject, values.topics);
 
           try {
             const response = await generateQuiz({
@@ -176,17 +121,13 @@ export const useTutorOnboardingLogic = () => {
   });
 
   const handleFinalSubmit = async (quizSummary: QuizSummary) => {
-    if (applicationSubmitted || isSubmitting || !tempFormData) {
-      console.log('Application already submitted or in progress, skipping...');
-      return;
-    }
+    if (applicationSubmitted || isSubmitting || !tempFormData) return;
 
     try {
-      console.log('Starting application submission...');
       setIsSubmitting(true);
       setApplicationSubmitted(true);
 
-      const applicationData = {
+      const payload = {
         personalInfo: {
           name: tempFormData.name,
           email: tempFormData.email,
@@ -200,26 +141,24 @@ export const useTutorOnboardingLogic = () => {
           subject: tempFormData.subject,
           topics: tempFormData.topics,
         },
-        quizSummary: quizSummary,
+        quizSummary,
         documents: {
           certificate: tempFormData.certificate || undefined,
           profilePicture: tempFormData.profilePicture || undefined,
         },
       };
 
-      console.log('Submitting application data:', applicationData);
-
-      const response = await submitApplication(applicationData).unwrap();
+      const response = await submitApplication(payload).unwrap();
 
       if (response.status === 'success') {
-        console.log('Application submitted successfully:', response);
         setCurrentStep(3);
       } else {
         throw new Error(response.message || 'Failed to submit application');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to submit application:', error);
-      setErrorMessage(error.data?.message || error.message || 'Failed to submit application');
+      const apiError = error as { data?: { message?: string }; message?: string };
+      setErrorMessage(apiError.data?.message || apiError.message || 'Failed to submit application');
       setApplicationSubmitted(false);
     } finally {
       setIsSubmitting(false);
@@ -227,24 +166,19 @@ export const useTutorOnboardingLogic = () => {
   };
 
   useEffect(() => {
-    if (userData && userSuccess) {
-      setUser(userData.user);
-    }
+    if (userData && userSuccess) setUser(userData.user);
   }, [userData, userSuccess]);
 
   useEffect(() => {
     if (applicationData && applicationSuccess) {
       setExistingApplication(applicationData.application);
-      // If user has an existing application, show approval summary first
       setCurrentStep(3);
     }
   }, [applicationData, applicationSuccess]);
 
   useEffect(() => {
     if (currentStep === 3 && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
+      const timer = setTimeout(() => setCountdown((n) => n - 1), 1000);
       return () => clearTimeout(timer);
     } else if (currentStep === 3 && countdown === 0) {
       router.push('/user/dashboard');
