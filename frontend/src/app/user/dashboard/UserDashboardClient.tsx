@@ -3,9 +3,9 @@
 import React from 'react';
 import PostAssignmentModal from '@/components/PostAssignmentModal';
 import { ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
-import DashboardComponent from '@/components/DashboardComponent';
 import TutorDashboard from '@/components/TutorDashboard';
 import { useUserDashboardLogic } from './useUserDashboardLogic';
+import DashboardComponent from '@/components/dashboard/DashboardComponent';
 
 export const UserDashboardClient = () => {
   const {
