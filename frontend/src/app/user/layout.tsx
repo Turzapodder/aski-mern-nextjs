@@ -1,6 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
-import CollapsibleSidebar from '@/components/CollapsibleSidebar';
+import { useEffect } from 'react';
 import TopNavbar from '@/components/TopNavbar';
 import { useGetUserQuery } from '@/lib/services/auth';
 import { useRouter, usePathname } from 'next/navigation';
@@ -9,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { setUserProfile } from '@/lib/features/auth/authSlice';
 import { setMobileMenuOpen } from '@/lib/features/ui/uiSlice';
+import MainSidebar from '@/components/sidebar/MainSidebar';
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: userData, isLoading } = useGetUserQuery();
@@ -98,7 +98,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         ${sidebarCollapsed ? 'w-16' : 'w-64'}
       `}
       >
-        <CollapsibleSidebar activeItem={activeItem} />
+        <MainSidebar activeItem={activeItem} />
       </div>
 
       {/* Main Content Area */}
