@@ -1,5 +1,5 @@
-import { isRejectedWithValue, isFulfilled, Middleware } from "@reduxjs/toolkit";
-import { toast } from "sonner";
+import { isRejectedWithValue, isFulfilled, Middleware } from '@reduxjs/toolkit';
+import { toast } from 'sonner';
 
 /**
  * Endpoints that should NOT trigger toasts (silent operations).
@@ -8,19 +8,19 @@ import { toast } from "sonner";
  */
 const SILENT_ENDPOINTS = new Set([
   // Auth endpoints that handle their own UI (success message in component)
-  "getMe",
-  "getUser",
+  'getMe',
+  'getUser',
   // Background operations
-  "convertFormToAssignment",
-  "generateSessionId",
-  "getLatestSubmissionStatusByAssignments",
+  'convertFormToAssignment',
+  'generateSessionId',
+  'getLatestSubmissionStatusByAssignments',
   // Chat - sending messages is silent (message appears in chat)
-  "sendMessage",
-  "sendFileMessage",
-  "markMessageAsRead",
+  'sendMessage',
+  'sendFileMessage',
+  'markMessageAsRead',
   // Notifications - silent background ops
-  "markNotificationRead",
-  "markAllRead",
+  'markNotificationRead',
+  'markAllRead',
 ]);
 
 /**
@@ -29,59 +29,59 @@ const SILENT_ENDPOINTS = new Set([
  */
 const SUCCESS_MESSAGES: Record<string, string> = {
   // Auth
-  loginUser: "Login successful",
-  createUser: "Account created successfully",
-  verifyEmail: "Email verified successfully",
-  logoutUser: "Logged out successfully",
-  resetPasswordLink: "Password reset link sent to your email",
-  resetPassword: "Password reset successfully",
-  changePassword: "Password changed successfully",
-  updateUser: "Profile updated",
+  loginUser: 'Login successful',
+  createUser: 'Account created successfully',
+  verifyEmail: 'Email verified successfully',
+  logoutUser: 'Logged out successfully',
+  resetPasswordLink: 'Password reset link sent to your email',
+  resetPassword: 'Password reset successfully',
+  changePassword: 'Password changed successfully',
+  updateUser: 'Profile updated',
 
   // Assignments
-  createAssignment: "Assignment created",
-  updateAssignment: "Assignment updated",
-  deleteAssignment: "Assignment deleted",
-  submitAssignmentSolution: "Solution submitted",
-  assignTutor: "Tutor assigned",
-  submitFeedback: "Feedback submitted",
-  processPayment: "Payment initiated",
-  requestRevision: "Revision requested",
+  createAssignment: 'Assignment created',
+  updateAssignment: 'Assignment updated',
+  deleteAssignment: 'Assignment deleted',
+  submitAssignmentSolution: 'Solution submitted',
+  assignTutor: 'Tutor assigned',
+  submitFeedback: 'Feedback submitted',
+  processPayment: 'Payment initiated',
+  requestRevision: 'Revision requested',
 
   // Proposals
-  createProposal: "Proposal sent",
-  updateProposal: "Proposal updated",
-  acceptProposal: "Proposal accepted",
-  rejectProposal: "Proposal rejected",
-  withdrawProposal: "Proposal withdrawn",
-  deleteProposal: "Proposal deleted",
+  createProposal: 'Proposal sent',
+  updateProposal: 'Proposal updated',
+  acceptProposal: 'Proposal accepted',
+  rejectProposal: 'Proposal rejected',
+  withdrawProposal: 'Proposal withdrawn',
+  deleteProposal: 'Proposal deleted',
 
   // Submissions
-  markSubmissionUnderReview: "Submission marked as under review",
+  markSubmissionUnderReview: 'Submission marked as under review',
 
   // Student
-  saveStudentForm: "Form saved",
+  saveStudentForm: 'Form saved',
 
   // Profile
-  updateProfile: "Profile updated",
-  uploadFiles: "Files uploaded",
+  updateProfile: 'Profile updated',
+  uploadFiles: 'Files uploaded',
 
   // Custom offers
-  createOffer: "Offer sent",
-  acceptOffer: "Offer accepted",
-  declineOffer: "Offer declined",
+  createOffer: 'Offer sent',
+  acceptOffer: 'Offer accepted',
+  declineOffer: 'Offer declined',
 
   // Reports
-  createReport: "Report submitted",
+  createReport: 'Report submitted',
 
   // Chat
-  createChat: "Chat created",
-  editMessage: "Message updated",
-  deleteMessage: "Message deleted",
-  leaveChat: "Chat removed",
+  createChat: 'Chat created',
+  editMessage: 'Message updated',
+  deleteMessage: 'Message deleted',
+  leaveChat: 'Chat removed',
 
   // Quiz
-  generateQuiz: "Quiz generated",
+  generateQuiz: 'Quiz generated',
 };
 
 /**
@@ -98,7 +98,7 @@ export const rtkToastMiddleware: Middleware = () => (next) => (action: any) => {
 
     // Only toast mutations (not queries)
     const type = action.meta?.arg?.type;
-    if (type !== "mutation") {
+    if (type !== 'mutation') {
       return next(action);
     }
 
@@ -118,15 +118,13 @@ export const rtkToastMiddleware: Middleware = () => (next) => (action: any) => {
     }
 
     const type = action.meta?.arg?.type;
-    if (type !== "mutation") {
+    if (type !== 'mutation') {
       return next(action);
     }
 
     const errorData = action.payload as any;
     const errorMessage =
-      errorData?.data?.message ||
-      errorData?.error ||
-      "Something went wrong. Please try again.";
+      errorData?.data?.message || errorData?.error || 'Something went wrong. Please try again.';
 
     toast.error(errorMessage);
   }

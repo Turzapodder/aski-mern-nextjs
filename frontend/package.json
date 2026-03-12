@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write \"src/**/*.{js,ts,tsx,json,css,md}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -61,6 +62,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.32",
     "postcss": "^8",
+    "prettier": "^3.8.1",
     "tailwindcss": "^3.4.1",
     "typescript": "5.8.2"
   }

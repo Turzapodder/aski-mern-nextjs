@@ -1,23 +1,19 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { Plus, X } from "lucide-react";
-import {
-  AvailabilityValue,
-  WEEKDAYS,
-  validateDaySlots,
-} from "@/lib/availability";
+import React, { useEffect, useState } from 'react';
+import { Plus, X } from 'lucide-react';
+import { AvailabilityValue, WEEKDAYS, validateDaySlots } from '@/lib/availability';
 
 interface AvailabilityPickerProps {
   value: AvailabilityValue;
   onChange: (value: AvailabilityValue) => void;
-  variant?: "settings" | "profile";
+  variant?: 'settings' | 'profile';
 }
 
 const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
   value,
   onChange,
-  variant = "settings",
+  variant = 'settings',
 }) => {
   const [slotDrafts, setSlotDrafts] = useState<Record<string, string>>({});
   const [slotErrors, setSlotErrors] = useState<Record<string, string>>({});
@@ -27,7 +23,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
       const next = { ...prev };
       value.days.forEach((day) => {
         if (!(day in next)) {
-          next[day] = "";
+          next[day] = '';
         }
       });
       Object.keys(next).forEach((day) => {
@@ -40,27 +36,25 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
   }, [value.days]);
 
   const styles =
-    variant === "profile"
+    variant === 'profile'
       ? {
-          selected: "border-indigo-200 bg-indigo-50/60",
-          focus: "focus:ring-indigo-200 focus:border-indigo-600",
-          checkbox: "text-indigo-600 focus:ring-indigo-200",
-          button: "border-gray-200 text-gray-700 hover:bg-gray-50",
+          selected: 'border-indigo-200 bg-indigo-50/60',
+          focus: 'focus:ring-indigo-200 focus:border-indigo-600',
+          checkbox: 'text-indigo-600 focus:ring-indigo-200',
+          button: 'border-gray-200 text-gray-700 hover:bg-gray-50',
         }
       : {
-          selected: "border-primary-200 bg-primary-50",
-          focus: "focus:ring-primary-200",
-          checkbox: "text-primary-600 focus:ring-primary-200",
-          button: "border-gray-200 text-gray-700 hover:bg-gray-50",
+          selected: 'border-primary-200 bg-primary-50',
+          focus: 'focus:ring-primary-200',
+          checkbox: 'text-primary-600 focus:ring-primary-200',
+          button: 'border-gray-200 text-gray-700 hover:bg-gray-50',
         };
 
   const toggleDay = (day: string) => {
     const isSelected = value.days.includes(day);
     const nextDays = isSelected
       ? value.days.filter((item) => item !== day)
-      : [...value.days, day].sort(
-          (a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b)
-        );
+      : [...value.days, day].sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b));
 
     const nextSlots = { ...value.slotsByDay };
     if (isSelected) {
@@ -83,7 +77,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
 
   const handleDraftChange = (day: string, value: string) => {
     setSlotDrafts((prev) => ({ ...prev, [day]: value }));
-    setSlotErrors((prev) => ({ ...prev, [day]: "" }));
+    setSlotErrors((prev) => ({ ...prev, [day]: '' }));
   };
 
   const handleAddSlot = (day: string) => {
@@ -92,7 +86,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
 
     const existing = value.slotsByDay[day] || [];
     if (existing.includes(draft)) {
-      setSlotDrafts((prev) => ({ ...prev, [day]: "" }));
+      setSlotDrafts((prev) => ({ ...prev, [day]: '' }));
       return;
     }
 
@@ -116,8 +110,8 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
       slotsByDay: nextSlotsByDay,
     });
 
-    setSlotErrors((prev) => ({ ...prev, [day]: "" }));
-    setSlotDrafts((prev) => ({ ...prev, [day]: "" }));
+    setSlotErrors((prev) => ({ ...prev, [day]: '' }));
+    setSlotDrafts((prev) => ({ ...prev, [day]: '' }));
   };
 
   const handleRemoveSlot = (day: string, slot: string) => {
@@ -132,7 +126,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
       },
     });
 
-    setSlotErrors((prev) => ({ ...prev, [day]: "" }));
+    setSlotErrors((prev) => ({ ...prev, [day]: '' }));
   };
 
   return (
@@ -141,9 +135,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
         {WEEKDAYS.map((day) => {
           const isSelected = value.days.includes(day);
           const slots = value.slotsByDay[day] || [];
-          const validationError = isSelected
-            ? validateDaySlots(day, slots)
-            : null;
+          const validationError = isSelected ? validateDaySlots(day, slots) : null;
           const errorMessage = slotErrors[day] || validationError;
           const hasError = Boolean(errorMessage);
 
@@ -152,10 +144,10 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
               key={day}
               className={`rounded-lg border p-4 ${
                 hasError
-                  ? "border-rose-200 bg-rose-50"
+                  ? 'border-rose-200 bg-rose-50'
                   : isSelected
-                  ? styles.selected
-                  : "border-gray-200"
+                    ? styles.selected
+                    : 'border-gray-200'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -168,9 +160,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
                   />
                   {day}
                 </label>
-                {isSelected && (
-                  <span className="text-xs text-gray-400">Selected</span>
-                )}
+                {isSelected && <span className="text-xs text-gray-400">Selected</span>}
               </div>
 
               {isSelected && (
@@ -193,25 +183,19 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-gray-400">
-                        No slots added yet.
-                      </span>
+                      <span className="text-xs text-gray-400">No slots added yet.</span>
                     )}
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-gray-500">
-                      Add time slot
-                    </label>
+                    <label className="text-xs font-medium text-gray-500">Add time slot</label>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <input
                         type="text"
-                        value={slotDrafts[day] || ""}
-                        onChange={(e) =>
-                          handleDraftChange(day, e.target.value)
-                        }
+                        value={slotDrafts[day] || ''}
+                        onChange={(e) => handleDraftChange(day, e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") {
+                          if (e.key === 'Enter') {
                             e.preventDefault();
                             handleAddSlot(day);
                           }
@@ -228,9 +212,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
                         Add
                       </button>
                     </div>
-                    {errorMessage && (
-                      <p className="text-xs text-rose-500">{errorMessage}</p>
-                    )}
+                    {errorMessage && <p className="text-xs text-rose-500">{errorMessage}</p>}
                   </div>
                 </div>
               )}

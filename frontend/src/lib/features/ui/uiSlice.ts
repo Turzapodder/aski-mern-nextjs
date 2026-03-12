@@ -36,10 +36,7 @@ const uiSlice = createSlice({
     setMobileMenuOpen: (state, action: PayloadAction<boolean>) => {
       state.isMobileMenuOpen = action.payload;
     },
-    openModal: (
-      state,
-      action: PayloadAction<{ type: string; data?: any }>
-    ) => {
+    openModal: (state, action: PayloadAction<{ type: string; data?: any }>) => {
       state.globalModal.isOpen = true;
       state.globalModal.type = action.payload.type;
       state.globalModal.data = action.payload.data || null;

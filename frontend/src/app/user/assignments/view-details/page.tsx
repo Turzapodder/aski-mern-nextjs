@@ -1,6 +1,6 @@
-"use client";
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+'use client';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Clock,
   Calendar,
@@ -9,21 +9,21 @@ import {
   BookOpen,
   Eye,
   Search,
-  Send
-} from "lucide-react";
-import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
-import { useGetUserQuery } from "@/lib/services/auth";
-import { skipToken } from "@reduxjs/toolkit/query";
-import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
-import SendProposalModal from "@/components/SendProposalModal";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+  Send,
+} from 'lucide-react';
+import { useGetAssignmentsQuery, Assignment } from '@/lib/services/assignments';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useGetLatestSubmissionStatusByAssignmentsQuery } from '@/lib/services/submissions';
+import SendProposalModal from '@/components/SendProposalModal';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 const AllAssignmentsPage = () => {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
@@ -39,17 +39,20 @@ const AllAssignmentsPage = () => {
     data: assignmentsData,
     isLoading: loading,
     error,
-    refetch
+    refetch,
   } = useGetAssignmentsQuery({
     page: 1,
     limit: 50,
-    status: statusFilter === "all" ? undefined : statusFilter,
-    priority: priorityFilter === "all" ? undefined : priorityFilter,
-    search: searchTerm || undefined
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    priority: priorityFilter === 'all' ? undefined : priorityFilter,
+    search: searchTerm || undefined,
   });
 
   const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
-  const assignmentIds = useMemo(() => assignments.map((assignment) => assignment._id), [assignments]);
+  const assignmentIds = useMemo(
+    () => assignments.map((assignment) => assignment._id),
+    [assignments]
+  );
   const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
     assignmentIds.length > 0 ? { assignmentIds } : skipToken
   );
@@ -58,11 +61,16 @@ const AllAssignmentsPage = () => {
   // Use assignments directly since API already handles filtering
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -147,10 +155,9 @@ const AllAssignmentsPage = () => {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">
-            {error && 'data' in error ?
-              (error.data as any)?.message || 'Failed to load assignments' :
-              'Failed to load assignments'
-            }
+            {error && 'data' in error
+              ? (error.data as any)?.message || 'Failed to load assignments'
+              : 'Failed to load assignments'}
           </p>
           <button
             onClick={() => refetch()}
@@ -242,15 +249,17 @@ const AllAssignmentsPage = () => {
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
               <p className="text-gray-600">
-                {searchTerm || statusFilter !== "all" || priorityFilter !== "all"
-                  ? "Try adjusting your filters to see more results."
-                  : "There are no assignments available at the moment."
-                }
+                {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
+                  ? 'Try adjusting your filters to see more results.'
+                  : 'There are no assignments available at the moment.'}
               </p>
             </div>
           ) : (
             assignments.map((assignment) => (
-              <div key={assignment._id} className="bg-white rounded-lg p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div
+                key={assignment._id}
+                className="bg-white rounded-lg p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                   <div className="flex-1">
                     {/* Title and Subject */}
@@ -262,13 +271,18 @@ const AllAssignmentsPage = () => {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {assignment.subject}
                         </span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(assignment.priority)}`}>
-                          {assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)}
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(assignment.priority)}`}
+                        >
+                          {assignment.priority.charAt(0).toUpperCase() +
+                            assignment.priority.slice(1)}
                         </span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}
+                        >
                           {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
                         </span>
-                        {latestStatuses[assignment._id]?.status === "under_review" && (
+                        {latestStatuses[assignment._id]?.status === 'under_review' && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700">
                             Under review
                           </span>
@@ -277,16 +291,17 @@ const AllAssignmentsPage = () => {
                     </div>
 
                     {/* Description */}
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      {assignment.description}
-                    </p>
+                    <p className="text-gray-600 mb-4 line-clamp-2">{assignment.description}</p>
 
                     {/* Topics */}
                     {assignment.topics && assignment.topics.length > 0 && (
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-2">
                           {assignment.topics.slice(0, 3).map((topic, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+                            >
                               {topic}
                             </span>
                           ))}
@@ -312,14 +327,17 @@ const AllAssignmentsPage = () => {
                       {(assignment.budget ?? assignment.estimatedCost) > 0 && (
                         <div className="flex items-center space-x-1">
                           <DollarSign className="h-4 w-4" />
-                          <span>{formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}</span>
+                          <span>
+                            {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {/* Student Info */}
                     <div className="mt-3 text-sm text-gray-600">
-                      <span className="font-medium">Student:</span> {assignment.student.name} ({assignment.student.email})
+                      <span className="font-medium">Student:</span> {assignment.student.name} (
+                      {assignment.student.email})
                     </div>
                   </div>
 
@@ -337,7 +355,8 @@ const AllAssignmentsPage = () => {
                     {isTutor &&
                       ['pending', 'created', 'proposal_received'].includes(assignment.status) &&
                       !assignment.assignedTutor &&
-                      (!assignment.requestedTutor || assignment.requestedTutor?._id === currentUser?._id) && (
+                      (!assignment.requestedTutor ||
+                        assignment.requestedTutor?._id === currentUser?._id) && (
                         <button
                           onClick={() => handleSendProposal(assignment)}
                           className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors space-x-2 sm:w-auto lg:w-full"

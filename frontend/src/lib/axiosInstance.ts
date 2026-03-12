@@ -1,13 +1,8 @@
-import axios, {
-  AxiosInstance,
-  AxiosResponse,
-  AxiosError,
-  AxiosRequestConfig,
-} from "axios";
-import { apiBaseUrl } from "./apiConfig";
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
+import { apiBaseUrl } from './apiConfig';
 
 // Augment AxiosRequestConfig to include a custom retry flag
-declare module "axios" {
+declare module 'axios' {
   export interface AxiosRequestConfig {
     _retry?: boolean;
   }
@@ -28,15 +23,15 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log("Token expired, refreshing...");
+        console.log('Token expired, refreshing...');
 
-        await axiosInstance.post("/user/refresh-token");
+        await axiosInstance.post('/user/refresh-token');
 
-        console.log("Token refreshed, retrying request");
+        console.log('Token refreshed, retrying request');
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        console.error("Token refresh failed, redirecting to login");
-        window.location.href = "/account/login?role=user";
+        console.error('Token refresh failed, redirecting to login');
+        window.location.href = '/account/login?role=user';
         return Promise.reject(refreshError);
       }
     }

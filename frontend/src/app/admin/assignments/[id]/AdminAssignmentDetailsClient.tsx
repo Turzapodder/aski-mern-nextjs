@@ -1,25 +1,40 @@
-"use client"
+'use client';
 
-import { FileText, User } from "lucide-react"
+import { FileText, User } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatDate, useAdminAssignmentDetailsLogic } from "./useAdminAssignmentDetailsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { formatDate, useAdminAssignmentDetailsLogic } from './useAdminAssignmentDetailsLogic';
 
 export const AdminAssignmentDetailsClient = () => {
   const {
-    dialogOpen, setDialogOpen,
+    dialogOpen,
+    setDialogOpen,
     dialogMode,
-    reason, setReason,
+    reason,
+    setReason,
     isSubmitting,
     isSaving,
-    formData, setFormData,
+    formData,
+    setFormData,
     assignment,
     chat,
     chatHistory,
@@ -31,7 +46,7 @@ export const AdminAssignmentDetailsClient = () => {
     handleSave,
     resolveFileUrl,
     isLoading,
-    error
+    error,
   } = useAdminAssignmentDetailsLogic();
 
   if (isLoading) {
@@ -40,7 +55,7 @@ export const AdminAssignmentDetailsClient = () => {
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-72 w-full" />
       </div>
-    )
+    );
   }
 
   if (error || !assignment) {
@@ -48,16 +63,16 @@ export const AdminAssignmentDetailsClient = () => {
       <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
         Unable to load assignment details.
       </div>
-    )
+    );
   }
 
-  const attachments = assignment.attachments || []
-  const submissionFiles = assignment.submissionDetails?.submissionFiles || []
-  const submissionLinks = assignment.submissionDetails?.submissionLinks || []
-  const submissionNotes = assignment.submissionDetails?.submissionNotes
-  const submissionHistory = assignment.submissionHistory || []
-  const submissions = submissionsData?.data ?? []
-  const chatParticipants = Array.isArray(chat?.participants) ? chat?.participants : []
+  const attachments = assignment.attachments || [];
+  const submissionFiles = assignment.submissionDetails?.submissionFiles || [];
+  const submissionLinks = assignment.submissionDetails?.submissionLinks || [];
+  const submissionNotes = assignment.submissionDetails?.submissionNotes;
+  const submissionHistory = assignment.submissionHistory || [];
+  const submissions = submissionsData?.data ?? [];
+  const chatParticipants = Array.isArray(chat?.participants) ? chat?.participants : [];
 
   return (
     <div className="space-y-6">
@@ -78,14 +93,18 @@ export const AdminAssignmentDetailsClient = () => {
                   <p className="text-xs text-gray-500">Title</p>
                   <Input
                     value={formData.title}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, title: event.target.value }))}
+                    onChange={(event) =>
+                      setFormData((prev) => ({ ...prev, title: event.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs text-gray-500">Subject</p>
                   <Input
                     value={formData.subject}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, subject: event.target.value }))}
+                    onChange={(event) =>
+                      setFormData((prev) => ({ ...prev, subject: event.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -94,7 +113,9 @@ export const AdminAssignmentDetailsClient = () => {
                 <p className="text-xs text-gray-500">Description</p>
                 <Textarea
                   value={formData.description}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, description: event.target.value }))
+                  }
                   rows={4}
                 />
               </div>
@@ -105,7 +126,9 @@ export const AdminAssignmentDetailsClient = () => {
                   <Input
                     type="number"
                     value={formData.budget}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, budget: event.target.value }))}
+                    onChange={(event) =>
+                      setFormData((prev) => ({ ...prev, budget: event.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -113,7 +136,9 @@ export const AdminAssignmentDetailsClient = () => {
                   <Input
                     type="date"
                     value={formData.deadline}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, deadline: event.target.value }))}
+                    onChange={(event) =>
+                      setFormData((prev) => ({ ...prev, deadline: event.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -149,7 +174,9 @@ export const AdminAssignmentDetailsClient = () => {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-1 text-xs text-gray-500">
                   <p>Payment status</p>
-                  <p className="text-sm text-gray-700 capitalize">{assignment.paymentStatus || "pending"}</p>
+                  <p className="text-sm text-gray-700 capitalize">
+                    {assignment.paymentStatus || 'pending'}
+                  </p>
                 </div>
                 <div className="space-y-1 text-xs text-gray-500">
                   <p>Payment amount</p>
@@ -159,14 +186,18 @@ export const AdminAssignmentDetailsClient = () => {
                 </div>
                 <div className="space-y-1 text-xs text-gray-500">
                   <p>Chat ID</p>
-                  <p className="text-sm text-gray-700">{assignment.chatId || "N/A"}</p>
+                  <p className="text-sm text-gray-700">{assignment.chatId || 'N/A'}</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>Created {formatDate(assignment.createdAt)}</span>
-                <Button onClick={handleSave} disabled={isSaving} className="bg-primary-600 hover:bg-primary-700">
-                  {isSaving ? "Saving..." : "Save changes"}
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  {isSaving ? 'Saving...' : 'Save changes'}
                 </Button>
               </div>
             </CardContent>
@@ -182,16 +213,18 @@ export const AdminAssignmentDetailsClient = () => {
                   <User className="h-4 w-4" />
                   Student
                 </div>
-                <p className="text-sm text-gray-600">{assignment.student?.name || "N/A"}</p>
-                <p className="text-xs text-gray-500">{assignment.student?.email || ""}</p>
+                <p className="text-sm text-gray-600">{assignment.student?.name || 'N/A'}</p>
+                <p className="text-xs text-gray-500">{assignment.student?.email || ''}</p>
               </div>
               <div className="rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
                   <User className="h-4 w-4" />
                   Tutor
                 </div>
-                <p className="text-sm text-gray-600">{assignment.assignedTutor?.name || "Unassigned"}</p>
-                <p className="text-xs text-gray-500">{assignment.assignedTutor?.email || ""}</p>
+                <p className="text-sm text-gray-600">
+                  {assignment.assignedTutor?.name || 'Unassigned'}
+                </p>
+                <p className="text-xs text-gray-500">{assignment.assignedTutor?.email || ''}</p>
               </div>
             </CardContent>
           </Card>
@@ -203,7 +236,9 @@ export const AdminAssignmentDetailsClient = () => {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 mb-2">Student attachments</p>
-                {attachments.length === 0 && <p className="text-sm text-gray-500">No attachments.</p>}
+                {attachments.length === 0 && (
+                  <p className="text-sm text-gray-500">No attachments.</p>
+                )}
                 {attachments.length > 0 && (
                   <div className="space-y-2">
                     {attachments.map((file: Record<string, any>) => (
@@ -224,9 +259,9 @@ export const AdminAssignmentDetailsClient = () => {
 
               <div>
                 <p className="text-xs text-gray-500 mb-2">Tutor submissions</p>
-                {submissionFiles.length === 0 && submissionLinks.length === 0 && !submissionNotes && (
-                  <p className="text-sm text-gray-500">No submissions yet.</p>
-                )}
+                {submissionFiles.length === 0 &&
+                  submissionLinks.length === 0 &&
+                  !submissionNotes && <p className="text-sm text-gray-500">No submissions yet.</p>}
                 {submissionFiles.length > 0 && (
                   <div className="space-y-2">
                     {submissionFiles.map((file: Record<string, any>) => (
@@ -260,18 +295,24 @@ export const AdminAssignmentDetailsClient = () => {
                   </div>
                 )}
                 {submissionNotes && (
-                  <p className="mt-3 text-sm text-gray-600 whitespace-pre-line">{submissionNotes}</p>
+                  <p className="mt-3 text-sm text-gray-600 whitespace-pre-line">
+                    {submissionNotes}
+                  </p>
                 )}
                 {submissionHistory.length > 1 && (
                   <div className="mt-4 space-y-2">
                     {submissionHistory.map((entry: Record<string, any>, index: number) => (
-                      <div key={`${entry.submittedAt || "history"}-${index}`} className="rounded-lg border border-gray-100 p-3 text-xs text-gray-600">
+                      <div
+                        key={`${entry.submittedAt || 'history'}-${index}`}
+                        className="rounded-lg border border-gray-100 p-3 text-xs text-gray-600"
+                      >
                         <div className="flex items-center justify-between">
                           <span>Revision {entry.revisionIndex ?? index + 1}</span>
                           <span>{formatDate(entry.submittedAt)}</span>
                         </div>
                         <div className="mt-1 text-[11px] text-gray-500">
-                          {(entry.submissionFiles?.length || 0)} files, {(entry.submissionLinks?.length || 0)} links
+                          {entry.submissionFiles?.length || 0} files,{' '}
+                          {entry.submissionLinks?.length || 0} links
                         </div>
                       </div>
                     ))}
@@ -303,14 +344,14 @@ export const AdminAssignmentDetailsClient = () => {
                       </p>
                     </div>
                     <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs capitalize text-gray-600">
-                      {submission.status?.replace("_", " ")}
+                      {submission.status?.replace('_', ' ')}
                     </span>
                   </div>
                   {submission.description && (
                     <p className="mt-2 text-sm text-gray-600">{submission.description}</p>
                   )}
                   <div className="mt-2 text-xs text-gray-500">
-                    Files: {submission.submissionFiles?.length || 0} • Links:{" "}
+                    Files: {submission.submissionFiles?.length || 0} • Links:{' '}
                     {submission.submissionLinks?.length || 0}
                   </div>
                   {submission.review?.stars && (
@@ -335,14 +376,18 @@ export const AdminAssignmentDetailsClient = () => {
               {proposals.length > 0 && (
                 <div className="space-y-3">
                   {proposals.map((proposal: Record<string, any>) => (
-                    <div key={proposal._id} className="rounded-lg border border-gray-100 p-3 text-sm text-gray-700">
+                    <div
+                      key={proposal._id}
+                      className="rounded-lg border border-gray-100 p-3 text-sm text-gray-700"
+                    >
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium text-gray-900">
-                            {proposal.tutor?.name || "Tutor"}
+                            {proposal.tutor?.name || 'Tutor'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {proposal.title || "Proposal"} - {formatDate(proposal.createdAt || proposal.submittedAt)}
+                            {proposal.title || 'Proposal'} -{' '}
+                            {formatDate(proposal.createdAt || proposal.submittedAt)}
                           </p>
                         </div>
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs capitalize text-gray-600">
@@ -350,7 +395,8 @@ export const AdminAssignmentDetailsClient = () => {
                         </span>
                       </div>
                       <div className="mt-2 text-xs text-gray-500">
-                        Price: {proposal.proposedPrice ?? 0} - ETA: {proposal.estimatedDeliveryTime ?? 0} hrs
+                        Price: {proposal.proposedPrice ?? 0} - ETA:{' '}
+                        {proposal.estimatedDeliveryTime ?? 0} hrs
                       </div>
                     </div>
                   ))}
@@ -366,7 +412,9 @@ export const AdminAssignmentDetailsClient = () => {
             <CardContent>
               {chat && (
                 <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-gray-900">{chat.name || "Assignment chat"}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {chat.name || 'Assignment chat'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Participants: {chatParticipants.length || 0}
                   </p>
@@ -377,7 +425,7 @@ export const AdminAssignmentDetailsClient = () => {
                           key={participant.user?._id || participant._id}
                           className="rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-700"
                         >
-                          {participant.user?.name || "User"}
+                          {participant.user?.name || 'User'}
                         </span>
                       ))}
                     </div>
@@ -387,7 +435,7 @@ export const AdminAssignmentDetailsClient = () => {
 
               {chatHistory.length === 0 && (
                 <p className="text-sm text-gray-500">
-                  {chat ? "No messages recorded yet." : "No chat found for this assignment."}
+                  {chat ? 'No messages recorded yet.' : 'No chat found for this assignment.'}
                 </p>
               )}
               {chatHistory.length > 0 && (
@@ -397,12 +445,15 @@ export const AdminAssignmentDetailsClient = () => {
                       const attachments = Array.isArray(message.attachments)
                         ? message.attachments
                         : [];
-                      const isOffer = message.type === "offer";
+                      const isOffer = message.type === 'offer';
                       const offerMeta = message.meta || {};
                       return (
-                        <div key={message._id} className="rounded-lg border border-gray-100 bg-white p-3 text-sm">
+                        <div
+                          key={message._id}
+                          className="rounded-lg border border-gray-100 bg-white p-3 text-sm"
+                        >
                           <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                            <span>{message.sender?.name || "User"}</span>
+                            <span>{message.sender?.name || 'User'}</span>
                             <span>{formatDate(message.createdAt)}</span>
                           </div>
                           {message.content && (
@@ -412,10 +463,13 @@ export const AdminAssignmentDetailsClient = () => {
                             <div className="mt-2 rounded-lg border border-purple-100 bg-purple-50 px-3 py-2 text-xs text-purple-700">
                               <p className="font-semibold">Custom offer</p>
                               <p className="mt-1">
-                                Budget: {offerMeta.proposedBudget ?? offerMeta.budget ?? "N/A"}
+                                Budget: {offerMeta.proposedBudget ?? offerMeta.budget ?? 'N/A'}
                               </p>
                               <p>
-                                Deadline: {offerMeta.proposedDeadline ? formatDate(offerMeta.proposedDeadline) : "N/A"}
+                                Deadline:{' '}
+                                {offerMeta.proposedDeadline
+                                  ? formatDate(offerMeta.proposedDeadline)
+                                  : 'N/A'}
                               </p>
                               {offerMeta.message && (
                                 <p className="mt-1 text-purple-600">{offerMeta.message}</p>
@@ -427,7 +481,7 @@ export const AdminAssignmentDetailsClient = () => {
                               {attachments.map((file: Record<string, any>) => (
                                 <a
                                   key={file.url}
-                                href={resolveFileUrl(file.url)}
+                                  href={resolveFileUrl(file.url)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="flex items-center gap-2 text-xs text-primary"
@@ -453,10 +507,16 @@ export const AdminAssignmentDetailsClient = () => {
             <CardTitle className="text-base font-semibold">Admin actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full bg-amber-600 hover:bg-amber-700" onClick={() => openDialog("force-cancel")}>
+            <Button
+              className="w-full bg-amber-600 hover:bg-amber-700"
+              onClick={() => openDialog('force-cancel')}
+            >
               Force cancel
             </Button>
-            <Button className="w-full bg-rose-600 hover:bg-rose-700" onClick={() => openDialog("delete")}>
+            <Button
+              className="w-full bg-rose-600 hover:bg-rose-700"
+              onClick={() => openDialog('delete')}
+            >
               Delete assignment
             </Button>
           </CardContent>
@@ -466,11 +526,13 @@ export const AdminAssignmentDetailsClient = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialogMode === "delete" ? "Delete assignment" : "Force cancel assignment"}</DialogTitle>
+            <DialogTitle>
+              {dialogMode === 'delete' ? 'Delete assignment' : 'Force cancel assignment'}
+            </DialogTitle>
             <DialogDescription>
-              {dialogMode === "delete"
-                ? "This removes the assignment permanently."
-                : "This cancels the assignment and refunds escrow to the student."}
+              {dialogMode === 'delete'
+                ? 'This removes the assignment permanently.'
+                : 'This cancels the assignment and refunds escrow to the student.'}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -485,7 +547,11 @@ export const AdminAssignmentDetailsClient = () => {
             </Button>
             <Button
               onClick={handleConfirm}
-              className={dialogMode === "delete" ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"}
+              className={
+                dialogMode === 'delete'
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : 'bg-amber-600 hover:bg-amber-700'
+              }
               disabled={isSubmitting || reason.trim().length === 0}
             >
               Confirm
@@ -494,5 +560,5 @@ export const AdminAssignmentDetailsClient = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

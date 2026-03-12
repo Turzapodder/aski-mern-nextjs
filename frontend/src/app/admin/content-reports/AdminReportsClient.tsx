@@ -1,36 +1,55 @@
-"use client"
+'use client';
 
-import { MoreHorizontal } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import AdminPagination from "@/components/admin/AdminPagination"
-import { getReportedLabel, useAdminReportsLogic } from "./useAdminReportsLogic"
-import { ReportRecord } from "@/types/admin"
+import { MoreHorizontal } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import AdminPagination from '@/components/admin/AdminPagination';
+import { getReportedLabel, useAdminReportsLogic } from './useAdminReportsLogic';
+import { ReportRecord } from '@/types/admin';
 
 export const AdminReportsClient = () => {
   const {
-    status, setStatus,
-    type, setType,
-    reporterType, setReporterType,
-    startDate, setStartDate,
-    endDate, setEndDate,
-    page, setPage,
+    status,
+    setStatus,
+    type,
+    setType,
+    reporterType,
+    setReporterType,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    page,
+    setPage,
     reports,
     pagination,
     handleAction,
     isLoading,
-    error
+    error,
   } = useAdminReportsLogic();
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-        <p className="text-sm text-gray-500">Review assignment and profile reports from users and tutors.</p>
+        <p className="text-sm text-gray-500">
+          Review assignment and profile reports from users and tutors.
+        </p>
       </div>
 
       <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
@@ -69,8 +88,16 @@ export const AdminReportsClient = () => {
                 <SelectItem value="tutor">Tutor</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-            <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -111,10 +138,12 @@ export const AdminReportsClient = () => {
                   <tbody className="divide-y divide-gray-100">
                     {reports.map((report: ReportRecord) => (
                       <tr key={report._id} className="hover:bg-gray-50/60">
-                        <td className="py-3 pr-4 font-medium text-gray-900">{getReportedLabel(report)}</td>
+                        <td className="py-3 pr-4 font-medium text-gray-900">
+                          {getReportedLabel(report)}
+                        </td>
                         <td className="py-3 pr-4 text-gray-600">{report.reason}</td>
                         <td className="py-3 pr-4 text-gray-600">
-                          {report.reporterId?.name || "Unknown"} ({report.reporterType})
+                          {report.reporterId?.name || 'Unknown'} ({report.reporterType})
                         </td>
                         <td className="py-3 pr-4 text-gray-600">{report.status}</td>
                         <td className="py-3 pr-4 text-gray-600">
@@ -128,16 +157,22 @@ export const AdminReportsClient = () => {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleAction(report._id, "mark_reviewed")}>
+                              <DropdownMenuItem
+                                onClick={() => handleAction(report._id, 'mark_reviewed')}
+                              >
                                 Mark reviewed
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAction(report._id, "dismiss")}>
+                              <DropdownMenuItem onClick={() => handleAction(report._id, 'dismiss')}>
                                 Dismiss
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAction(report._id, "delete_content")}>
+                              <DropdownMenuItem
+                                onClick={() => handleAction(report._id, 'delete_content')}
+                              >
                                 Delete content
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAction(report._id, "block_user")}>
+                              <DropdownMenuItem
+                                onClick={() => handleAction(report._id, 'block_user')}
+                              >
                                 Block user
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -151,28 +186,51 @@ export const AdminReportsClient = () => {
 
               <div className="md:hidden space-y-4">
                 {reports.map((report: ReportRecord) => (
-                  <div key={report._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                  <div
+                    key={report._id}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{getReportedLabel(report)}</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {getReportedLabel(report)}
+                        </p>
                         <p className="text-xs text-gray-500">{report.reason}</p>
                       </div>
-                      <span className="text-[10px] font-semibold uppercase text-gray-500">{report.status}</span>
+                      <span className="text-[10px] font-semibold uppercase text-gray-500">
+                        {report.status}
+                      </span>
                     </div>
                     <div className="mt-3 text-xs text-gray-500">
-                      Reporter: {report.reporterId?.name || "Unknown"} ({report.reporterType})
+                      Reporter: {report.reporterId?.name || 'Unknown'} ({report.reporterType})
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleAction(report._id, "mark_reviewed")}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAction(report._id, 'mark_reviewed')}
+                      >
                         Mark reviewed
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleAction(report._id, "dismiss")}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAction(report._id, 'dismiss')}
+                      >
                         Dismiss
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleAction(report._id, "delete_content")}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAction(report._id, 'delete_content')}
+                      >
                         Delete content
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleAction(report._id, "block_user")}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAction(report._id, 'block_user')}
+                      >
                         Block user
                       </Button>
                     </div>
@@ -192,5 +250,5 @@ export const AdminReportsClient = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};

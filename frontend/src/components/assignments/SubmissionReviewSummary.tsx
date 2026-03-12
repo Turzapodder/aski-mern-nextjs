@@ -1,10 +1,10 @@
-import React, { useMemo } from "react";
-import { FileText, Link as LinkIcon, Star } from "lucide-react";
-import { Assignment } from "@/lib/services/assignments";
+import React, { useMemo } from 'react';
+import { FileText, Link as LinkIcon, Star } from 'lucide-react';
+import { Assignment } from '@/lib/services/assignments';
 
 interface SubmissionReviewSummaryProps {
   assignment: Assignment;
-  submissionStatus?: "submitted" | "under_review" | "completed" | "revision_requested";
+  submissionStatus?: 'submitted' | 'under_review' | 'completed' | 'revision_requested';
 }
 
 const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
@@ -34,29 +34,27 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
   const ratingValue = feedback?.rating ?? 0;
 
   const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const resolveFileUrl = (url?: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
     return `${apiBaseUrl}${url}`;
   };
 
   const statusBadge = () => {
-    if (submissionStatus === "under_review") {
-      return "bg-amber-50 text-amber-700 border-amber-200";
+    if (submissionStatus === 'under_review') {
+      return 'bg-amber-50 text-amber-700 border-amber-200';
     }
-    if (assignment.status === "completed") {
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (assignment.status === 'completed') {
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
-    if (assignment.status === "revision_requested") {
-      return "bg-amber-50 text-amber-700 border-amber-200";
+    if (assignment.status === 'revision_requested') {
+      return 'bg-amber-50 text-amber-700 border-amber-200';
     }
-    if (assignment.status === "submitted") {
-      return "bg-blue-50 text-blue-700 border-blue-200";
+    if (assignment.status === 'submitted') {
+      return 'bg-blue-50 text-blue-700 border-blue-200';
     }
-    return "bg-gray-50 text-gray-600 border-gray-200";
+    return 'bg-gray-50 text-gray-600 border-gray-200';
   };
 
   return (
@@ -69,7 +67,7 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
           </p>
         </div>
         <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusBadge()}`}>
-          {(submissionStatus || assignment.status).replace("_", " ")}
+          {(submissionStatus || assignment.status).replace('_', ' ')}
         </span>
       </div>
 
@@ -150,9 +148,7 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
       <div className="mt-6 rounded-lg border border-gray-100 bg-gray-50 p-4">
         <p className="text-sm font-medium text-gray-700">Student review</p>
         {!feedback?.rating && (
-          <p className="mt-2 text-sm text-gray-500">
-            Awaiting student feedback.
-          </p>
+          <p className="mt-2 text-sm text-gray-500">Awaiting student feedback.</p>
         )}
         {feedback?.rating && (
           <div className="mt-2">
@@ -160,15 +156,11 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
               {[1, 2, 3, 4, 5].map((value) => (
                 <Star
                   key={`feedback-${value}`}
-                  className={`h-4 w-4 ${
-                    ratingValue >= value ? "fill-current" : "text-amber-200"
-                  }`}
+                  className={`h-4 w-4 ${ratingValue >= value ? 'fill-current' : 'text-amber-200'}`}
                 />
               ))}
             </div>
-            {feedback.comments && (
-              <p className="mt-2 text-sm text-gray-600">{feedback.comments}</p>
-            )}
+            {feedback.comments && <p className="mt-2 text-sm text-gray-600">{feedback.comments}</p>}
             {feedback.feedbackDate && (
               <p className="mt-1 text-xs text-gray-400">
                 Reviewed on {new Date(feedback.feedbackDate).toLocaleString()}

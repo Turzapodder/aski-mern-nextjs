@@ -29,12 +29,14 @@ export interface Proposal {
     name: string;
     email: string;
   };
-  conversation?: {
-    _id: string;
-    name?: string;
-    assignment?: string;
-    assignmentTitle?: string;
-  } | string;
+  conversation?:
+    | {
+        _id: string;
+        name?: string;
+        assignment?: string;
+        assignmentTitle?: string;
+      }
+    | string;
   title: string;
   description: string;
   proposedPrice: number;

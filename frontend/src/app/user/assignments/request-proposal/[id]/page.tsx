@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { RequestProposalClient } from "./RequestProposalClient";
+import React, { Suspense } from 'react';
+import { RequestProposalClient } from './RequestProposalClient';
 
 export const metadata = {
-  title: "Request Proposal | Aski",
-  description: "Request a proposal from a tutor",
+  title: 'Request Proposal | Aski',
+  description: 'Request a proposal from a tutor',
 };
 
 export default function RequestProposalPage() {

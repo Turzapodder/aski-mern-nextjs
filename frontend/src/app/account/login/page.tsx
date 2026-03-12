@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { LoginClient } from "./LoginClient";
+import React, { Suspense } from 'react';
+import { LoginClient } from './LoginClient';
 
 export const metadata = {
-  title: "Login | Aski",
-  description: "Sign in to your account",
+  title: 'Login | Aski',
+  description: 'Sign in to your account',
 };
 
 export default function LoginPage() {

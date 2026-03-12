@@ -1,9 +1,18 @@
-'use client'
-import React, { useState } from 'react'
-import { BarChart3, TrendingUp, Users, Clock, BookOpen, Target, Calendar, Award } from 'lucide-react'
+'use client';
+import React, { useState } from 'react';
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  Clock,
+  BookOpen,
+  Target,
+  Calendar,
+  Award,
+} from 'lucide-react';
 
 const AnalyticsPage = () => {
-  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
+  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
   // Mock analytics data
   const stats = {
@@ -12,8 +21,8 @@ const AnalyticsPage = () => {
     studentsHelped: 12,
     averageRating: 4.8,
     completionRate: 92,
-    responseTime: '2.3 min'
-  }
+    responseTime: '2.3 min',
+  };
 
   const weeklyData = [
     { day: 'Mon', sessions: 3, hours: 4.5 },
@@ -22,22 +31,37 @@ const AnalyticsPage = () => {
     { day: 'Thu', sessions: 3, hours: 4.5 },
     { day: 'Fri', sessions: 5, hours: 7.5 },
     { day: 'Sat', sessions: 4, hours: 6 },
-    { day: 'Sun', sessions: 3, hours: 4.5 }
-  ]
+    { day: 'Sun', sessions: 3, hours: 4.5 },
+  ];
 
   const subjectBreakdown = [
     { subject: 'Mathematics', sessions: 8, percentage: 33 },
     { subject: 'Physics', sessions: 6, percentage: 25 },
     { subject: 'Chemistry', sessions: 5, percentage: 21 },
     { subject: 'Biology', sessions: 3, percentage: 13 },
-    { subject: 'Computer Science', sessions: 2, percentage: 8 }
-  ]
+    { subject: 'Computer Science', sessions: 2, percentage: 8 },
+  ];
 
   const recentAchievements = [
-    { title: 'Top Tutor', description: 'Highest rated tutor this month', icon: Award, color: 'text-yellow-600' },
-    { title: 'Quick Responder', description: 'Average response time under 3 minutes', icon: Clock, color: 'text-blue-600' },
-    { title: 'Student Favorite', description: '10+ positive reviews', icon: Users, color: 'text-primary-600' }
-  ]
+    {
+      title: 'Top Tutor',
+      description: 'Highest rated tutor this month',
+      icon: Award,
+      color: 'text-yellow-600',
+    },
+    {
+      title: 'Quick Responder',
+      description: 'Average response time under 3 minutes',
+      icon: Clock,
+      color: 'text-blue-600',
+    },
+    {
+      title: 'Student Favorite',
+      description: '10+ positive reviews',
+      icon: Users,
+      color: 'text-primary-600',
+    },
+  ];
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend }: any) => (
     <div className="bg-white rounded-lg shadow p-6">
@@ -54,11 +78,13 @@ const AnalyticsPage = () => {
       {trend && (
         <div className="mt-4 flex items-center">
           <TrendingUp className="w-4 h-4 text-primary-300 mr-1" />
-          <span className="text-sm text-primary-600 font-medium">{trend}% from last {timeRange}</span>
+          <span className="text-sm text-primary-600 font-medium">
+            {trend}% from last {timeRange}
+          </span>
         </div>
       )}
     </div>
-  )
+  );
 
   return (
     <div>
@@ -75,10 +101,11 @@ const AnalyticsPage = () => {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-4 py-2 text-sm font-medium capitalize ${timeRange === range
+                  className={`px-4 py-2 text-sm font-medium capitalize ${
+                    timeRange === range
                       ? 'bg-primary-300 text-white'
                       : 'text-gray-700 hover:text-gray-900'
-                    } ${range === 'week' ? 'rounded-l-lg' : range === 'year' ? 'rounded-r-lg' : ''}`}
+                  } ${range === 'week' ? 'rounded-l-lg' : range === 'year' ? 'rounded-r-lg' : ''}`}
                 >
                   {range}
                 </button>
@@ -94,12 +121,7 @@ const AnalyticsPage = () => {
               icon={BookOpen}
               trend={12}
             />
-            <StatCard
-              title="Hours Tutored"
-              value={`${stats.totalHours}h`}
-              icon={Clock}
-              trend={8}
-            />
+            <StatCard title="Hours Tutored" value={`${stats.totalHours}h`} icon={Clock} trend={8} />
             <StatCard
               title="Students Helped"
               value={stats.studentsHelped}
@@ -144,7 +166,9 @@ const AnalyticsPage = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{day.sessions} sessions</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {day.sessions} sessions
+                      </div>
                       <div className="text-xs text-gray-500">{day.hours}h</div>
                     </div>
                   </div>
@@ -168,7 +192,9 @@ const AnalyticsPage = () => {
                           ></div>
                         </div>
                       </div>
-                      <span className="text-sm text-gray-600 w-12 text-right">{subject.sessions}</span>
+                      <span className="text-sm text-gray-600 w-12 text-right">
+                        {subject.sessions}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -182,9 +208,12 @@ const AnalyticsPage = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Achievements</h3>
               <div className="space-y-4">
                 {recentAchievements.map((achievement, index) => {
-                  const Icon = achievement.icon
+                  const Icon = achievement.icon;
                   return (
-                    <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
+                    >
                       <div className={`p-2 rounded-full bg-white ${achievement.color}`}>
                         <Icon size={20} />
                       </div>
@@ -193,7 +222,7 @@ const AnalyticsPage = () => {
                         <p className="text-sm text-gray-600">{achievement.description}</p>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -237,7 +266,7 @@ const AnalyticsPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AnalyticsPage
+export default AnalyticsPage;

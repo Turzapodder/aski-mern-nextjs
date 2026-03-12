@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useResetPasswordConfirmLogic } from "./useResetPasswordConfirmLogic";
+import Link from 'next/link';
+import { useResetPasswordConfirmLogic } from './useResetPasswordConfirmLogic';
 
 export const ResetPasswordConfirmClient = () => {
   const { formik, loading, serverErrorMessage, serverSuccessMessage } =
@@ -30,19 +30,14 @@ export const ResetPasswordConfirmClient = () => {
           </div>
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">
-          Set a new password
-        </h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">Set a new password</h2>
         <p className="text-sm text-center mb-8 text-gray-500">
           Choose a strong password you have not used before.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               New password
             </label>
             <input
@@ -54,9 +49,7 @@ export const ResetPasswordConfirmClient = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               placeholder="Enter a new password"
             />
-            {errors.password && (
-              <div className="mt-1 text-sm text-red-500">{errors.password}</div>
-            )}
+            {errors.password && <div className="mt-1 text-sm text-red-500">{errors.password}</div>}
           </div>
 
           <div>
@@ -76,9 +69,7 @@ export const ResetPasswordConfirmClient = () => {
               placeholder="Re-enter your password"
             />
             {errors.password_confirmation && (
-              <div className="mt-1 text-sm text-red-500">
-                {errors.password_confirmation}
-              </div>
+              <div className="mt-1 text-sm text-red-500">{errors.password_confirmation}</div>
             )}
           </div>
 
@@ -92,10 +83,7 @@ export const ResetPasswordConfirmClient = () => {
         </form>
 
         <div className="mt-8 text-center">
-          <Link
-            href="/account/login?role=user"
-            className="text-sm text-gray-600 hover:text-black"
-          >
+          <Link href="/account/login?role=user" className="text-sm text-gray-600 hover:text-black">
             Back to log in
           </Link>
         </div>

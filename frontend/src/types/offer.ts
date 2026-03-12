@@ -7,7 +7,7 @@ export interface CustomOffer {
   proposedBudget: number;
   proposedDeadline: string;
   message?: string;
-  status: "pending" | "accepted" | "declined" | "expired";
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
   createdAt: string;
   expiresAt: string;
 }

@@ -1,33 +1,53 @@
-"use client"
+'use client';
 
-import { Eye, MoreHorizontal, Trash2, XCircle } from "lucide-react"
+import { Eye, MoreHorizontal, Trash2, XCircle } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminPagination from "@/components/admin/AdminPagination"
-import { 
-  AssignmentRow, 
-  statusTone, 
-  useAdminAssignmentsLogic 
-} from "./useAdminAssignmentsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminPagination from '@/components/admin/AdminPagination';
+import { AssignmentRow, statusTone, useAdminAssignmentsLogic } from './useAdminAssignmentsLogic';
 
 export const AdminAssignmentsClient = () => {
   const {
     router,
-    status, setStatus,
-    subject, setSubject,
-    minBudget, setMinBudget,
-    maxBudget, setMaxBudget,
-    page, setPage,
-    dialogOpen, setDialogOpen,
+    status,
+    setStatus,
+    subject,
+    setSubject,
+    minBudget,
+    setMinBudget,
+    maxBudget,
+    setMaxBudget,
+    page,
+    setPage,
+    dialogOpen,
+    setDialogOpen,
     dialogMode,
-    reason, setReason,
+    reason,
+    setReason,
     isSubmitting,
     assignments,
     pagination,
@@ -35,7 +55,7 @@ export const AdminAssignmentsClient = () => {
     openDialog,
     handleConfirm,
     isLoading,
-    error
+    error,
   } = useAdminAssignmentsLogic();
 
   return (
@@ -137,17 +157,24 @@ export const AdminAssignmentsClient = () => {
                             {assignment.title}
                           </button>
                         </td>
-                        <td className="py-3 pr-4 text-gray-600">{assignment.student?.name || "N/A"}</td>
+                        <td className="py-3 pr-4 text-gray-600">
+                          {assignment.student?.name || 'N/A'}
+                        </td>
                         <td className="py-3 pr-4 text-gray-600">{assignment.subject}</td>
                         <td className="py-3 pr-4 text-gray-700">
-                          {assignment.budget ?? assignment.estimatedCost ?? assignment.paymentAmount ?? 0}
+                          {assignment.budget ??
+                            assignment.estimatedCost ??
+                            assignment.paymentAmount ??
+                            0}
                         </td>
                         <td className="py-3 pr-4">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(assignment.status)}`}
+                            >
                               {assignment.status}
                             </span>
-                            {latestStatuses[assignment._id]?.status === "under_review" && (
+                            {latestStatuses[assignment._id]?.status === 'under_review' && (
                               <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
                                 Under review
                               </span>
@@ -172,11 +199,17 @@ export const AdminAssignmentsClient = () => {
                                 <Eye className="h-4 w-4" />
                                 View details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openDialog(assignment, "force-cancel")} className="text-amber-600">
+                              <DropdownMenuItem
+                                onClick={() => openDialog(assignment, 'force-cancel')}
+                                className="text-amber-600"
+                              >
                                 <XCircle className="h-4 w-4" />
                                 Force cancel
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openDialog(assignment, "delete")} className="text-rose-600">
+                              <DropdownMenuItem
+                                onClick={() => openDialog(assignment, 'delete')}
+                                className="text-rose-600"
+                              >
                                 <Trash2 className="h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
@@ -192,7 +225,10 @@ export const AdminAssignmentsClient = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
                 {assignments.map((assignment: AssignmentRow) => (
-                  <div key={assignment._id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-200">
+                  <div
+                    key={assignment._id}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-primary-200"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0 flex-1">
                         <button
@@ -202,7 +238,7 @@ export const AdminAssignmentsClient = () => {
                           {assignment.title}
                         </button>
                         <p className="text-xs text-gray-500 truncate">
-                          {assignment.subject} - {assignment.student?.name || "N/A"}
+                          {assignment.subject} - {assignment.student?.name || 'N/A'}
                         </p>
                       </div>
                       <DropdownMenu>
@@ -212,15 +248,24 @@ export const AdminAssignmentsClient = () => {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/admin/assignments/${assignment._id}`)} className="cursor-pointer">
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/admin/assignments/${assignment._id}`)}
+                            className="cursor-pointer"
+                          >
                             <Eye className="h-4 w-4" />
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openDialog(assignment, "force-cancel")} className="text-amber-600">
+                          <DropdownMenuItem
+                            onClick={() => openDialog(assignment, 'force-cancel')}
+                            className="text-amber-600"
+                          >
                             <XCircle className="h-4 w-4" />
                             Force cancel
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openDialog(assignment, "delete")} className="text-rose-600">
+                          <DropdownMenuItem
+                            onClick={() => openDialog(assignment, 'delete')}
+                            className="text-rose-600"
+                          >
                             <Trash2 className="h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -230,16 +275,24 @@ export const AdminAssignmentsClient = () => {
 
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1 flex-1">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Budget</p>
-                        <p className="font-semibold text-gray-900">${assignment.budget ?? assignment.estimatedCost ?? 0}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+                          Budget
+                        </p>
+                        <p className="font-semibold text-gray-900">
+                          ${assignment.budget ?? assignment.estimatedCost ?? 0}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-1">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Status</p>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+                          Status
+                        </p>
                         <div className="flex flex-wrap justify-end gap-2">
-                            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusTone(assignment.status)} shadow-sm whitespace-nowrap`}>
-                              {assignment.status}
-                            </span>
-                          {latestStatuses[assignment._id]?.status === "under_review" && (
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusTone(assignment.status)} shadow-sm whitespace-nowrap`}
+                          >
+                            {assignment.status}
+                          </span>
+                          {latestStatuses[assignment._id]?.status === 'under_review' && (
                             <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 whitespace-nowrap">
                               Under review
                             </span>
@@ -273,11 +326,13 @@ export const AdminAssignmentsClient = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialogMode === "delete" ? "Delete assignment" : "Force cancel assignment"}</DialogTitle>
+            <DialogTitle>
+              {dialogMode === 'delete' ? 'Delete assignment' : 'Force cancel assignment'}
+            </DialogTitle>
             <DialogDescription>
-              {dialogMode === "delete"
-                ? "This removes the assignment from the marketplace."
-                : "This will cancel the assignment and move escrow funds back to the student."}
+              {dialogMode === 'delete'
+                ? 'This removes the assignment from the marketplace.'
+                : 'This will cancel the assignment and move escrow funds back to the student.'}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -292,14 +347,18 @@ export const AdminAssignmentsClient = () => {
             </Button>
             <Button
               onClick={handleConfirm}
-              className={dialogMode === "delete" ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"}
+              className={
+                dialogMode === 'delete'
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : 'bg-amber-600 hover:bg-amber-700'
+              }
               disabled={isSubmitting || reason.trim().length === 0}
             >
-              {dialogMode === "delete" ? "Delete assignment" : "Force cancel"}
+              {dialogMode === 'delete' ? 'Delete assignment' : 'Force cancel'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

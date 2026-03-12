@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   Proposal,
   ProposalsResponse,
@@ -6,20 +6,23 @@ import type {
   CreateProposalRequest,
   ProposalFilters,
   ProposalStats,
-} from '@/types/proposal'
+} from '@/types/proposal';
 
 // Re-export types for backward compatibility
-export type { Proposal, ProposalsResponse, ProposalResponse, CreateProposalRequest, ProposalFilters, ProposalStats }
+export type {
+  Proposal,
+  ProposalsResponse,
+  ProposalResponse,
+  CreateProposalRequest,
+  ProposalFilters,
+  ProposalStats,
+};
 
 const resolveApiRoot = () => {
   const rawBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    'http://localhost:8000';
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const normalizedBaseUrl = rawBaseUrl.replace(/\/+$/, '');
-  return /\/api$/i.test(normalizedBaseUrl)
-    ? normalizedBaseUrl
-    : `${normalizedBaseUrl}/api`;
+  return /\/api$/i.test(normalizedBaseUrl) ? normalizedBaseUrl : `${normalizedBaseUrl}/api`;
 };
 
 const proposalsApiBaseUrl = `${resolveApiRoot()}/proposals`;
@@ -66,7 +69,7 @@ export const proposalsApi = createApi({
         method: 'GET',
       }),
       providesTags: (result, error, assignmentId) => [
-        { type: 'Proposals', id: `assignment-${assignmentId}` }
+        { type: 'Proposals', id: `assignment-${assignmentId}` },
       ],
     }),
 
@@ -126,10 +129,7 @@ export const proposalsApi = createApi({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Proposal', id },
-        'Proposals',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Proposal', id }, 'Proposals'],
     }),
 
     // Accept a proposal
@@ -139,10 +139,7 @@ export const proposalsApi = createApi({
         method: 'POST',
         body: { message },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Proposal', id },
-        'Proposals',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Proposal', id }, 'Proposals'],
     }),
 
     // Reject a proposal
@@ -152,10 +149,7 @@ export const proposalsApi = createApi({
         method: 'POST',
         body: { message },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Proposal', id },
-        'Proposals',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Proposal', id }, 'Proposals'],
     }),
 
     // Withdraw a proposal
@@ -165,10 +159,7 @@ export const proposalsApi = createApi({
         method: 'POST',
         body: { reason },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Proposal', id },
-        'Proposals',
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Proposal', id }, 'Proposals'],
     }),
 
     // Delete a proposal
@@ -177,17 +168,17 @@ export const proposalsApi = createApi({
         url: `/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Proposal', id },
-        'Proposals',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Proposal', id }, 'Proposals'],
     }),
 
     // Get proposal statistics
-    getProposalStats: builder.query<{
-      status: string;
-      data: ProposalStats;
-    }, void>({
+    getProposalStats: builder.query<
+      {
+        status: string;
+        data: ProposalStats;
+      },
+      void
+    >({
       query: () => ({
         url: '/stats',
         method: 'GET',

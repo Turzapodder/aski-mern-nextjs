@@ -1,25 +1,18 @@
-"use client"
+'use client';
 
-import { useRouter } from "next/navigation"
-import { ArrowRightCircle } from "lucide-react"
+import { useRouter } from 'next/navigation';
+import { ArrowRightCircle } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminPagination from "@/components/admin/AdminPagination"
-import { DisputeRow, useAdminDisputesLogic } from "./useAdminDisputesLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminPagination from '@/components/admin/AdminPagination';
+import { DisputeRow, useAdminDisputesLogic } from './useAdminDisputesLogic';
 
 export const AdminDisputesClient = () => {
-  const router = useRouter()
-  const {
-    page,
-    setPage,
-    paginatedDisputes,
-    disputes,
-    totalPages,
-    isLoading,
-    error
-  } = useAdminDisputesLogic();
+  const router = useRouter();
+  const { page, setPage, paginatedDisputes, disputes, totalPages, isLoading, error } =
+    useAdminDisputesLogic();
 
   return (
     <div className="space-y-6">
@@ -78,8 +71,12 @@ export const AdminDisputesClient = () => {
                             {dispute.title}
                           </button>
                         </td>
-                        <td className="py-3 pr-4 text-gray-600">{dispute.student?.name || "N/A"}</td>
-                        <td className="py-3 pr-4 text-gray-600">{dispute.assignedTutor?.name || "N/A"}</td>
+                        <td className="py-3 pr-4 text-gray-600">
+                          {dispute.student?.name || 'N/A'}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-600">
+                          {dispute.assignedTutor?.name || 'N/A'}
+                        </td>
                         <td className="py-3 pr-4 text-gray-700">
                           {dispute.paymentAmount || dispute.estimatedCost || 0}
                         </td>
@@ -104,7 +101,10 @@ export const AdminDisputesClient = () => {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-4">
                 {paginatedDisputes.map((dispute: DisputeRow) => (
-                  <div key={dispute._id} className="rounded-xl border border-rose-100 bg-white p-4 shadow-sm transition-all hover:border-rose-200">
+                  <div
+                    key={dispute._id}
+                    className="rounded-xl border border-rose-100 bg-white p-4 shadow-sm transition-all hover:border-rose-200"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
                         <button
@@ -117,27 +117,46 @@ export const AdminDisputesClient = () => {
                           ID: {dispute._id.substring(0, 8)}...
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 text-[10px] font-bold uppercase tracking-wider">
+                      <Badge
+                        variant="outline"
+                        className="text-rose-600 border-rose-200 bg-rose-50 text-[10px] font-bold uppercase tracking-wider"
+                      >
                         Disputed
                       </Badge>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
                       <div className="space-y-1 min-w-0">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Student</p>
-                        <p className="text-xs font-medium text-gray-700 truncate">{dispute.student?.name || "N/A"}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Student
+                        </p>
+                        <p className="text-xs font-medium text-gray-700 truncate">
+                          {dispute.student?.name || 'N/A'}
+                        </p>
                       </div>
                       <div className="space-y-1 text-right min-w-0">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Tutor</p>
-                        <p className="text-xs font-medium text-gray-700 truncate">{dispute.assignedTutor?.name || "N/A"}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Tutor
+                        </p>
+                        <p className="text-xs font-medium text-gray-700 truncate">
+                          {dispute.assignedTutor?.name || 'N/A'}
+                        </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Escrow Value</p>
-                        <p className="text-xs font-bold text-rose-600">৳{dispute.paymentAmount || dispute.estimatedCost || 0}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Escrow Value
+                        </p>
+                        <p className="text-xs font-bold text-rose-600">
+                          ৳{dispute.paymentAmount || dispute.estimatedCost || 0}
+                        </p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Last Update</p>
-                        <p className="text-[11px] text-gray-600 font-medium">{new Date(dispute.updatedAt).toLocaleDateString()}</p>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                          Last Update
+                        </p>
+                        <p className="text-[11px] text-gray-600 font-medium">
+                          {new Date(dispute.updatedAt).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
 
@@ -164,5 +183,5 @@ export const AdminDisputesClient = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};

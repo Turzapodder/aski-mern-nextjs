@@ -1,17 +1,19 @@
-"use client"
+'use client';
 
-import { Ban, Mail, Phone, ShieldCheck, Wallet } from "lucide-react"
+import { Ban, Mail, Phone, ShieldCheck, Wallet } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import BanUserModal from "@/components/admin/BanUserModal"
-import { formatDate, statusTone, useAdminUserDetailsLogic } from "./useAdminUserDetailsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import BanUserModal from '@/components/admin/BanUserModal';
+import { formatDate, statusTone, useAdminUserDetailsLogic } from './useAdminUserDetailsLogic';
 
 export const AdminUserDetailsClient = () => {
   const {
-    modalOpen, setModalOpen,
-    modalMode, setModalMode,
+    modalOpen,
+    setModalOpen,
+    modalMode,
+    setModalMode,
     isSubmitting,
     user,
     wallet,
@@ -23,7 +25,7 @@ export const AdminUserDetailsClient = () => {
     openModal,
     handleConfirm,
     isLoading,
-    error
+    error,
   } = useAdminUserDetailsLogic();
 
   if (isLoading) {
@@ -32,7 +34,7 @@ export const AdminUserDetailsClient = () => {
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-80 w-full" />
       </div>
-    )
+    );
   }
 
   if (error || !user) {
@@ -40,7 +42,7 @@ export const AdminUserDetailsClient = () => {
       <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
         Unable to load user details.
       </div>
-    )
+    );
   }
 
   return (
@@ -49,7 +51,7 @@ export const AdminUserDetailsClient = () => {
         <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-2xl bg-gray-100 flex items-center justify-center text-xl font-semibold text-gray-600">
-              {(user.name || "A").slice(0, 1).toUpperCase()}
+              {(user.name || 'A').slice(0, 1).toUpperCase()}
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">{user.name}</h1>
@@ -58,7 +60,9 @@ export const AdminUserDetailsClient = () => {
                   <ShieldCheck className="h-4 w-4" />
                   {roleLabel}
                 </span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(user.status)}`}>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone(user.status)}`}
+                >
                   {user.status}
                 </span>
               </div>
@@ -78,15 +82,15 @@ export const AdminUserDetailsClient = () => {
           </div>
 
           <button
-            onClick={() => openModal(isBanned ? "unban" : "ban")}
+            onClick={() => openModal(isBanned ? 'unban' : 'ban')}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
               isBanned
-                ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border border-rose-200 bg-rose-50 text-rose-700"
+                ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border border-rose-200 bg-rose-50 text-rose-700'
             }`}
           >
             <Ban className="h-4 w-4" />
-            {isBanned ? "Unban user" : "Ban user"}
+            {isBanned ? 'Unban user' : 'Ban user'}
           </button>
         </CardContent>
       </Card>
@@ -96,7 +100,7 @@ export const AdminUserDetailsClient = () => {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="wallet">Wallet</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
-          {roles.includes("tutor") && <TabsTrigger value="tutor">Tutor</TabsTrigger>}
+          {roles.includes('tutor') && <TabsTrigger value="tutor">Tutor</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -116,12 +120,14 @@ export const AdminUserDetailsClient = () => {
               <div>
                 <p className="text-xs text-gray-500">Location</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {[user.city, user.country].filter(Boolean).join(", ") || "N/A"}
+                  {[user.city, user.country].filter(Boolean).join(', ') || 'N/A'}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Onboarding status</p>
-                <p className="text-sm font-medium text-gray-900">{user.onboardingStatus || "N/A"}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {user.onboardingStatus || 'N/A'}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -196,10 +202,10 @@ export const AdminUserDetailsClient = () => {
                     {activity.map((entry) => (
                       <div key={entry._id} className="rounded-lg border border-gray-200 p-3">
                         <p className="text-sm font-medium text-gray-900">
-                          {entry.actionType.replace(/_/g, " ").toLowerCase()}
+                          {entry.actionType.replace(/_/g, ' ').toLowerCase()}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {entry.adminId?.name || "Admin"} | {formatDate(entry.timestamp)}
+                          {entry.adminId?.name || 'Admin'} | {formatDate(entry.timestamp)}
                         </p>
                       </div>
                     ))}
@@ -210,7 +216,7 @@ export const AdminUserDetailsClient = () => {
           </div>
         </TabsContent>
 
-        {roles.includes("tutor") && (
+        {roles.includes('tutor') && (
           <TabsContent value="tutor">
             <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
               <CardHeader>
@@ -220,7 +226,7 @@ export const AdminUserDetailsClient = () => {
                 <div>
                   <p className="text-xs text-gray-500">Verification status</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {user.tutorProfile?.verificationStatus || "Pending"}
+                    {user.tutorProfile?.verificationStatus || 'Pending'}
                   </p>
                 </div>
                 <div>
@@ -232,7 +238,7 @@ export const AdminUserDetailsClient = () => {
                 <div className="md:col-span-2">
                   <p className="text-xs text-gray-500">Skills</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {user.tutorProfile?.skills?.join(", ") || "N/A"}
+                    {user.tutorProfile?.skills?.join(', ') || 'N/A'}
                   </p>
                 </div>
               </CardContent>
@@ -250,5 +256,5 @@ export const AdminUserDetailsClient = () => {
         onConfirm={handleConfirm}
       />
     </div>
-  )
-}
+  );
+};

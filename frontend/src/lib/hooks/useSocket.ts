@@ -21,7 +21,12 @@ interface SocketEvents {
   onTypingStop?: (data: { chatId: string; userId: string }) => void;
   onUserJoined?: (data: { chatId: string; user: any }) => void;
   onUserLeft?: (data: { chatId: string; user: any }) => void;
-  onMessageRead?: (data: { chatId: string; messageId?: string; userId: string; readAt?: string }) => void;
+  onMessageRead?: (data: {
+    chatId: string;
+    messageId?: string;
+    userId: string;
+    readAt?: string;
+  }) => void;
   onUserOnline?: (data: { userId: string; status: string; userData?: any }) => void;
   onUserOffline?: (data: { userId: string; userData?: any }) => void;
   onOnlineUsers?: (data: { users: any[] }) => void;
@@ -61,7 +66,7 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-      timeout: 20000
+      timeout: 20000,
     });
 
     socketRef.current = socket;
@@ -189,7 +194,7 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
         chatId,
         content,
         type: 'text',
-        replyTo
+        replyTo,
       });
     } else {
       console.warn('Socket not connected, cannot send message');
@@ -243,7 +248,7 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
     leaveChat,
     startTyping,
     stopTyping,
-    markAsRead
+    markAsRead,
   };
 };
 

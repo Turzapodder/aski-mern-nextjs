@@ -1,39 +1,51 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { toast } from "sonner"
-import { useCreateReportMutation } from "@/lib/services/reports"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useCreateReportMutation } from '@/lib/services/reports';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 const REPORT_REASONS = [
-  "Spam or misleading",
-  "Harassment or hate speech",
-  "Inappropriate content",
-  "Fraud or scam",
-  "Low quality or irrelevant",
-  "Other",
-]
+  'Spam or misleading',
+  'Harassment or hate speech',
+  'Inappropriate content',
+  'Fraud or scam',
+  'Low quality or irrelevant',
+  'Other',
+];
 
 interface ReportModalProps {
-  isOpen: boolean
-  onClose: () => void
-  reporterType: "user" | "tutor"
-  reportedType: "assignment" | "tutorProfile" | "userProfile"
-  reportedId: string
+  isOpen: boolean;
+  onClose: () => void;
+  reporterType: 'user' | 'tutor';
+  reportedType: 'assignment' | 'tutorProfile' | 'userProfile';
+  reportedId: string;
 }
 
-const ReportModal = ({ isOpen, onClose, reporterType, reportedType, reportedId }: ReportModalProps) => {
-  const [reason, setReason] = useState("")
-  const [comments, setComments] = useState("")
-  const [createReport, { isLoading }] = useCreateReportMutation()
+const ReportModal = ({
+  isOpen,
+  onClose,
+  reporterType,
+  reportedType,
+  reportedId,
+}: ReportModalProps) => {
+  const [reason, setReason] = useState('');
+  const [comments, setComments] = useState('');
+  const [createReport, { isLoading }] = useCreateReportMutation();
 
   const handleSubmit = async () => {
     if (!reason) {
-      toast.error("Please select a reason")
-      return
+      toast.error('Please select a reason');
+      return;
     }
     try {
       await createReport({
@@ -42,14 +54,14 @@ const ReportModal = ({ isOpen, onClose, reporterType, reportedType, reportedId }
         reportedId,
         reason,
         comments: comments || undefined,
-      }).unwrap()
-      setReason("")
-      setComments("")
-      onClose()
+      }).unwrap();
+      setReason('');
+      setComments('');
+      onClose();
     } catch {
       // Error toast handled by centralized middleware
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -87,7 +99,7 @@ const ReportModal = ({ isOpen, onClose, reporterType, reportedType, reportedId }
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
 export default ReportModal;

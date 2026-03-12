@@ -1,11 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useResetPasswordLinkLogic } from "./useResetPasswordLinkLogic";
+import Link from 'next/link';
+import { useResetPasswordLinkLogic } from './useResetPasswordLinkLogic';
 
 export const ResetPasswordLinkClient = () => {
-  const { formik, serverErrorMessage, serverSuccessMessage, loading } =
-    useResetPasswordLinkLogic();
+  const { formik, serverErrorMessage, serverSuccessMessage, loading } = useResetPasswordLinkLogic();
   const { values, errors, handleChange, handleSubmit } = formik;
 
   return (
@@ -30,19 +29,14 @@ export const ResetPasswordLinkClient = () => {
           </div>
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">
-          Forgot password?
-        </h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-center mb-2">Forgot password?</h2>
         <p className="text-sm text-center mb-8 text-gray-500">
           No worries, we&apos;ll send you reset instructions.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Enter your email
             </label>
             <input
@@ -54,9 +48,7 @@ export const ResetPasswordLinkClient = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               placeholder="Enter your email"
             />
-            {errors.email && (
-              <div className="mt-1 text-sm text-red-500">{errors.email}</div>
-            )}
+            {errors.email && <div className="mt-1 text-sm text-red-500">{errors.email}</div>}
           </div>
 
           <button

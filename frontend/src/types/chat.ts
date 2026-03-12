@@ -12,7 +12,7 @@ export interface Chat {
   _id: string;
   name?: string;
   description?: string;
-  type: "direct" | "group";
+  type: 'direct' | 'group';
   participants: ChatUser[];
   assignment?: {
     _id: string;
@@ -31,7 +31,7 @@ export interface Chat {
     content: string;
     sender: ChatUser;
     createdAt: string;
-    type?: "text" | "file" | "image" | "offer";
+    type?: 'text' | 'file' | 'image' | 'offer';
     attachments?: {
       filename: string;
       originalName: string;
@@ -50,7 +50,7 @@ export interface Message {
   chat: string | { _id?: string };
   sender: ChatUser | string;
   content?: string;
-  type: "text" | "file" | "image" | "offer";
+  type: 'text' | 'file' | 'image' | 'offer';
   attachments?: {
     filename: string;
     originalName: string;
@@ -70,7 +70,7 @@ export interface Message {
   replyTo?: string;
   createdAt: string;
   updatedAt: string;
-  status?: "sending" | "error";
+  status?: 'sending' | 'error';
   tempId?: string;
 }
 
@@ -83,7 +83,7 @@ export interface ChatResponse {
 export interface CreateChatRequest {
   name?: string;
   description?: string;
-  type: "direct" | "group";
+  type: 'direct' | 'group';
   participants: string[];
   tutorId?: string;
   assignmentId?: string;
@@ -93,7 +93,7 @@ export interface CreateChatRequest {
 export interface SendMessageRequest {
   chatId: string;
   content?: string;
-  type?: "text" | "file" | "image";
+  type?: 'text' | 'file' | 'image';
   replyTo?: string;
 }
 

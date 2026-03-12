@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   StudentProfile,
   TutorProfile,
@@ -8,7 +8,7 @@ import type {
   ProfileCompletionResponse,
   TutorPublicProfile,
   VerifiedTutorsResponse,
-} from "@/types/user";
+} from '@/types/user';
 
 // Re-export types for backward compatibility
 export type {
@@ -20,28 +20,26 @@ export type {
   ProfileCompletionResponse,
   TutorPublicProfile,
   VerifiedTutorsResponse,
-}
+};
 
 /**
  * Profile API - Redux Toolkit Query setup
  * Handles all profile-related API operations
  */
 const profileApiBaseUrl = `${
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  "http://localhost:8000"
+  process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000'
 }/api/profile`;
 
 export const profileApi = createApi({
-  reducerPath: "profileApi",
-  tagTypes: ["Profile", "VerifiedTutors"],
+  reducerPath: 'profileApi',
+  tagTypes: ['Profile', 'VerifiedTutors'],
   baseQuery: fetchBaseQuery({
     baseUrl: profileApiBaseUrl,
-    credentials: "include",
+    credentials: 'include',
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem('accessToken');
       if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+        headers.set('authorization', `Bearer ${token}`);
       }
       return headers;
     },
@@ -52,9 +50,7 @@ export const profileApi = createApi({
      */
     getProfile: builder.query<{ status: string; user: UserProfile }, string>({
       query: (userId) => `/${userId}`,
-      providesTags: (result, error, userId) => [
-        { type: "Profile", id: userId },
-      ],
+      providesTags: (result, error, userId) => [{ type: 'Profile', id: userId }],
     }),
 
     /**
@@ -66,32 +62,25 @@ export const profileApi = createApi({
     >({
       query: ({ userId, data }) => ({
         url: `/${userId}`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       }),
-      invalidatesTags: (result, error, { userId }) => [
-        { type: "Profile", id: userId },
-      ],
+      invalidatesTags: (result, error, { userId }) => [{ type: 'Profile', id: userId }],
     }),
 
     /**
      * Upload profile files (images and documents)
      */
-    uploadFiles: builder.mutation<
-      UploadFilesResponse,
-      { userId: string; formData: FormData }
-    >({
+    uploadFiles: builder.mutation<UploadFilesResponse, { userId: string; formData: FormData }>({
       query: ({ userId, formData }) => ({
         url: `/${userId}/upload`,
-        method: "POST",
+        method: 'POST',
         body: formData,
       }),
-      invalidatesTags: (result, error, { userId }) => [
-        { type: "Profile", id: userId },
-      ],
+      invalidatesTags: (result, error, { userId }) => [{ type: 'Profile', id: userId }],
     }),
 
     /**
@@ -99,9 +88,7 @@ export const profileApi = createApi({
      */
     getProfileCompletion: builder.query<ProfileCompletionResponse, string>({
       query: (userId) => `/${userId}/completion`,
-      providesTags: (result, error, userId) => [
-        { type: "Profile", id: userId },
-      ],
+      providesTags: (result, error, userId) => [{ type: 'Profile', id: userId }],
     }),
 
     /**
@@ -109,9 +96,7 @@ export const profileApi = createApi({
      */
     getTutorPublicProfile: builder.query<TutorPublicProfile, string>({
       query: (tutorId) => `/tutor/public/${tutorId}`,
-      providesTags: (result, error, tutorId) => [
-        { type: "Profile", id: tutorId },
-      ],
+      providesTags: (result, error, tutorId) => [{ type: 'Profile', id: tutorId }],
     }),
 
     /**
@@ -135,7 +120,7 @@ export const profileApi = createApi({
         });
         return `/tutors/verified?${params.toString()}`;
       },
-      providesTags: ["VerifiedTutors"],
+      providesTags: ['VerifiedTutors'],
     }),
 
     /**
@@ -145,18 +130,18 @@ export const profileApi = createApi({
       { status: string; message: string; user: UserProfile },
       {
         userId: string;
-        verificationStatus: "Verified" | "Rejected" | "Pending";
+        verificationStatus: 'Verified' | 'Rejected' | 'Pending';
         reason?: string;
       }
     >({
       query: ({ userId, verificationStatus, reason }) => ({
         url: `/admin/${userId}/verify`,
-        method: "PUT",
+        method: 'PUT',
         body: { verificationStatus, reason },
       }),
       invalidatesTags: (result, error, { userId }) => [
-        { type: "Profile", id: userId },
-        "VerifiedTutors",
+        { type: 'Profile', id: userId },
+        'VerifiedTutors',
       ],
     }),
   }),

@@ -1,15 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useGetUserQuery, useUpdateUserMutation } from "@/lib/services/auth";
-import { buildAvailabilityValue } from "@/lib/availability";
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useGetUserQuery, useUpdateUserMutation } from '@/lib/services/auth';
+import { buildAvailabilityValue } from '@/lib/availability';
 
 export const parseCommaList = (value: string) =>
   value
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 
 export const parseNumericInput = (value: any) => {
-  if (value === "" || value === null || value === undefined) return undefined;
+  if (value === '' || value === null || value === undefined) return undefined;
   const parsed = Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
 };
@@ -29,7 +29,7 @@ export type SettingsState = {
   expertiseSubjects: string[];
   skills: string[];
   currentInstitution: string;
-  teachingMode: "" | "Online" | "Offline" | "Hybrid";
+  teachingMode: '' | 'Online' | 'Offline' | 'Hybrid';
   achievements: string;
   emailNotifications: boolean;
   pushNotifications: boolean;
@@ -54,30 +54,30 @@ export const useSettingsLogic = () => {
   const lastScrollTopRef = useRef(0);
 
   const [message, setMessage] = useState<{
-    type: "success" | "error";
+    type: 'success' | 'error';
     text: string;
   } | null>(null);
 
   const [settings, setSettings] = useState<SettingsState>({
     // Profile Settings
-    name: "",
-    email: "",
-    bio: "",
-    timezone: "UTC-5",
-    city: "",
-    country: "",
-    languages: "",
+    name: '',
+    email: '',
+    bio: '',
+    timezone: 'UTC-5',
+    city: '',
+    country: '',
+    languages: '',
 
     // Tutor Profile Settings
-    professionalTitle: "",
-    qualification: "",
+    professionalTitle: '',
+    qualification: '',
     hourlyRate: 0,
     experienceYears: 0,
     expertiseSubjects: [] as string[],
     skills: [] as string[],
-    currentInstitution: "",
-    teachingMode: "",
-    achievements: "",
+    currentInstitution: '',
+    teachingMode: '',
+    achievements: '',
 
     // Notification Settings
     emailNotifications: true,
@@ -87,13 +87,13 @@ export const useSettingsLogic = () => {
     weeklyReports: false,
 
     // Privacy Settings
-    profileVisibility: "public",
+    profileVisibility: 'public',
     showOnlineStatus: true,
     allowDirectMessages: true,
 
     // Appearance Settings
-    theme: "system",
-    language: "en",
+    theme: 'system',
+    language: 'en',
 
     // Tutoring Settings
     autoAcceptSessions: false,
@@ -110,15 +110,15 @@ export const useSettingsLogic = () => {
   });
 
   useEffect(() => {
-    const container = document.querySelector("main");
+    const container = document.querySelector('main');
     if (!container) return;
     scrollContainerRef.current = container as HTMLElement;
     const handleScroll = () => {
       lastScrollTopRef.current = container.scrollTop;
     };
-    container.addEventListener("scroll", handleScroll, { passive: true });
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -138,23 +138,21 @@ export const useSettingsLogic = () => {
 
     setSettings((prev) => ({
       ...prev,
-      name: user.name || "",
-      email: user.email || "",
-      bio: user.roles?.includes("tutor")
-        ? tutorProfile?.bio || user.about || ""
-        : user.about || "",
-      city: user.city || "",
-      country: user.country || "",
-      languages: user.languages?.join(", ") || "",
-      professionalTitle: tutorProfile?.professionalTitle || "",
-      qualification: tutorProfile?.qualification || "",
+      name: user.name || '',
+      email: user.email || '',
+      bio: user.roles?.includes('tutor') ? tutorProfile?.bio || user.about || '' : user.about || '',
+      city: user.city || '',
+      country: user.country || '',
+      languages: user.languages?.join(', ') || '',
+      professionalTitle: tutorProfile?.professionalTitle || '',
+      qualification: tutorProfile?.qualification || '',
       hourlyRate: tutorProfile?.hourlyRate ?? 0,
       experienceYears: tutorProfile?.experienceYears ?? 0,
       expertiseSubjects: tutorProfile?.expertiseSubjects || [],
       skills: tutorProfile?.skills || [],
-      currentInstitution: tutorProfile?.currentInstitution || "",
-      teachingMode: tutorProfile?.teachingMode || "",
-      achievements: tutorProfile?.achievements || "",
+      currentInstitution: tutorProfile?.currentInstitution || '',
+      teachingMode: tutorProfile?.teachingMode || '',
+      achievements: tutorProfile?.achievements || '',
     }));
 
     setAvailability(buildAvailabilityValue(availableDays, availableTimeSlots));
@@ -199,27 +197,27 @@ export const useSettingsLogic = () => {
       if (experienceYears !== undefined) payload.experienceYears = experienceYears;
       if (teachingMode !== undefined) payload.teachingMode = teachingMode;
 
-      if (user?.roles?.includes("tutor")) {
+      if (user?.roles?.includes('tutor')) {
         payload.availableDays = availability.days;
         payload.availableTimeSlots = availableTimeSlots;
       }
 
       const res = await updateUser(payload).unwrap();
 
-      if (res.status === "success") {
-        setMessage({ type: "success", text: "Profile updated successfully!" });
+      if (res.status === 'success') {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
         refetch();
       } else {
         setMessage({
-          type: "error",
-          text: res.message || "Failed to update profile",
+          type: 'error',
+          text: res.message || 'Failed to update profile',
         });
       }
     } catch (error: any) {
       console.error(error);
       setMessage({
-        type: "error",
-        text: error?.data?.message || "Something went wrong!",
+        type: 'error',
+        text: error?.data?.message || 'Something went wrong!',
       });
     }
   };
@@ -234,6 +232,6 @@ export const useSettingsLogic = () => {
     handleSave,
     isUpdating,
     availability,
-    setAvailability
-  }
-}
+    setAvailability,
+  };
+};

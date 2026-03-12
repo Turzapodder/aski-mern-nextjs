@@ -1,27 +1,20 @@
-import React, { useMemo, useState } from "react";
-import {
-  FileText,
-  Link as LinkIcon,
-  Plus,
-  Trash2,
-  UploadCloud,
-  PencilLine,
-} from "lucide-react";
-import { toast } from "sonner";
-import axios from "axios";
-import { Assignment } from "@/lib/services/assignments";
+import React, { useMemo, useState } from 'react';
+import { FileText, Link as LinkIcon, Plus, Trash2, UploadCloud, PencilLine } from 'lucide-react';
+import { toast } from 'sonner';
+import axios from 'axios';
+import { Assignment } from '@/lib/services/assignments';
 
 const blockedExtensions = [
-  ".exe",
-  ".bat",
-  ".cmd",
-  ".sh",
-  ".msi",
-  ".com",
-  ".scr",
-  ".ps1",
-  ".vbs",
-  ".jar",
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.sh',
+  '.msi',
+  '.com',
+  '.scr',
+  '.ps1',
+  '.vbs',
+  '.jar',
 ];
 
 const maxFileSize = 50 * 1024 * 1024;
@@ -38,8 +31,8 @@ type SubmissionLink = {
 };
 
 const getFileExtension = (name: string) => {
-  const index = name.lastIndexOf(".");
-  if (index === -1) return "";
+  const index = name.lastIndexOf('.');
+  if (index === -1) return '';
   return name.slice(index).toLowerCase();
 };
 
@@ -52,22 +45,17 @@ const isValidUrl = (value: string) => {
   }
 };
 
-const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
-  assignment,
-  onSubmitted,
-}) => {
-  const [submissionTitle, setSubmissionTitle] = useState("");
-  const [submissionDescription, setSubmissionDescription] = useState("");
+const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment, onSubmitted }) => {
+  const [submissionTitle, setSubmissionTitle] = useState('');
+  const [submissionDescription, setSubmissionDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<SubmissionLink[]>([]);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.REACT_APP_API_URL ||
-    "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
   const fileErrors = useMemo(() => {
     return files.reduce<string[]>((acc, file) => {
@@ -111,7 +99,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
     if (allowedFiles.length > 0) {
       setFiles((prev) => [...prev, ...allowedFiles]);
     }
-    event.target.value = "";
+    event.target.value = '';
   };
 
   const removeFile = (index: number) => {
@@ -119,7 +107,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
   };
 
   const addLink = () => {
-    setLinks((prev) => [...prev, { url: "", label: "" }]);
+    setLinks((prev) => [...prev, { url: '', label: '' }]);
   };
 
   const updateLink = (index: number, field: keyof SubmissionLink, value: string) => {
@@ -141,7 +129,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
       .filter((link) => link.url && isValidUrl(link.url));
 
     if (!trimmedTitle || !trimmedDescription) {
-      toast.error("Please add a submission title and description.");
+      toast.error('Please add a submission title and description.');
       return;
     }
 
@@ -151,21 +139,21 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
     }
 
     if (files.length === 0 && validLinks.length === 0 && !trimmedNotes) {
-      toast.error("Please add files, links, or notes before submitting.");
+      toast.error('Please add files, links, or notes before submitting.');
       return;
     }
 
     const formData = new FormData();
-    formData.append("submissionTitle", trimmedTitle);
-    formData.append("submissionDescription", trimmedDescription);
+    formData.append('submissionTitle', trimmedTitle);
+    formData.append('submissionDescription', trimmedDescription);
     files.forEach((file) => {
-      formData.append("submissionFiles", file);
+      formData.append('submissionFiles', file);
     });
     if (trimmedNotes) {
-      formData.append("submissionNotes", trimmedNotes);
+      formData.append('submissionNotes', trimmedNotes);
     }
     if (validLinks.length > 0) {
-      formData.append("submissionLinks", JSON.stringify(validLinks));
+      formData.append('submissionLinks', JSON.stringify(validLinks));
     }
 
     try {
@@ -177,7 +165,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
         {
           withCredentials: true,
           headers: {
-            "Content-Type": "multipart/form-data",
+            'Content-Type': 'multipart/form-data',
           },
           onUploadProgress: (event) => {
             if (!event.total) return;
@@ -187,19 +175,19 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
         }
       );
       const result = response.data;
-      toast.success("Submission sent successfully.");
-      setSubmissionTitle("");
-      setSubmissionDescription("");
+      toast.success('Submission sent successfully.');
+      setSubmissionTitle('');
+      setSubmissionDescription('');
       setFiles([]);
       setLinks([]);
-      setNotes("");
+      setNotes('');
       setUploadProgress(0);
       if (result?.data && onSubmitted) {
         onSubmitted(result.data);
       }
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || error?.data?.message || "Unable to submit work"
+        error?.response?.data?.message || error?.data?.message || 'Unable to submit work'
       );
     } finally {
       setIsUploading(false);
@@ -223,9 +211,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Submission title
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Submission title</label>
             <div className="relative">
               <PencilLine className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
@@ -303,9 +289,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
             </button>
           </div>
 
-          {links.length === 0 && (
-            <p className="text-xs text-gray-500">No links added yet.</p>
-          )}
+          {links.length === 0 && <p className="text-xs text-gray-500">No links added yet.</p>}
 
           <div className="space-y-2">
             {links.map((link, index) => (
@@ -315,7 +299,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
                     <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <input
                       value={link.url}
-                      onChange={(event) => updateLink(index, "url", event.target.value)}
+                      onChange={(event) => updateLink(index, 'url', event.target.value)}
                       placeholder="https://drive.google.com/..."
                       className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm"
                     />
@@ -323,8 +307,8 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
                 </div>
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <input
-                    value={link.label || ""}
-                    onChange={(event) => updateLink(index, "label", event.target.value)}
+                    value={link.label || ''}
+                    onChange={(event) => updateLink(index, 'label', event.target.value)}
                     placeholder="Label (optional)"
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                   />
@@ -374,7 +358,7 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({
         disabled={isUploading}
         className="mt-6 w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
       >
-        {isUploading ? "Submitting..." : "Submit work"}
+        {isUploading ? 'Submitting...' : 'Submit work'}
       </button>
     </div>
   );

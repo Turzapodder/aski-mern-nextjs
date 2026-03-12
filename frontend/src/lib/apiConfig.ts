@@ -1,10 +1,8 @@
-const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 
-const rawApiUrl =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8000";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-const origin = trimTrailingSlash(rawApiUrl.replace(/\/api\/?$/i, ""));
+const origin = trimTrailingSlash(rawApiUrl.replace(/\/api\/?$/i, ''));
 
 // Backend origin for non-API routes like OAuth (/auth/google)
 export const apiOrigin = origin;

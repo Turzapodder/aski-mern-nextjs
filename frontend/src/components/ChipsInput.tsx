@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 
 interface ChipsInputProps {
   label: string;
@@ -10,7 +10,7 @@ interface ChipsInputProps {
   placeholder?: string;
   helperText?: string;
   maxItems?: number;
-  variant?: "settings" | "profile";
+  variant?: 'settings' | 'profile';
 }
 
 const ChipsInput: React.FC<ChipsInputProps> = ({
@@ -20,40 +20,35 @@ const ChipsInput: React.FC<ChipsInputProps> = ({
   placeholder,
   helperText,
   maxItems,
-  variant = "settings",
+  variant = 'settings',
 }) => {
-  const [draft, setDraft] = useState("");
-  const [error, setError] = useState("");
+  const [draft, setDraft] = useState('');
+  const [error, setError] = useState('');
 
   const styles =
-    variant === "profile"
+    variant === 'profile'
       ? {
-          label: "text-sm font-semibold text-gray-900 mb-2",
+          label: 'text-sm font-semibold text-gray-900 mb-2',
           input:
-            "w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors",
-          chip:
-            "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200",
+            'w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors',
+          chip: 'inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200',
           button:
-            "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50",
+            'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50',
         }
       : {
-          label: "text-sm font-medium text-gray-700 mb-2",
+          label: 'text-sm font-medium text-gray-700 mb-2',
           input:
-            "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500",
-          chip:
-            "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200",
+            'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500',
+          chip: 'inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200',
           button:
-            "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50",
+            'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50',
         };
 
-  const normalized = useMemo(
-    () => items.map((item) => item.trim()).filter(Boolean),
-    [items]
-  );
+  const normalized = useMemo(() => items.map((item) => item.trim()).filter(Boolean), [items]);
 
   useEffect(() => {
     if (error && maxItems !== undefined && normalized.length < maxItems) {
-      setError("");
+      setError('');
     }
   }, [error, maxItems, normalized.length]);
 
@@ -62,7 +57,7 @@ const ChipsInput: React.FC<ChipsInputProps> = ({
     if (!raw) return;
 
     const candidates = raw
-      .split(",")
+      .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -84,7 +79,7 @@ const ChipsInput: React.FC<ChipsInputProps> = ({
     }
 
     onChange(next);
-    setDraft("");
+    setDraft('');
   };
 
   const handleRemove = (item: string) => {
@@ -118,7 +113,7 @@ const ChipsInput: React.FC<ChipsInputProps> = ({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === ",") {
+            if (e.key === 'Enter' || e.key === ',') {
               e.preventDefault();
               addItems(draft);
             }
@@ -127,18 +122,12 @@ const ChipsInput: React.FC<ChipsInputProps> = ({
           placeholder={placeholder}
           className={styles.input}
         />
-        <button
-          type="button"
-          onClick={() => addItems(draft)}
-          className={styles.button}
-        >
+        <button type="button" onClick={() => addItems(draft)} className={styles.button}>
           <Plus className="h-4 w-4" />
           Add
         </button>
       </div>
-      {helperText && (
-        <p className="mt-2 text-xs text-gray-500">{helperText}</p>
-      )}
+      {helperText && <p className="mt-2 text-xs text-gray-500">{helperText}</p>}
       {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
     </div>
   );

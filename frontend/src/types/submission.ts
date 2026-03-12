@@ -35,7 +35,7 @@ export interface Submission {
   }>;
   submissionNotes?: string;
   submittedAt?: string;
-  status: "submitted" | "under_review" | "completed" | "revision_requested";
+  status: 'submitted' | 'under_review' | 'completed' | 'revision_requested';
   review?: {
     stars?: number;
     feedback?: string;
@@ -66,7 +66,7 @@ export interface LatestSubmissionStatusResponse {
   data: Record<
     string,
     {
-      status: "submitted" | "under_review" | "completed" | "revision_requested";
+      status: 'submitted' | 'under_review' | 'completed' | 'revision_requested';
       submittedAt?: string;
       review?: {
         stars?: number;

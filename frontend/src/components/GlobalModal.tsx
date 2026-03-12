@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { closeModal } from "@/lib/features/ui/uiSlice";
-import PostAssignmentModal from "@/components/PostAssignmentModal";
+import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { closeModal } from '@/lib/features/ui/uiSlice';
+import PostAssignmentModal from '@/components/PostAssignmentModal';
 
 export default function GlobalModal() {
   const dispatch = useAppDispatch();
@@ -16,12 +16,12 @@ export default function GlobalModal() {
 
   return (
     <>
-      {type === "POST_ASSIGNMENT" && (
+      {type === 'POST_ASSIGNMENT' && (
         <PostAssignmentModal
           isOpen={true}
           onClose={handleClose}
           onSubmit={(submissionData) => {
-            console.log("Global Assignment posted:", submissionData);
+            console.log('Global Assignment posted:', submissionData);
             // Submit handle logic here, potentially dispatching to an API slice
             handleClose();
           }}

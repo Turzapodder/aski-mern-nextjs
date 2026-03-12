@@ -1,13 +1,11 @@
-"use client"
+'use client';
 
-import React from 'react'
-import PostAssignmentModal from '@/components/PostAssignmentModal'
-import {
-  ChevronLeft, ChevronRight, Briefcase
-} from 'lucide-react'
-import DashboardComponent from '@/components/DashboardComponent'
-import TutorDashboard from '@/components/TutorDashboard'
-import { useUserDashboardLogic } from './useUserDashboardLogic'
+import React from 'react';
+import PostAssignmentModal from '@/components/PostAssignmentModal';
+import { ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
+import DashboardComponent from '@/components/DashboardComponent';
+import TutorDashboard from '@/components/TutorDashboard';
+import { useUserDashboardLogic } from './useUserDashboardLogic';
 
 export const UserDashboardClient = () => {
   const {
@@ -18,12 +16,13 @@ export const UserDashboardClient = () => {
     setPendingFormData,
     currentMonth,
     prevMonth,
-    nextMonth
+    nextMonth,
   } = useUserDashboardLogic();
 
   const today = new Date();
 
-  const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const daysInMonth = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 
   const renderCalendarDays = () => {
@@ -36,7 +35,8 @@ export const UserDashboardClient = () => {
     }
 
     for (let day = 1; day <= totalDays; day++) {
-      const isToday = today.getDate() === day &&
+      const isToday =
+        today.getDate() === day &&
         today.getMonth() === currentMonth.getMonth() &&
         today.getFullYear() === currentMonth.getFullYear();
 
@@ -76,53 +76,43 @@ export const UserDashboardClient = () => {
           )}
 
           {/* Conditionally render dashboard based on user role */}
-          {
-            userData?.user?.roles?.includes('tutor') ? (
-              <TutorDashboard
-                user={userData?.user}
-              />
-            ) : (
-              <DashboardComponent />
-            )
-          }
-
-
-
-        </div >
+          {userData?.user?.roles?.includes('tutor') ? (
+            <TutorDashboard user={userData?.user} />
+          ) : (
+            <DashboardComponent />
+          )}
+        </div>
 
         {/* Right Sidebar */}
-        < div className="w-full  md:w-80 space-y-6" >
-
+        <div className="w-full  md:w-80 space-y-6">
           {/* Calendar */}
-          < div className="bg-white p-6 rounded-xl shadow-sm border" >
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex justify-between items-center mb-4">
               <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-gray-100">
                 <ChevronLeft size={20} className="text-gray-600" />
               </button>
               <h3 className="text-lg font-semibold text-gray-800">
-                {currentMonth.toLocaleString('default', { month: 'long' })}, {currentMonth.getFullYear()}
+                {currentMonth.toLocaleString('default', { month: 'long' })},{' '}
+                {currentMonth.getFullYear()}
               </h3>
               <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-gray-100">
                 <ChevronRight size={20} className="text-gray-600" />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-3">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="py-2 font-medium">{day}</div>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+                <div key={day} className="py-2 font-medium">
+                  {day}
+                </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
-              {renderCalendarDays()}
-            </div>
-          </div >
-
-        </div >
-      </div >
-
-
+            <div className="grid grid-cols-7 gap-1">{renderCalendarDays()}</div>
+          </div>
+        </div>
+      </div>
 
       {/* PostAssignmentModal */}
-      < PostAssignmentModal
+      <PostAssignmentModal
         isOpen={showPostModal}
         onClose={() => {
           setShowPostModal(false);
@@ -137,6 +127,6 @@ export const UserDashboardClient = () => {
         }}
         initialData={pendingFormData}
       />
-    </div >
+    </div>
   );
 };

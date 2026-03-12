@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { ViewDetailsClient } from "./ViewDetailsClient";
+import React, { Suspense } from 'react';
+import { ViewDetailsClient } from './ViewDetailsClient';
 
 export const metadata = {
-  title: "Assignment Details | Aski",
-  description: "View assignment details",
+  title: 'Assignment Details | Aski',
+  description: 'View assignment details',
 };
 
 export default function AssignmentDetailsPage() {

@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   Area,
@@ -13,22 +13,16 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from 'recharts';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import AdminSectionNav from "@/components/admin/AdminSectionNav"
-import { useAdminFinanceAnalyticsLogic } from "./useAdminFinanceAnalyticsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import AdminSectionNav from '@/components/admin/AdminSectionNav';
+import { useAdminFinanceAnalyticsLogic } from './useAdminFinanceAnalyticsLogic';
 
 export const AdminFinanceAnalyticsClient = () => {
-  const {
-    monthlyRevenue,
-    typeBreakdown,
-    escrowTrend,
-    topTutors,
-    isLoading,
-    error
-  } = useAdminFinanceAnalyticsLogic();
+  const { monthlyRevenue, typeBreakdown, escrowTrend, topTutors, isLoading, error } =
+    useAdminFinanceAnalyticsLogic();
 
   return (
     <div className="space-y-6">
@@ -38,9 +32,9 @@ export const AdminFinanceAnalyticsClient = () => {
         <div className="mt-3">
           <AdminSectionNav
             items={[
-              { label: "Transactions", href: "/admin/finance" },
-              { label: "Withdrawals", href: "/admin/finance/withdrawals" },
-              { label: "Analytics", href: "/admin/finance/analytics" },
+              { label: 'Transactions', href: '/admin/finance' },
+              { label: 'Withdrawals', href: '/admin/finance/withdrawals' },
+              { label: 'Analytics', href: '/admin/finance/analytics' },
             ]}
           />
         </div>
@@ -85,7 +79,13 @@ export const AdminFinanceAnalyticsClient = () => {
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={typeBreakdown} dataKey="amount" nameKey="type" outerRadius={80} fill="#7c5cff" />
+                  <Pie
+                    data={typeBreakdown}
+                    dataKey="amount"
+                    nameKey="type"
+                    outerRadius={80}
+                    fill="#7c5cff"
+                  />
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
@@ -102,8 +102,20 @@ export const AdminFinanceAnalyticsClient = () => {
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="escrow" stackId="1" stroke="#f97316" fill="#fdba74" />
-                  <Area type="monotone" dataKey="available" stackId="1" stroke="#16a34a" fill="#86efac" />
+                  <Area
+                    type="monotone"
+                    dataKey="escrow"
+                    stackId="1"
+                    stroke="#f97316"
+                    fill="#fdba74"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="available"
+                    stackId="1"
+                    stroke="#16a34a"
+                    fill="#86efac"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -127,5 +139,5 @@ export const AdminFinanceAnalyticsClient = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

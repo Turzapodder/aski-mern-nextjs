@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Calendar, Clock, MapPin } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useGetUserQuery } from "@/lib/services/auth";
-import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
+import { useMemo } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
 interface AvailabilitySlot {
   day: string;
@@ -26,7 +26,7 @@ export default function TutorProfilePage() {
     const slotsByDay = new Map<string, string[]>();
 
     timeSlots.forEach((entry: any) => {
-      const day = typeof entry?.day === "string" ? entry.day : "";
+      const day = typeof entry?.day === 'string' ? entry.day : '';
       const slots = Array.isArray(entry?.slots) ? entry.slots.filter(Boolean) : [];
       if (day) {
         slotsByDay.set(day, slots);
@@ -57,7 +57,7 @@ export default function TutorProfilePage() {
     );
   }
 
-  if (!user || !user.roles?.includes("tutor")) {
+  if (!user || !user.roles?.includes('tutor')) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
         <p className="text-sm text-gray-500">Tutor profile is not available.</p>
@@ -69,7 +69,7 @@ export default function TutorProfilePage() {
   const expertise = tutorProfile.expertiseSubjects || [];
   const skills = tutorProfile.skills || [];
   const tags = Array.from(new Set([...expertise, ...skills]));
-  const location = [user.city, user.country].filter(Boolean).join(", ");
+  const location = [user.city, user.country].filter(Boolean).join(', ');
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -77,7 +77,7 @@ export default function TutorProfilePage() {
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-gray-100">
             <Image
-              src={user.profileImage || "/assets/tutor-profile.svg"}
+              src={user.profileImage || '/assets/tutor-profile.svg'}
               alt={user.name}
               fill
               className="object-cover"
@@ -90,9 +90,7 @@ export default function TutorProfilePage() {
                 <Badge variant="outline">{tutorProfile.verificationStatus}</Badge>
               )}
             </div>
-            <p className="text-gray-600">
-              {tutorProfile.professionalTitle || "Tutor"}
-            </p>
+            <p className="text-gray-600">{tutorProfile.professionalTitle || 'Tutor'}</p>
             {location && (
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <MapPin className="h-4 w-4" />
@@ -101,7 +99,7 @@ export default function TutorProfilePage() {
             )}
           </div>
           <div className="flex flex-col items-start gap-3 md:items-end">
-            {typeof tutorProfile.hourlyRate === "number" && tutorProfile.hourlyRate > 0 ? (
+            {typeof tutorProfile.hourlyRate === 'number' && tutorProfile.hourlyRate > 0 ? (
               <>
                 <div className="text-sm text-gray-500">Hourly rate</div>
                 <div className="text-2xl font-bold text-gray-900">
@@ -157,7 +155,7 @@ export default function TutorProfilePage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-900">{slot.day}</span>
                     <span className="text-xs text-gray-500">
-                      {slot.slots.length ? `${slot.slots.length} slots` : "No slots listed"}
+                      {slot.slots.length ? `${slot.slots.length} slots` : 'No slots listed'}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -171,7 +169,9 @@ export default function TutorProfilePage() {
                         </span>
                       ))
                     ) : (
-                      <div className="text-xs text-gray-400">Update your schedule to show available times.</div>
+                      <div className="text-xs text-gray-400">
+                        Update your schedule to show available times.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -184,22 +184,28 @@ export default function TutorProfilePage() {
           {tutorProfile.qualification && (
             <div className="rounded-xl border border-gray-100 p-4">
               <div className="text-xs uppercase tracking-wide text-gray-400">Qualification</div>
-              <div className="mt-1 text-sm font-semibold text-gray-900">{tutorProfile.qualification}</div>
+              <div className="mt-1 text-sm font-semibold text-gray-900">
+                {tutorProfile.qualification}
+              </div>
             </div>
           )}
           {tutorProfile.currentInstitution && (
             <div className="rounded-xl border border-gray-100 p-4">
               <div className="text-xs uppercase tracking-wide text-gray-400">Institution</div>
-              <div className="mt-1 text-sm font-semibold text-gray-900">{tutorProfile.currentInstitution}</div>
+              <div className="mt-1 text-sm font-semibold text-gray-900">
+                {tutorProfile.currentInstitution}
+              </div>
             </div>
           )}
           {tutorProfile.teachingMode && (
             <div className="rounded-xl border border-gray-100 p-4">
               <div className="text-xs uppercase tracking-wide text-gray-400">Teaching mode</div>
-              <div className="mt-1 text-sm font-semibold text-gray-900">{tutorProfile.teachingMode}</div>
+              <div className="mt-1 text-sm font-semibold text-gray-900">
+                {tutorProfile.teachingMode}
+              </div>
             </div>
           )}
-          {typeof tutorProfile.experienceYears === "number" && (
+          {typeof tutorProfile.experienceYears === 'number' && (
             <div className="rounded-xl border border-gray-100 p-4">
               <div className="text-xs uppercase tracking-wide text-gray-400">Experience</div>
               <div className="mt-1 text-sm font-semibold text-gray-900">
@@ -210,7 +216,9 @@ export default function TutorProfilePage() {
           {tutorProfile.achievements && (
             <div className="rounded-xl border border-gray-100 p-4 sm:col-span-2">
               <div className="text-xs uppercase tracking-wide text-gray-400">Achievements</div>
-              <div className="mt-1 text-sm font-semibold text-gray-900">{tutorProfile.achievements}</div>
+              <div className="mt-1 text-sm font-semibold text-gray-900">
+                {tutorProfile.achievements}
+              </div>
             </div>
           )}
         </div>

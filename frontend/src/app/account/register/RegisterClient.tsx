@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRegisterLogic } from "./useRegisterLogic";
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRegisterLogic } from './useRegisterLogic';
 
 export const RegisterClient = () => {
   const {
@@ -23,8 +23,7 @@ export const RegisterClient = () => {
     handleGoogleLogin,
   } = useRegisterLogic();
 
-  const { values, errors, touched, handleChange, handleSubmit, handleBlur } =
-    formik;
+  const { values, errors, touched, handleChange, handleSubmit, handleBlur } = formik;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-3 sm:p-4">
@@ -53,8 +52,8 @@ export const RegisterClient = () => {
                     <div>
                       <p className="font-semibold">Join Today</p>
                       <p className="text-sm text-gray-600">
-                        Join as a {userRole === "tutor" ? "teacher" : "student"}
-                        . a new world <br></br>is waiting for you
+                        Join as a {userRole === 'tutor' ? 'teacher' : 'student'}. a new world{' '}
+                        <br></br>is waiting for you
                       </p>
                     </div>
                   </div>
@@ -91,20 +90,14 @@ export const RegisterClient = () => {
 
           <h2 className="text-2xl sm:text-3xl font-semibold mb-5 text-gray-800">
             Create an account
-            {userRole === "tutor" && (
-              <span className="text-accent-500 ml-2">as a Teacher</span>
-            )}
+            {userRole === 'tutor' && <span className="text-accent-500 ml-2">as a Teacher</span>}
           </h2>
           <div className="mt-6">
             <button
               onClick={handleGoogleLogin}
               className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-[15px] hover:bg-gray-50 transition duration-200"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 48 48"
-                className="w-5 h-5"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
                 <path
                   fill="#FFC107"
                   d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
@@ -129,19 +122,14 @@ export const RegisterClient = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or use your personal email
-                </span>
+                <span className="px-2 bg-white text-gray-500">Or use your personal email</span>
               </div>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Form fields remain unchanged */}
             <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Name
               </label>
               <input
@@ -160,10 +148,7 @@ export const RegisterClient = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
               <input
@@ -182,15 +167,12 @@ export const RegisterClient = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 w-full">
               <div className="w-full sm:w-1/2">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     name="password"
                     value={values.password}
@@ -243,9 +225,7 @@ export const RegisterClient = () => {
                   </button>
                 </div>
                 {touched.password && errors.password && (
-                  <div className="mt-1 text-sm text-red-500">
-                    {errors.password}
-                  </div>
+                  <div className="mt-1 text-sm text-red-500">{errors.password}</div>
                 )}
               </div>
 
@@ -258,7 +238,7 @@ export const RegisterClient = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     id="password_confirmation"
                     name="password_confirmation"
                     value={values.password_confirmation}
@@ -310,12 +290,9 @@ export const RegisterClient = () => {
                     )}
                   </button>
                 </div>
-                {touched.password_confirmation &&
-                  errors.password_confirmation && (
-                    <div className="mt-1 text-sm text-red-500">
-                      {errors.password_confirmation}
-                    </div>
-                  )}
+                {touched.password_confirmation && errors.password_confirmation && (
+                  <div className="mt-1 text-sm text-red-500">{errors.password_confirmation}</div>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-2 mb-4 mt-6 sm:mt-10">
@@ -326,22 +303,13 @@ export const RegisterClient = () => {
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
               />
-              <label
-                htmlFor="terms"
-                className="text-sm text-gray-600 font-medium"
-              >
-                By registering your details, you agree with our{" "}
-                <Link
-                  href="/terms"
-                  className="text-indigo-600 hover:text-indigo-700"
-                >
+              <label htmlFor="terms" className="text-sm text-gray-600 font-medium">
+                By registering your details, you agree with our{' '}
+                <Link href="/terms" className="text-indigo-600 hover:text-indigo-700">
                   Terms & Conditions
                 </Link>
-                , and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-indigo-600 hover:text-indigo-700"
-                >
+                , and{' '}
+                <Link href="/privacy" className="text-indigo-600 hover:text-indigo-700">
                   Privacy and Cookie Policy
                 </Link>
               </label>
@@ -351,15 +319,15 @@ export const RegisterClient = () => {
               disabled={loading || !termsAccepted}
               className="w-full bg-primary-500 text-white py-2 px-4 rounded-[15px] hover:bg-black hover:text-white transition duration-200 disabled:bg-gray-400"
             >
-              {loading ? "Creating Account..." : "Register"}
+              {loading ? 'Creating Account...' : 'Register'}
             </button>
           </form>
 
           <div className="mt-6">
             <p className="text-center text-sm text-gray-600">
-              Already have an account?{" "}
+              Already have an account?{' '}
               <Link
-                href={`/account/login?role=${userRole === "tutor" ? "tutor" : "user"}`}
+                href={`/account/login?role=${userRole === 'tutor' ? 'tutor' : 'user'}`}
                 className="text-black hover:text-indigo-700 font-semibold"
               >
                 Login

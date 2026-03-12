@@ -1,70 +1,70 @@
-import { useFormik } from "formik";
-import { loginSchema } from "@/validation/schemas";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { useLoginUserMutation } from "@/lib/services/auth";
-import { useConvertFormToAssignmentMutation } from "@/lib/services/student";
-import { useAppDispatch } from "@/lib/hooks";
-import { setCredentials } from "@/lib/features/auth/authSlice";
-import { apiOrigin } from "@/lib/apiConfig";
-import axiosInstance from "@/lib/axiosInstance";
+import { useFormik } from 'formik';
+import { loginSchema } from '@/validation/schemas';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useLoginUserMutation } from '@/lib/services/auth';
+import { useConvertFormToAssignmentMutation } from '@/lib/services/student';
+import { useAppDispatch } from '@/lib/hooks';
+import { setCredentials } from '@/lib/features/auth/authSlice';
+import { apiOrigin } from '@/lib/apiConfig';
+import axiosInstance from '@/lib/axiosInstance';
 
-export type LoginRole = "user" | "tutor" | "admin";
+export type LoginRole = 'user' | 'tutor' | 'admin';
 
 const initialValues = {
-  email: "",
-  password: ""
+  email: '',
+  password: '',
 };
 
 export const normalizeRole = (value: string | null): LoginRole | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
-  if (normalized === "user" || normalized === "student") return "user";
-  if (normalized === "tutor") return "tutor";
-  if (normalized === "admin") return "admin";
+  if (normalized === 'user' || normalized === 'student') return 'user';
+  if (normalized === 'tutor') return 'tutor';
+  if (normalized === 'admin') return 'admin';
   return null;
 };
 
 export const useLoginLogic = () => {
-  const [serverErrorMessage, setServerErrorMessage] = useState("");
-  const [serverSuccessMessage, setServerSuccessMessage] = useState("");
+  const [serverErrorMessage, setServerErrorMessage] = useState('');
+  const [serverSuccessMessage, setServerSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const [loginUser] = useLoginUserMutation();
-  const [pendingSessionId, setPendingSessionId] = useState<string>("");
+  const [pendingSessionId, setPendingSessionId] = useState<string>('');
   const [convertForm] = useConvertFormToAssignmentMutation();
 
   const loginRole = useMemo<LoginRole | null>(
-    () => normalizeRole(searchParams.get("role")),
+    () => normalizeRole(searchParams.get('role')),
     [searchParams]
   );
-  const redirect = searchParams.get("redirect");
-  const authError = searchParams.get("error");
-  const oauthStatus = searchParams.get("oauth");
+  const redirect = searchParams.get('redirect');
+  const authError = searchParams.get('error');
+  const oauthStatus = searchParams.get('oauth');
   const authErrorMessage = useMemo(() => {
-    if (!authError) return "";
-    if (authError === "role_mismatch") {
-      return "This account cannot use this login entrypoint.";
+    if (!authError) return '';
+    if (authError === 'role_mismatch') {
+      return 'This account cannot use this login entrypoint.';
     }
-    if (authError === "oauth_failed") {
-      return "Google login failed. Please try again.";
+    if (authError === 'oauth_failed') {
+      return 'Google login failed. Please try again.';
     }
-    if (authError === "callback_failed") {
-      return "Google login callback failed. Please try again.";
+    if (authError === 'callback_failed') {
+      return 'Google login callback failed. Please try again.';
     }
-    if (authError === "oauth_init_failed") {
-      return "Unable to start Google login.";
+    if (authError === 'oauth_init_failed') {
+      return 'Unable to start Google login.';
     }
-    return "";
+    return '';
   }, [authError]);
   const isRoleMissing = !loginRole;
 
   useEffect(() => {
     if (isRoleMissing) {
       setServerErrorMessage(
-        "Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin."
+        'Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin.'
       );
       return;
     }
@@ -72,46 +72,44 @@ export const useLoginLogic = () => {
       setServerErrorMessage(authErrorMessage);
       return;
     }
-    setServerErrorMessage("");
+    setServerErrorMessage('');
   }, [isRoleMissing, authErrorMessage]);
 
   useEffect(() => {
-    if (oauthStatus !== "success") return;
+    if (oauthStatus !== 'success') return;
 
     const syncOAuthSession = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get("/user/profile");
+        const response = await axiosInstance.get('/user/profile');
         const profile = response?.data?.user;
         const roles = Array.isArray(profile?.roles) ? profile.roles : [];
-        const role = roles.includes("admin")
-          ? "admin"
-          : roles.includes("tutor")
-          ? "tutor"
-          : "user";
+        const role = roles.includes('admin') ? 'admin' : roles.includes('tutor') ? 'tutor' : 'user';
 
         if (profile) {
           dispatch(setCredentials({ user: profile, role }));
         }
 
-        if (role === "admin") {
-          router.replace("/admin");
+        if (role === 'admin') {
+          router.replace('/admin');
           return;
         }
 
         if (
-          roles.includes("tutor") &&
+          roles.includes('tutor') &&
           profile?.onboardingStatus &&
-          profile.onboardingStatus !== "completed" &&
-          profile.onboardingStatus !== "approved"
+          profile.onboardingStatus !== 'completed' &&
+          profile.onboardingStatus !== 'approved'
         ) {
-          router.replace("/account/tutor-onboarding");
+          router.replace('/account/tutor-onboarding');
           return;
         }
 
-        router.replace("/user/dashboard");
+        router.replace('/user/dashboard');
       } catch {
-        setServerErrorMessage("Google login succeeded but session sync failed. Please login again.");
+        setServerErrorMessage(
+          'Google login succeeded but session sync failed. Please login again.'
+        );
       } finally {
         setLoading(false);
       }
@@ -121,20 +119,20 @@ export const useLoginLogic = () => {
   }, [oauthStatus, dispatch, router]);
 
   useEffect(() => {
-    if (loginRole === "admin") return;
-    const storedSessionId = localStorage.getItem("pendingFormSessionId");
+    if (loginRole === 'admin') return;
+    const storedSessionId = localStorage.getItem('pendingFormSessionId');
     if (storedSessionId) {
       setPendingSessionId(storedSessionId);
     }
   }, [loginRole]);
 
   const handleFormConversion = async () => {
-    if (!pendingSessionId || loginRole === "admin") return;
+    if (!pendingSessionId || loginRole === 'admin') return;
     try {
       await convertForm({ sessionId: pendingSessionId }).unwrap();
-      localStorage.removeItem("pendingFormSessionId");
+      localStorage.removeItem('pendingFormSessionId');
     } catch (error) {
-      console.error("Failed to convert form:", error);
+      console.error('Failed to convert form:', error);
     }
   };
 
@@ -144,7 +142,7 @@ export const useLoginLogic = () => {
     onSubmit: async (formValues, action) => {
       if (!loginRole) {
         setServerErrorMessage(
-          "Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin."
+          'Login role is required. Use /account/login?role=user, /account/login?role=tutor, or /account/login?role=admin.'
         );
         return;
       }
@@ -156,58 +154,60 @@ export const useLoginLogic = () => {
           role: loginRole,
         });
 
-        if (response.data && response.data.status === "success") {
+        if (response.data && response.data.status === 'success') {
           setServerSuccessMessage(response.data.message);
-          setServerErrorMessage("");
+          setServerErrorMessage('');
           action.resetForm();
 
           if (response.data.user) {
-            dispatch(setCredentials({ 
-              user: response.data.user, 
-              role: loginRole 
-            }));
+            dispatch(
+              setCredentials({
+                user: response.data.user,
+                role: loginRole,
+              })
+            );
           }
 
           await handleFormConversion();
 
           setTimeout(() => {
             const user = response.data.user;
-            const isAdmin = user?.roles?.includes("admin");
-            const isTutor = user?.roles?.includes("tutor");
+            const isAdmin = user?.roles?.includes('admin');
+            const isTutor = user?.roles?.includes('tutor');
             const onboardingStatus = user?.onboardingStatus;
 
             if (isAdmin) {
-              router.push("/admin");
+              router.push('/admin');
               return;
             }
 
             if (
               isTutor &&
               onboardingStatus &&
-              onboardingStatus !== "completed" &&
-              onboardingStatus !== "approved"
+              onboardingStatus !== 'completed' &&
+              onboardingStatus !== 'approved'
             ) {
-              router.push("/account/tutor-onboarding");
+              router.push('/account/tutor-onboarding');
               return;
             }
 
-            if (redirect === "whatsapp") {
-              window.location.href = "https://wa.me/";
+            if (redirect === 'whatsapp') {
+              window.location.href = 'https://wa.me/';
               return;
             }
 
-            router.push("/user/dashboard");
+            router.push('/user/dashboard');
           }, 1000);
           return;
         }
 
-        if (response.error && response.error.data?.status === "failed") {
+        if (response.error && response.error.data?.status === 'failed') {
           setServerErrorMessage(response.error.data.message);
-          setServerSuccessMessage("");
+          setServerSuccessMessage('');
         }
       } catch (error: any) {
-        setServerErrorMessage(error?.message || "Unable to login");
-        setServerSuccessMessage("");
+        setServerErrorMessage(error?.message || 'Unable to login');
+        setServerSuccessMessage('');
       } finally {
         setLoading(false);
       }
@@ -216,10 +216,7 @@ export const useLoginLogic = () => {
 
   const handleGoogleLogin = () => {
     if (!loginRole) return;
-    window.open(
-      `${apiOrigin}/auth/google?role=${loginRole}`,
-      "_self"
-    );
+    window.open(`${apiOrigin}/auth/google?role=${loginRole}`, '_self');
   };
 
   return {

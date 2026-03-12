@@ -1,15 +1,15 @@
 /** File extensions that are blocked from upload. */
 export const BLOCKED_EXTENSIONS = [
-  ".exe",
-  ".bat",
-  ".cmd",
-  ".sh",
-  ".msi",
-  ".com",
-  ".scr",
-  ".ps1",
-  ".vbs",
-  ".jar",
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.sh',
+  '.msi',
+  '.com',
+  '.scr',
+  '.ps1',
+  '.vbs',
+  '.jar',
 ] as const;
 
 /** Maximum file size in bytes (50 MB). */

@@ -1,16 +1,12 @@
-"use client"
+'use client';
 
-import React from 'react'
-import ProfileEditor from "@/components/ProfileEditor";
-import { Skeleton } from "@/components/ui/skeleton";
+import React from 'react';
+import ProfileEditor from '@/components/ProfileEditor';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useProfileLogic } from './useProfileLogic';
 
 export const ProfileClient = () => {
-  const {
-    isSuccess,
-    userId,
-    role
-  } = useProfileLogic();
+  const { isSuccess, userId, role } = useProfileLogic();
 
   if (!isSuccess || !userId) {
     return (
@@ -35,4 +31,4 @@ export const ProfileClient = () => {
       </div>
     </div>
   );
-}
+};

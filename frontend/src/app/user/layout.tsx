@@ -1,14 +1,14 @@
-'use client'
-import { useState, useEffect } from "react"
-import CollapsibleSidebar from "@/components/CollapsibleSidebar"
-import TopNavbar from "@/components/TopNavbar"
-import { useGetUserQuery } from "@/lib/services/auth"
-import { useRouter, usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { setUserProfile } from "@/lib/features/auth/authSlice"
-import { setMobileMenuOpen } from "@/lib/features/ui/uiSlice"
+'use client';
+import { useState, useEffect } from 'react';
+import CollapsibleSidebar from '@/components/CollapsibleSidebar';
+import TopNavbar from '@/components/TopNavbar';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { useRouter, usePathname } from 'next/navigation';
+import { Menu } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { setUserProfile } from '@/lib/features/auth/authSlice';
+import { setMobileMenuOpen } from '@/lib/features/ui/uiSlice';
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: userData, isLoading } = useGetUserQuery();
@@ -16,17 +16,16 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const sidebarCollapsed = useAppSelector((state) => !state.ui.isSidebarOpen)
-  const mobileSidebarOpen = useAppSelector((state) => state.ui.isMobileMenuOpen)
+  const sidebarCollapsed = useAppSelector((state) => !state.ui.isSidebarOpen);
+  const mobileSidebarOpen = useAppSelector((state) => state.ui.isMobileMenuOpen);
 
   // Derive active item from pathname
   const activeItem = pathname?.split('/').pop() || 'dashboard';
 
-
   useEffect(() => {
     if (userData?.user) {
       const user = userData.user;
-      
+
       // Update the global state with the fetched user profile
       dispatch(setUserProfile(user));
 
@@ -81,7 +80,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className='flex h-screen bg-gray-100 font-sans'>
+    <div className="flex h-screen bg-gray-100 font-sans">
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div
@@ -91,20 +90,25 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
       )}
 
       {/* Collapsible Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed inset-y-0 left-0 z-50 transition-transform duration-300 transform 
         ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0
         ${sidebarCollapsed ? 'w-16' : 'w-64'}
-      `}>
+      `}
+      >
         <CollapsibleSidebar activeItem={activeItem} />
       </div>
 
       {/* Main Content Area */}
-      <div className='flex-1 flex flex-col min-w-0 overflow-hidden'>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <div className="flex items-center p-4 bg-white md:hidden border-b">
-          <button onClick={() => dispatch(setMobileMenuOpen(true))} className="p-2 mr-2 hover:bg-gray-100 rounded-md">
+          <button
+            onClick={() => dispatch(setMobileMenuOpen(true))}
+            className="p-2 mr-2 hover:bg-gray-100 rounded-md"
+          >
             <Menu size={20} />
           </button>
           <span className="font-semibold text-lg">Aski</span>
@@ -113,19 +117,19 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         {/* We keep TopNavbar but maybe refine its mobile visibility or behavior */}
         <div className="hidden md:block">
           <TopNavbar
-            onSearch={(query) => console.log("Search:", query)}
-            onNotificationClick={() => console.log("Notifications clicked")}
-            onProfileClick={() => console.log("Profile clicked")}
+            onSearch={(query) => console.log('Search:', query)}
+            onNotificationClick={() => console.log('Notifications clicked')}
+            onProfileClick={() => console.log('Profile clicked')}
           />
         </div>
 
         {/* Main Content */}
-        <main className='flex-1 p-4 md:p-6 gray-bg overflow-x-hidden overflow-y-auto'>
+        <main className="flex-1 p-4 md:p-6 gray-bg overflow-x-hidden overflow-y-auto">
           {children}
         </main>
       </div>
     </div>
   );
-}
+};
 
-export default UserLayout
+export default UserLayout;

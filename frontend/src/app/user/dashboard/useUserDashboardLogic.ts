@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
-import { useGetUserQuery } from '@/lib/services/auth'
-import { useConvertFormToAssignmentMutation } from '@/lib/services/student'
+import { useEffect, useState } from 'react';
+import { useGetUserQuery } from '@/lib/services/auth';
+import { useConvertFormToAssignmentMutation } from '@/lib/services/student';
 
 const mockUser = {
   name: 'Taylor',
-  avatar: '/site-logo.png' // Using available logo as placeholder
+  avatar: '/site-logo.png', // Using available logo as placeholder
 };
 
 export const useUserDashboardLogic = () => {
@@ -17,7 +17,10 @@ export const useUserDashboardLogic = () => {
 
   useEffect(() => {
     if (isUserSuccess && userData?.user) {
-      setUser({ name: userData.user.name || 'Taylor', avatar: userData.user.avatar || '/site-logo.png' });
+      setUser({
+        name: userData.user.name || 'Taylor',
+        avatar: userData.user.avatar || '/site-logo.png',
+      });
 
       // Check for pending form data after login
       const storedSessionId = localStorage.getItem('pendingFormSessionId');
@@ -49,12 +52,13 @@ export const useUserDashboardLogic = () => {
     }
   }, [userData, isUserSuccess, convertForm]);
 
-
   // Calendar state and functions
-  const [currentMonth, setCurrentMonth] = useState(new Date()); 
-  
-  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const prevMonth = () =>
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const nextMonth = () =>
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
   return {
     user,
@@ -67,6 +71,6 @@ export const useUserDashboardLogic = () => {
     setPendingFormData,
     currentMonth,
     prevMonth,
-    nextMonth
-  }
-}
+    nextMonth,
+  };
+};

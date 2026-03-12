@@ -17,14 +17,12 @@ const ProposalsComponent: React.FC<ProposalsComponentProps> = ({
   budget,
   setBudget,
   submitProposal,
-  onCancel
+  onCancel,
 }) => {
   const { currency } = useCurrency();
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        Send Your Proposal
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Your Proposal</h2>
 
       <div className="space-y-6">
         {/* Proposal Letter (Removed) */}

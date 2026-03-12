@@ -9,7 +9,9 @@ import { AvailabilityValue } from '@/lib/availability';
 interface ProfileFormProps {
   profile: UserProfile | null;
   formData: ProfileUpdatePayload;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isUpdating: boolean;
@@ -203,9 +205,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 variant="profile"
               />
             ) : (
-              <p className="text-sm text-gray-500">
-                Availability settings are not available.
-              </p>
+              <p className="text-sm text-gray-500">Availability settings are not available.</p>
             )}
           </div>
         )}
@@ -214,18 +214,34 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Account</h3>
           <div className="flex items-start gap-2 mb-4">
             <div className="mt-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-gray-500"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
             </div>
             <p className="text-sm text-gray-500">
-              After making a deletion request, you will have <span className="font-bold text-gray-900">&quot;6 months&quot;</span> to maintain this account.
+              After making a deletion request, you will have{' '}
+              <span className="font-bold text-gray-900">&quot;6 months&quot;</span> to maintain this
+              account.
             </p>
           </div>
           <p className="text-sm text-gray-500 mb-6">
-            To permanently erase your whole ProAcc account, click the button below. This implies that you won&apos;t have access to your enterprises, accounting and personal financial data.
+            To permanently erase your whole ProAcc account, click the button below. This implies
+            that you won&apos;t have access to your enterprises, accounting and personal financial
+            data.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
-            There is no reversing this action.
-          </p>
+          <p className="text-sm text-gray-500 mb-6">There is no reversing this action.</p>
         </div>
 
         <div className="flex justify-end">

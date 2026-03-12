@@ -1,20 +1,23 @@
-"use client"
+'use client';
 
-import { FileText } from "lucide-react"
+import { FileText } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import ResolveDisputeModal from "@/components/admin/ResolveDisputeModal"
-import { formatDate, useAdminDisputeDetailsLogic } from "./useAdminDisputeDetailsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import ResolveDisputeModal from '@/components/admin/ResolveDisputeModal';
+import { formatDate, useAdminDisputeDetailsLogic } from './useAdminDisputeDetailsLogic';
 
 export const AdminDisputeDetailsClient = () => {
   const {
-    resolutionType, setResolutionType,
-    studentPercent, setStudentPercent,
-    modalOpen, setModalOpen,
+    resolutionType,
+    setResolutionType,
+    studentPercent,
+    setStudentPercent,
+    modalOpen,
+    setModalOpen,
     isSubmitting,
     assignment,
     chatHistory,
@@ -27,7 +30,7 @@ export const AdminDisputeDetailsClient = () => {
     summary,
     handleResolve,
     isLoading,
-    error
+    error,
   } = useAdminDisputeDetailsLogic();
 
   if (isLoading) {
@@ -36,7 +39,7 @@ export const AdminDisputeDetailsClient = () => {
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-80 w-full" />
       </div>
-    )
+    );
   }
 
   if (error || !assignment) {
@@ -44,14 +47,16 @@ export const AdminDisputeDetailsClient = () => {
       <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
         Unable to load dispute details.
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dispute courtroom</h1>
-        <p className="text-sm text-gray-500">Review evidence, chat history, and resolve the dispute.</p>
+        <p className="text-sm text-gray-500">
+          Review evidence, chat history, and resolve the dispute.
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -75,15 +80,21 @@ export const AdminDisputeDetailsClient = () => {
             </div>
             <div>
               <p className="text-xs text-gray-500">Student</p>
-              <p className="text-sm font-medium text-gray-900">{assignment.student?.name || "N/A"}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {assignment.student?.name || 'N/A'}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Tutor</p>
-              <p className="text-sm font-medium text-gray-900">{assignment.assignedTutor?.name || "N/A"}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {assignment.assignedTutor?.name || 'N/A'}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Last updated</p>
-              <p className="text-sm font-medium text-gray-900">{formatDate(assignment.updatedAt)}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(assignment.updatedAt)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -95,22 +106,30 @@ export const AdminDisputeDetailsClient = () => {
           <CardContent>
             <Tabs defaultValue="chat" className="space-y-4">
               <TabsList className="w-full">
-                <TabsTrigger value="chat" className="flex-1">Chat</TabsTrigger>
-                <TabsTrigger value="submissions" className="flex-1">Submissions</TabsTrigger>
-                <TabsTrigger value="requirements" className="flex-1">Requirements</TabsTrigger>
+                <TabsTrigger value="chat" className="flex-1">
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger value="submissions" className="flex-1">
+                  Submissions
+                </TabsTrigger>
+                <TabsTrigger value="requirements" className="flex-1">
+                  Requirements
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="chat">
-                {chatHistory.length === 0 && <p className="text-sm text-gray-500">No messages recorded.</p>}
+                {chatHistory.length === 0 && (
+                  <p className="text-sm text-gray-500">No messages recorded.</p>
+                )}
                 {chatHistory.length > 0 && (
                   <ScrollArea className="h-56 rounded-lg border border-gray-200 p-3">
                     <div className="space-y-3 text-sm">
                       {chatHistory.map((message: Record<string, any>) => (
                         <div key={message._id} className="rounded-lg border border-gray-100 p-2">
                           <p className="text-xs text-gray-500">
-                            {message.sender?.name || "User"} | {formatDate(message.createdAt)}
+                            {message.sender?.name || 'User'} | {formatDate(message.createdAt)}
                           </p>
-                          <p className="text-gray-700">{message.content || "Attachment"}</p>
+                          <p className="text-gray-700">{message.content || 'Attachment'}</p>
                         </div>
                       ))}
                     </div>
@@ -119,7 +138,9 @@ export const AdminDisputeDetailsClient = () => {
               </TabsContent>
 
               <TabsContent value="submissions">
-                {submissions.length === 0 && <p className="text-sm text-gray-500">No submission files.</p>}
+                {submissions.length === 0 && (
+                  <p className="text-sm text-gray-500">No submission files.</p>
+                )}
                 {submissions.length > 0 && (
                   <div className="space-y-2">
                     {submissions.map((file: Record<string, any>) => (
@@ -173,37 +194,38 @@ export const AdminDisputeDetailsClient = () => {
             )}
             {financiallyActionable && !hasGatewayRefundData && (
               <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
-                No gateway refund metadata found. Wallet transfer will still be processed internally.
+                No gateway refund metadata found. Wallet transfer will still be processed
+                internally.
               </div>
             )}
             <div className="space-y-2 text-sm text-gray-700">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
-                  checked={resolutionType === "refund"}
-                  onChange={() => setResolutionType("refund")}
+                  checked={resolutionType === 'refund'}
+                  onChange={() => setResolutionType('refund')}
                 />
                 Full refund to student
               </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
-                  checked={resolutionType === "release"}
-                  onChange={() => setResolutionType("release")}
+                  checked={resolutionType === 'release'}
+                  onChange={() => setResolutionType('release')}
                 />
                 Release payment to tutor
               </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
-                  checked={resolutionType === "split"}
-                  onChange={() => setResolutionType("split")}
+                  checked={resolutionType === 'split'}
+                  onChange={() => setResolutionType('split')}
                 />
                 Split decision
               </label>
             </div>
 
-            {resolutionType === "split" && (
+            {resolutionType === 'split' && (
               <div className="space-y-2">
                 <p className="text-xs text-gray-500">Student share: {studentPercent}%</p>
                 <input
@@ -238,5 +260,5 @@ export const AdminDisputeDetailsClient = () => {
         onConfirm={handleResolve}
       />
     </div>
-  )
-}
+  );
+};

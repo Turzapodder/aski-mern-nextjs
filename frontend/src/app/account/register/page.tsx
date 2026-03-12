@@ -1,9 +1,9 @@
-import React, { Suspense } from "react";
-import { RegisterClient } from "./RegisterClient";
+import React, { Suspense } from 'react';
+import { RegisterClient } from './RegisterClient';
 
 export const metadata = {
-  title: "Register | Aski",
-  description: "Create a new account",
+  title: 'Register | Aski',
+  description: 'Create a new account',
 };
 
 export default function RegisterPage() {

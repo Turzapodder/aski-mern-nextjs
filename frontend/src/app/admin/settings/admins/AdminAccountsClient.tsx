@@ -1,25 +1,33 @@
-"use client"
+'use client';
 
-import { ShieldMinus, UserPlus } from "lucide-react"
+import { ShieldMinus, UserPlus } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useAdminAccountsLogic } from "./useAdminAccountsLogic"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminAccountsLogic } from './useAdminAccountsLogic';
 
 export const AdminAccountsClient = () => {
   const {
     admins,
-    email, setEmail,
-    role, setRole,
+    email,
+    setEmail,
+    role,
+    setRole,
     isSubmitting,
     handleAdd,
     handleRoleChange,
     handleRevoke,
     isLoading,
-    error
+    error,
   } = useAdminAccountsLogic();
 
   return (
@@ -97,11 +105,13 @@ export const AdminAccountsClient = () => {
                 <tbody className="divide-y divide-gray-100">
                   {admins.map((admin) => (
                     <tr key={admin._id} className="hover:bg-gray-50/60">
-                      <td className="py-3 pr-4 font-medium text-gray-900">{admin.name || "Admin"}</td>
-                      <td className="py-3 pr-4 text-gray-600">{admin.email || "N/A"}</td>
+                      <td className="py-3 pr-4 font-medium text-gray-900">
+                        {admin.name || 'Admin'}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-600">{admin.email || 'N/A'}</td>
                       <td className="py-3 pr-4">
                         <Select
-                          value={admin.adminRole || "admin"}
+                          value={admin.adminRole || 'admin'}
                           onValueChange={(value) => handleRoleChange(admin, value)}
                         >
                           <SelectTrigger className="w-40">
@@ -115,7 +125,7 @@ export const AdminAccountsClient = () => {
                         </Select>
                       </td>
                       <td className="py-3 pr-4 text-gray-600">
-                        {admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : "N/A"}
+                        {admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="py-3 text-right">
                         <Button
@@ -137,5 +147,5 @@ export const AdminAccountsClient = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};

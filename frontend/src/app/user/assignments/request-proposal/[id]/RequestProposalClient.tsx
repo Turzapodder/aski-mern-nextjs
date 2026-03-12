@@ -1,18 +1,12 @@
-"use client"
+'use client';
 
-import React from "react";
-import UploadProjectForm from "@/components/UploadProjectForm";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useRequestProposalLogic } from "./useRequestProposalLogic"
+import React from 'react';
+import UploadProjectForm from '@/components/UploadProjectForm';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useRequestProposalLogic } from './useRequestProposalLogic';
 
 export const RequestProposalClient = () => {
-  const {
-    router,
-    tutorId,
-    isTutorViewer,
-    tutor,
-    loading
-  } = useRequestProposalLogic();
+  const { router, tutorId, isTutorViewer, tutor, loading } = useRequestProposalLogic();
 
   if (!tutorId) {
     return (
@@ -56,4 +50,4 @@ export const RequestProposalClient = () => {
       />
     </div>
   );
-}
+};

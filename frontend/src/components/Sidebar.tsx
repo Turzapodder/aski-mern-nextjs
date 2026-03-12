@@ -1,10 +1,17 @@
-'use client'
-import { useRouter } from 'next/navigation'
-import { useLogoutUserMutation } from '@/lib/services/auth'
-import { 
-  LayoutGrid, MessageSquare, Bell, CalendarDays, Users, Settings, LogOut, 
-  BookOpen, Briefcase
-} from 'lucide-react'
+'use client';
+import { useRouter } from 'next/navigation';
+import { useLogoutUserMutation } from '@/lib/services/auth';
+import {
+  LayoutGrid,
+  MessageSquare,
+  Bell,
+  CalendarDays,
+  Users,
+  Settings,
+  LogOut,
+  BookOpen,
+  Briefcase,
+} from 'lucide-react';
 
 interface SidebarItem {
   name: string;
@@ -19,7 +26,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ activeItem }: SidebarProps) => {
-  const [logoutUser] = useLogoutUserMutation()
+  const [logoutUser] = useLogoutUserMutation();
   const router = useRouter();
 
   // const handleLogout = async () => {
@@ -34,11 +41,22 @@ const Sidebar = ({ activeItem }: SidebarProps) => {
   // }
 
   const sidebarItems: SidebarItem[] = [
-    { name: 'Dashboard', icon: LayoutGrid, href: '/user/dashboard', active: activeItem === 'dashboard' },
+    {
+      name: 'Dashboard',
+      icon: LayoutGrid,
+      href: '/user/dashboard',
+      active: activeItem === 'dashboard',
+    },
     { name: 'My Assignments', icon: BookOpen, href: '/user/courses' },
 
     { name: 'My Classes', icon: Briefcase, href: '/user/assignments' },
-    { name: 'Messages', icon: MessageSquare, href: '/user/messages', active: activeItem === 'messages', badge: 3 },
+    {
+      name: 'Messages',
+      icon: MessageSquare,
+      href: '/user/messages',
+      active: activeItem === 'messages',
+      badge: 3,
+    },
     { name: 'Notifications', icon: Bell, href: '/user/notifications', badge: 2 },
     { name: 'Calendars', icon: CalendarDays, href: '/user/calendar' },
     { name: 'Community', icon: Users, href: '/user/community' },
@@ -51,12 +69,11 @@ const Sidebar = ({ activeItem }: SidebarProps) => {
 
   return (
     <aside className="bg-gray-800 text-white w-64 p-4 space-y-6 flex flex-col h-screen h-100">
-
       <nav className="flex-grow">
         <ul className="space-y-2">
           {sidebarItems.map((item) => (
             <li key={item.name}>
-              <button 
+              <button
                 onClick={() => handleNavigation(item.href)}
                 className={`w-full flex items-center py-3 px-4 rounded-lg transition-colors text-sm text-left
                   ${item.active ? 'bg-primary-300 text-white' : 'hover:bg-gray-700 text-gray-300'}
@@ -79,7 +96,7 @@ const Sidebar = ({ activeItem }: SidebarProps) => {
       <div className="bg-primary-300 rounded-xl p-4 text-center relative overflow-hidden">
         <div className="relative z-10">
           <div className="w-16 h-16 mx-auto mb-3 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <Briefcase size={24} className="text-white"/>
+            <Briefcase size={24} className="text-white" />
           </div>
           <p className="text-sm font-semibold mb-1">Download our mobile app</p>
           <button className="text-xs bg-white text-primary-300 px-3 py-1 rounded-md font-medium hover:bg-gray-100">
