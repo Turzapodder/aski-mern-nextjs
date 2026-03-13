@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from "nextjs-toploader/app";
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { toggleSidebar } from '@/lib/features/ui/uiSlice';
