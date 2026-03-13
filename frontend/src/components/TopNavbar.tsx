@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import { Search, User, Plus, ChevronDown, LogOut, Settings } from 'lucide-react';
 import Image from 'next/image';
-import PostAssignmentModal from './PostAssignmentModal';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "nextjs-toploader/app";
 import { useGetUserQuery, useLogoutUserMutation } from '@/lib/services/auth';
 import {
   useGetNotificationsQuery,

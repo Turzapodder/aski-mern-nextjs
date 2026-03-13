@@ -2,7 +2,8 @@
 import { useEffect } from 'react';
 import TopNavbar from '@/components/TopNavbar';
 import { useGetUserQuery } from '@/lib/services/auth';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app";
 import { Menu } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';

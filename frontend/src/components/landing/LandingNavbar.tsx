@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import React, { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
 
 export const LandingNavbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -8,10 +9,10 @@ export const LandingNavbar = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const navLinks = [
-    { name: 'Find Tutors', href: '#' },
-    { name: 'How it Works', href: '#' },
-    { name: 'Success Stories', href: '#' },
-    { name: 'Resources', href: '#' },
+    { name: "Find Tutors", href: "#" },
+    { name: "How it Works", href: "#" },
+    { name: "Success Stories", href: "#" },
+    { name: "Resources", href: "#" },
   ];
 
   return (
@@ -19,10 +20,14 @@ export const LandingNavbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-              A
-            </div>
-            <span className="font-bold text-xl tracking-tight">Aski</span>
+            <Image
+              src="/assets/main-logo.svg"
+              alt="logo"
+              width={120}
+              height={30}
+              className="min-w-[30px] min-h-[30px] w-[110px] sm:w-[120px] object-contain"
+              priority
+            />
           </div>
 
           <div className="hidden md:flex items-center gap-8">

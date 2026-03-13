@@ -1,26 +1,73 @@
-import { useEffect, useState } from 'react';
-import * as Yup from 'yup';
-import { useFormik } from 'formik';
-import { useGetUserQuery, useGenerateQuizMutation } from '@/lib/services/auth';
+import { useCallback, useEffect, useRef, useState } from "react";
+import * as Yup from "yup";
+import { useFormik } from "formik";
+import {
+  useGetUserQuery,
+  useGenerateQuizMutation,
+  useLogoutUserMutation,
+} from "@/lib/services/auth";
 import {
   useSubmitTutorApplicationMutation,
   useGetTutorApplicationStatusQuery,
-} from '@/lib/services/tutor';
-import { useRouter } from 'next/navigation';
-import type { User, QuizQuestion, QuizSummary, OnboardingFormData } from '../../../types/tutorOnboarding';
+} from "@/lib/services/tutor";
+import { useRouter } from "nextjs-toploader/app";
+import { useAppDispatch } from "@/lib/hooks";
+import { logout } from "@/lib/features/auth/authSlice";
 
-const validationSchema = [
+export interface User {
+  name: string;
+  email: string;
+  is_verified: boolean;
+}
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  topic: string;
+}
+
+export interface QuizSummary {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  timeSpent: number;
+  topicPerformance: Record<string, any>;
+  answers?: any[];
+}
+
+export interface FormData {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  university: string;
+  degree: string;
+  gpa: string;
+  country: string;
+  subject: string;
+  topics: string[];
+  quizSummary: QuizSummary | null;
+  certificate: File | null;
+  profilePicture: File | null;
+}
+
+export const validationSchema = [
   Yup.object({
-    name: Yup.string().required('Full name is required'),
-    email: Yup.string().email('Invalid email').required('Email is required'),
-    phoneNumber: Yup.string().required('Phone number is required'),
-    university: Yup.string().required('University name is required'),
-    degree: Yup.string().required('Degree is required'),
-    gpa: Yup.string().required('GPA is required'),
-    country: Yup.string().required('Country is required'),
-    subject: Yup.string().required('Subject is required'),
-    topics: Yup.array().min(1, 'Select at least one topic').required('Topics are required'),
-    profilePicture: Yup.mixed().required('Profile picture is required'),
+    name: Yup.string().required("Full name is required"),
+    email: Yup.string().email("Invalid email").required("Email is required"),
+    phoneNumber: Yup.string().required("Phone number is required"),
+    university: Yup.string().required("University name is required"),
+    degree: Yup.string().required("Degree is required"),
+    gpa: Yup.string().required("GPA is required"),
+    country: Yup.string().required("Country is required"),
+    subject: Yup.string().required("Subject is required"),
+    topics: Yup.array()
+      .min(1, "Select at least one topic")
+      .required("Topics are required"),
+    profilePicture: Yup.mixed().required("Profile picture is required"),
   }),
   Yup.object({}),
   Yup.object({}),
@@ -28,37 +75,61 @@ const validationSchema = [
 
 export const useTutorOnboardingLogic = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User>({ name: '', email: '', is_verified: false });
+  const dispatch = useAppDispatch();
+  const [user, setUser] = useState<User>({
+    name: "",
+    email: "",
+    is_verified: false,
+  });
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizLoading, setQuizLoading] = useState(false);
-  const [tempFormData, setTempFormData] = useState<OnboardingFormData | null>(null);
+  const [tempFormData, setTempFormData] = useState<FormData | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [showSubmit, setShowSubmit] = useState(true);
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [existingApplication, setExistingApplication] = useState<unknown>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [isFlowReady, setIsFlowReady] = useState(false);
+  const hasTriggeredLogoutRef = useRef(false);
 
   const [generateQuiz] = useGenerateQuizMutation();
   const [submitApplication] = useSubmitTutorApplicationMutation();
+  const [logoutUser] = useLogoutUserMutation();
   const { data: userData, isSuccess: userSuccess } = useGetUserQuery();
+    const logoutAndGoHome = useCallback(async () => {
+      if (hasTriggeredLogoutRef.current) return;
+      hasTriggeredLogoutRef.current = true;
+
+      try {
+        await logoutUser({}).unwrap();
+      } catch (error) {
+        // Even if server logout fails, clear client auth state to avoid redirect flicker.
+      } finally {
+        dispatch(logout());
+        router.replace("/");
+      }
+    }, [dispatch, logoutUser, router]);
+
   const {
     data: applicationData,
     isSuccess: applicationSuccess,
+    isLoading: applicationLoading,
+    isError: applicationError,
   } = useGetTutorApplicationStatusQuery();
 
-  const formik = useFormik<OnboardingFormData>({
+  const formik = useFormik<FormData>({
     enableReinitialize: true,
     initialValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      phoneNumber: '',
-      university: '',
-      degree: '',
-      gpa: '',
-      country: '',
-      subject: '',
+      name: user?.name || "",
+      email: user?.email || "",
+      phoneNumber: "",
+      university: "",
+      degree: "",
+      gpa: "",
+      country: "",
+      subject: "",
       topics: [],
       quizSummary: null,
       certificate: null,
@@ -67,31 +138,42 @@ export const useTutorOnboardingLogic = () => {
     validationSchema: validationSchema[currentStep - 1],
     onSubmit: async (values) => {
       setIsSubmitting(true);
-      setErrorMessage('');
+      setErrorMessage("");
 
       try {
         if (currentStep === 1) {
+          // Check if user can apply for this subject
           if (values.subject) {
             try {
               const canApplyResponse = await fetch(
                 `${
-                  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+                  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
                 }/api/tutor/can-apply/${encodeURIComponent(values.subject)}`,
-                { credentials: 'include', headers: { Accept: 'application/json' } }
+                {
+                  credentials: "include",
+                  headers: {
+                    Accept: "application/json",
+                  },
+                }
               );
+
               const canApplyData = await canApplyResponse.json();
+
               if (!canApplyData.canApply) {
                 setErrorMessage(canApplyData.message);
                 setIsSubmitting(false);
                 return;
               }
             } catch (error) {
-              console.error('Error checking application eligibility:', error);
+              console.error("Error checking application eligibility:", error);
+              // Continue with the process if check fails
             }
           }
 
           setTempFormData(values);
           setQuizLoading(true);
+
+          console.log("Generating quiz for:", values.subject, values.topics);
 
           try {
             const response = await generateQuiz({
@@ -103,16 +185,18 @@ export const useTutorOnboardingLogic = () => {
               setQuizQuestions(response.data.questions);
               setCurrentStep(2);
             } else {
-              throw new Error('Failed to generate quiz - no questions received');
+              throw new Error(
+                "Failed to generate quiz - no questions received"
+              );
             }
           } catch (quizError) {
-            console.error('Quiz generation error:', quizError);
-            setErrorMessage('Failed to generate quiz. Please try again.');
+            console.error("Quiz generation error:", quizError);
+            setErrorMessage("Failed to generate quiz. Please try again.");
           }
         }
       } catch (error) {
-        console.error('Error:', error);
-        setErrorMessage('An error occurred. Please try again.');
+        console.error("Error:", error);
+        setErrorMessage("An error occurred. Please try again.");
       } finally {
         setIsSubmitting(false);
         setQuizLoading(false);
@@ -121,13 +205,17 @@ export const useTutorOnboardingLogic = () => {
   });
 
   const handleFinalSubmit = async (quizSummary: QuizSummary) => {
-    if (applicationSubmitted || isSubmitting || !tempFormData) return;
+    if (applicationSubmitted || isSubmitting || !tempFormData) {
+      console.log("Application already submitted or in progress, skipping...");
+      return;
+    }
 
     try {
+      console.log("Starting application submission...");
       setIsSubmitting(true);
       setApplicationSubmitted(true);
 
-      const payload = {
+      const applicationData = {
         personalInfo: {
           name: tempFormData.name,
           email: tempFormData.email,
@@ -141,24 +229,28 @@ export const useTutorOnboardingLogic = () => {
           subject: tempFormData.subject,
           topics: tempFormData.topics,
         },
-        quizSummary,
+        quizSummary: quizSummary,
         documents: {
           certificate: tempFormData.certificate || undefined,
           profilePicture: tempFormData.profilePicture || undefined,
         },
       };
 
-      const response = await submitApplication(payload).unwrap();
+      console.log("Submitting application data:", applicationData);
 
-      if (response.status === 'success') {
+      const response = await submitApplication(applicationData).unwrap();
+
+      if (response.status === "success") {
+        console.log("Application submitted successfully:", response);
         setCurrentStep(3);
       } else {
-        throw new Error(response.message || 'Failed to submit application');
+        throw new Error(response.message || "Failed to submit application");
       }
-    } catch (error: unknown) {
-      console.error('Failed to submit application:', error);
-      const apiError = error as { data?: { message?: string }; message?: string };
-      setErrorMessage(apiError.data?.message || apiError.message || 'Failed to submit application');
+    } catch (error: any) {
+      console.error("Failed to submit application:", error);
+      setErrorMessage(
+        error.data?.message || error.message || "Failed to submit application"
+      );
       setApplicationSubmitted(false);
     } finally {
       setIsSubmitting(false);
@@ -166,24 +258,42 @@ export const useTutorOnboardingLogic = () => {
   };
 
   useEffect(() => {
-    if (userData && userSuccess) setUser(userData.user);
+    if (userData && userSuccess) {
+      setUser(userData.user);
+    }
   }, [userData, userSuccess]);
 
   useEffect(() => {
     if (applicationData && applicationSuccess) {
+      if (applicationData.application?.applicationStatus === "approved") {
+        router.replace("/user/dashboard");
+        return;
+      }
+
       setExistingApplication(applicationData.application);
+      // If user has an existing application, show approval summary first
       setCurrentStep(3);
     }
-  }, [applicationData, applicationSuccess]);
+  }, [applicationData, applicationSuccess, router]);
+
+  useEffect(() => {
+    if (applicationLoading) return;
+
+    if (applicationSuccess || applicationError) {
+      setIsFlowReady(true);
+    }
+  }, [applicationLoading, applicationSuccess, applicationError]);
 
   useEffect(() => {
     if (currentStep === 3 && countdown > 0) {
-      const timer = setTimeout(() => setCountdown((n) => n - 1), 1000);
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
       return () => clearTimeout(timer);
     } else if (currentStep === 3 && countdown === 0) {
-      router.push('/user/dashboard');
+      logoutAndGoHome();
     }
-  }, [currentStep, countdown, router]);
+  }, [currentStep, countdown, logoutAndGoHome]);
 
   return {
     formik,
@@ -197,7 +307,9 @@ export const useTutorOnboardingLogic = () => {
     errorMessage,
     setErrorMessage,
     existingApplication,
+    isFlowReady,
+    logoutAndGoHome,
     handleFinalSubmit,
-    router,
+    router
   };
 };
