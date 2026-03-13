@@ -1,5 +1,5 @@
 'use client'
-import { useRouter } from 'next/navigation'
+import { useRouter } from "nextjs-toploader/app";
 import { useLogoutUserMutation } from '@/lib/services/auth'
 import { 
   LayoutGrid, MessageSquare, Bell, CalendarDays, Users, Settings, LogOut, 

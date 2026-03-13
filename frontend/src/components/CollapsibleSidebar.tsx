@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from "next/image"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "nextjs-toploader/app";
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
 import Link from 'next/link'
 import { CopyMinus, Menu, LogOut } from 'lucide-react'

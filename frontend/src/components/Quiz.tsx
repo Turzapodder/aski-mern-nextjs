@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, Check, X, AlertCircle } from 'lucide-react';
+import { Clock, Check } from 'lucide-react';
 
 interface QuizProps {
   subject: string;
@@ -13,23 +13,15 @@ interface QuizProps {
     correctAnswer: number;
     topic: string;
   }[];
+  isSubmitting?: boolean;
   onComplete: (quizSummary: any) => void;
 }
 
-export default function Quiz({ subject, topics, questions, onComplete }: QuizProps) {
+export default function Quiz({ subject, topics, questions, isSubmitting = false, onComplete }: QuizProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes in seconds
-  const [quizCompleted, setQuizCompleted] = useState(false);
-  const [quizSummary, setQuizSummary] = useState<{
-    score: number;
-    totalQuestions: number;
-    answeredQuestions: number;
-    correctAnswers: number;
-    incorrectAnswers: number;
-    topicPerformance: Record<string, { total: number; correct: number }>;
-    timeSpent: number;
-  } | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const handleAnswer = (optionIndex: number) => {
     const newAnswers = [...answers];
@@ -38,7 +30,11 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
   };
 
   const handleSubmit = useCallback(() => {
-    setQuizCompleted(true);
+    if (hasSubmitted || isSubmitting) {
+      return;
+    }
+
+    setHasSubmitted(true);
     
     // Calculate score
     const score = answers.reduce((acc, answer, index) => {
@@ -83,23 +79,22 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
       answers: detailedAnswers
     };
     
-    setQuizSummary(summary);
     console.log('Generated quiz summary:', summary);
     
     // Call the onComplete callback with the summary object directly
     onComplete(summary);
-  }, [answers, onComplete, questions, timeLeft]);
+  }, [answers, hasSubmitted, isSubmitting, onComplete, questions, timeLeft]);
 
   useEffect(() => {
-    if (timeLeft > 0 && !quizCompleted) {
+    if (timeLeft > 0 && !hasSubmitted && !isSubmitting) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 && !hasSubmitted) {
       handleSubmit();
     }
-  }, [timeLeft, quizCompleted, handleSubmit]);
+  }, [timeLeft, hasSubmitted, isSubmitting, handleSubmit]);
 
   const handleNavigation = (index: number) => {
     setCurrentQuestion(index);
@@ -119,116 +114,6 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-gray-600">No questions available.</p>
-      </div>
-    );
-  }
-
-  // Show quiz summary if completed
-  if (quizCompleted && quizSummary) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-6">Quiz Summary</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Performance Overview</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Score:</span>
-                <span className="font-medium">{quizSummary.score} / {quizSummary.totalQuestions}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Percentage:</span>
-                <span className="font-medium">
-                  {Math.round((quizSummary.score / quizSummary.totalQuestions) * 100)}%
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Questions Answered:</span>
-                <span className="font-medium">{quizSummary.answeredQuestions} / {quizSummary.totalQuestions}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Correct Answers:</span>
-                <span className="font-medium text-primary-300">{quizSummary.correctAnswers}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Incorrect Answers:</span>
-                <span className="font-medium text-red-600">{quizSummary.incorrectAnswers}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Time Spent:</span>
-                <span className="font-medium">{formatTime(quizSummary.timeSpent)}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Topic Performance</h3>
-            <div className="space-y-3">
-              {Object.entries(quizSummary.topicPerformance).map(([topic, data]) => (
-                <div key={topic} className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{topic}</span>
-                    <span className="text-sm">
-                      {data.correct} / {data.total} ({Math.round((data.correct / data.total) * 100)}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        (data.correct / data.total) >= 0.7 ? 'bg-primary-300' : 
-                        (data.correct / data.total) >= 0.4 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${(data.correct / data.total) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold mb-3">Question Analysis</h3>
-          <div className="space-y-4">
-            {questions.map((question, index) => (
-              <div key={index} className="border-b pb-3 last:border-b-0">
-                <div className="flex items-start">
-                  <div className="mr-2 mt-1">
-                    {answers[index] === undefined ? (
-                      <AlertCircle className="h-5 w-5 text-yellow-500" />
-                    ) : answers[index] === question.correctAnswer ? (
-                      <Check className="h-5 w-5 text-primary-300" />
-                    ) : (
-                      <X className="h-5 w-5 text-red-500" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">Question {index + 1}: {question.question}</p>
-                    <div className="mt-1 text-sm">
-                      {answers[index] === undefined ? (
-                        <span className="text-yellow-600">Not answered</span>
-                      ) : answers[index] === question.correctAnswer ? (
-                        <span className="text-primary-300">Correct answer: {question.options[question.correctAnswer]}</span>
-                      ) : (
-                        <div className="text-red-600">
-                          <div>Your answer: {question.options[answers[index]]}</div>
-                          <div>Correct answer: {question.options[question.correctAnswer]}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">
-            This summary has been saved for admin review. Thank you for completing the quiz.
-          </p>
-        </div>
       </div>
     );
   }
@@ -290,10 +175,11 @@ export default function Quiz({ subject, topics, questions, onComplete }: QuizPro
           {currentQuestion === questions.length - 1 && (
             <button
               onClick={handleSubmit}
+              disabled={isSubmitting || hasSubmitted}
               className="w-full px-6 py-2 rounded-full bg-primary-300 text-white"
               type="button"
             >
-              Submit Answer
+              {isSubmitting || hasSubmitted ? 'Submitting...' : 'Submit Answer'}
             </button>
           )}
         </div>

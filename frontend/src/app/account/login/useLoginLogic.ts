@@ -1,6 +1,7 @@
 import { useFormik } from "formik";
 import { loginSchema } from "@/validation/schemas";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useMemo, useState } from "react";
 import { useLoginUserMutation } from "@/lib/services/auth";
 import { useConvertFormToAssignmentMutation } from "@/lib/services/student";

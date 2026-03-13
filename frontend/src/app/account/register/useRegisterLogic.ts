@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useFormik } from 'formik';
 import { registerSchema } from '@/validation/schemas'
 import { useCreateUserMutation } from "@/lib/services/auth";
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useRouter } from "nextjs-toploader/app";
 import { useGetStudentFormQuery, useConvertFormToAssignmentMutation } from '@/lib/services/student'
 import { apiOrigin } from "@/lib/apiConfig";
 

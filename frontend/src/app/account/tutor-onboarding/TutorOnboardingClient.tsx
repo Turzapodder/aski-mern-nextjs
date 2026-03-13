@@ -55,8 +55,9 @@ export const TutorOnboardingClient = () => {
     errorMessage,
     setErrorMessage,
     existingApplication,
+    isFlowReady,
+    logoutAndGoHome,
     handleFinalSubmit,
-    router,
   } = useTutorOnboardingLogic();
 
   const countryList = Object.values(countries)
@@ -466,6 +467,7 @@ export const TutorOnboardingClient = () => {
               subject={formik.values.subject}
               topics={formik.values.topics}
               questions={quizQuestions}
+              isSubmitting={isSubmitting || applicationSubmitted}
               onComplete={(quizSummary: QuizSummary) => {
                 console.log("Quiz completed with summary:", quizSummary);
                 if (!isSubmitting && !applicationSubmitted) {
@@ -537,6 +539,22 @@ export const TutorOnboardingClient = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
+                      <p className="text-sm text-gray-600">Applicant Name</p>
+                      <p className="font-medium">
+                        {existingApplication.personalInfo?.name ||
+                          existingApplication.user?.name ||
+                          "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Applicant Email</p>
+                      <p className="font-medium break-all">
+                        {existingApplication.personalInfo?.email ||
+                          existingApplication.user?.email ||
+                          "N/A"}
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-sm text-gray-600">Subject</p>
                       <p className="font-medium">
                         {existingApplication.academicInfo?.subject || "N/A"}
@@ -594,10 +612,10 @@ export const TutorOnboardingClient = () => {
 
                   <button
                     type="button"
-                    onClick={() => router.push("/user/dashboard")}
+                    onClick={logoutAndGoHome}
                     className="px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors"
                   >
-                    Go to Dashboard
+                    Go to Home Page
                   </button>
                 </div>
               </div>
@@ -638,7 +656,7 @@ export const TutorOnboardingClient = () => {
             <div className="mt-4">
               <button
                 type="button"
-                onClick={() => router.push("/user/dashboard")}
+                onClick={logoutAndGoHome}
                 className="px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-black transition-colors"
               >
                 Check your inbox{" "}
@@ -654,6 +672,15 @@ export const TutorOnboardingClient = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8">
+      {!isFlowReady ? (
+        <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden p-8">
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-5 w-72" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      ) : (
       <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:min-h-[760px]">
           <div className="w-full lg:w-80 bg-gray-50 p-4 sm:p-6 lg:p-8 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
@@ -723,6 +750,7 @@ export const TutorOnboardingClient = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

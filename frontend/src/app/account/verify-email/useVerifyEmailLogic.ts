@@ -1,7 +1,8 @@
 import { useFormik } from 'formik';
 import { verifyEmailSchema } from '@/validation/schemas';
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useVerifyEmailMutation } from "@/lib/services/auth";
 import { useAppDispatch } from "@/lib/hooks";
 import { setCredentials } from "@/lib/features/auth/authSlice";

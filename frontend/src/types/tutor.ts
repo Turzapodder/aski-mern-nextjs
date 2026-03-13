@@ -31,7 +31,7 @@ export interface TutorResponse {
   status: string;
   message: string;
   data?: any;
-  application?: string;
+  application?: any;
 }
 
 export interface CanApplyResponse {

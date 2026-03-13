@@ -1,12 +1,18 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import { useGetUserQuery, useGenerateQuizMutation } from "@/lib/services/auth";
+import {
+  useGetUserQuery,
+  useGenerateQuizMutation,
+  useLogoutUserMutation,
+} from "@/lib/services/auth";
 import {
   useSubmitTutorApplicationMutation,
   useGetTutorApplicationStatusQuery,
 } from "@/lib/services/tutor";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
+import { useAppDispatch } from "@/lib/hooks";
+import { logout } from "@/lib/features/auth/authSlice";
 
 export interface User {
   name: string;
@@ -69,6 +75,7 @@ export const validationSchema = [
 
 export const useTutorOnboardingLogic = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [user, setUser] = useState<User>({
     name: "",
     email: "",
@@ -84,14 +91,32 @@ export const useTutorOnboardingLogic = () => {
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [isFlowReady, setIsFlowReady] = useState(false);
+  const hasTriggeredLogoutRef = useRef(false);
 
   const [generateQuiz] = useGenerateQuizMutation();
   const [submitApplication] = useSubmitTutorApplicationMutation();
+  const [logoutUser] = useLogoutUserMutation();
   const { data: userData, isSuccess: userSuccess } = useGetUserQuery();
+    const logoutAndGoHome = useCallback(async () => {
+      if (hasTriggeredLogoutRef.current) return;
+      hasTriggeredLogoutRef.current = true;
+
+      try {
+        await logoutUser({}).unwrap();
+      } catch (error) {
+        // Even if server logout fails, clear client auth state to avoid redirect flicker.
+      } finally {
+        dispatch(logout());
+        router.replace("/");
+      }
+    }, [dispatch, logoutUser, router]);
+
   const {
     data: applicationData,
     isSuccess: applicationSuccess,
     isLoading: applicationLoading,
+    isError: applicationError,
   } = useGetTutorApplicationStatusQuery();
 
   const formik = useFormik<FormData>({
@@ -240,11 +265,24 @@ export const useTutorOnboardingLogic = () => {
 
   useEffect(() => {
     if (applicationData && applicationSuccess) {
+      if (applicationData.application?.applicationStatus === "approved") {
+        router.replace("/user/dashboard");
+        return;
+      }
+
       setExistingApplication(applicationData.application);
       // If user has an existing application, show approval summary first
       setCurrentStep(3);
     }
-  }, [applicationData, applicationSuccess]);
+  }, [applicationData, applicationSuccess, router]);
+
+  useEffect(() => {
+    if (applicationLoading) return;
+
+    if (applicationSuccess || applicationError) {
+      setIsFlowReady(true);
+    }
+  }, [applicationLoading, applicationSuccess, applicationError]);
 
   useEffect(() => {
     if (currentStep === 3 && countdown > 0) {
@@ -253,9 +291,9 @@ export const useTutorOnboardingLogic = () => {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (currentStep === 3 && countdown === 0) {
-      router.push("/user/dashboard");
+      logoutAndGoHome();
     }
-  }, [currentStep, countdown, router]);
+  }, [currentStep, countdown, logoutAndGoHome]);
 
   return {
     formik,
@@ -269,6 +307,8 @@ export const useTutorOnboardingLogic = () => {
     errorMessage,
     setErrorMessage,
     existingApplication,
+    isFlowReady,
+    logoutAndGoHome,
     handleFinalSubmit,
     router
   };
