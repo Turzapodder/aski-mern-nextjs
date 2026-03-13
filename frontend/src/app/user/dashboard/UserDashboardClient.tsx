@@ -2,6 +2,7 @@
 
 import React from 'react'
 import PostAssignmentModal from '@/components/PostAssignmentModal'
+import { DashboardPageSkeleton } from '@/components/dashboard/DashboardSkeletons'
 import {
   ChevronLeft, ChevronRight, Briefcase
 } from 'lucide-react'
@@ -20,6 +21,10 @@ export const UserDashboardClient = () => {
     prevMonth,
     nextMonth
   } = useUserDashboardLogic();
+
+  if (!userData?.user) {
+    return <DashboardPageSkeleton />;
+  }
 
   const today = new Date();
 
@@ -107,8 +112,8 @@ export const UserDashboardClient = () => {
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-3">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="py-2 font-medium">{day}</div>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                <div key={`weekday-${index}-${day}`} className="py-2 font-medium">{day}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">

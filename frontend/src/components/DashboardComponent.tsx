@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import UploadProjectForm from "./UploadProjectForm";
+import { StudentDashboardContentSkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useGetLatestSubmissionStatusByAssignmentsQuery } from "@/lib/services/submissions";
@@ -260,6 +261,10 @@ const DashboardComponent = () => {
   const ongoingAssignments = assignments.filter(a => ['assigned', 'submitted', 'in_progress', 'submission_pending', 'revision_requested'].includes(a.status));
   const completedAssignments = assignments.filter(a => a.status === 'completed');
   const pendingAssignments = assignments.filter(a => ['pending', 'draft', 'created', 'proposal_received', 'proposal_accepted'].includes(a.status));
+
+  if (isLoading) {
+    return <StudentDashboardContentSkeleton />;
+  }
 
 
   return (

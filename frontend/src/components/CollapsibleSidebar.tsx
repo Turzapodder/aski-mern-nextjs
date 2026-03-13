@@ -1,5 +1,4 @@
 'use client'
-import { useState } from 'react'
 import Image from "next/image"
 import { useRouter } from "nextjs-toploader/app";
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth'
@@ -64,7 +63,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     ? [
       { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
       { name: 'My Profile', icon: '/assets/icons/tutor.png', href: userData?.user?._id ? `/user/tutors/tutor-profile/${userData.user._id}` : '#', active: activeItem === 'tutor-profile' },
-      { name: 'All Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
+      { name: 'All Tasks', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
       { name: 'Ongoing Projects', icon: '/assets/icons/folder-icon.png', href: '/user/projects', active: activeItem === 'projects' },
       { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
       { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' },
@@ -73,7 +72,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
     : [
       { name: 'Home', icon: '/assets/icons/dashboard.png', href: '/user/dashboard', active: activeItem === 'dashboard' },
       { name: 'Tutors', icon: '/assets/icons/tutor.png', href: '/user/tutors', active: activeItem === 'tutors' },
-      { name: 'My Assignments', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
+      { name: 'My Tasks', icon: '/assets/icons/tasks.png', href: '/user/assignments', active: activeItem === 'assignments' },
       { name: 'Calendar', icon: '/assets/icons/calender-icon.png', href: '/user/calendar', active: activeItem === 'calendar' },
       { name: 'Inbox', icon: '/assets/icons/inbox.png', href: '/user/messages', active: activeItem === 'messages' }
     ]
@@ -94,7 +93,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
       <div className="p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center space-x-2">
+            <Link href="/user/dashboard" className="flex items-center space-x-2">
               <Image
                 src="/assets/main-logo.svg"
                 alt="logo"
@@ -103,7 +102,7 @@ const CollapsibleSidebar = ({ activeItem, onToggle }: CollapsibleSidebarProps) =
                 className={`min-w-[30px] min-h-[30px] w-[120px] mx-[10px] object-contain ${!isCollapsed && "mr-3"
                   }`}
               />
-            </div>
+            </Link>
           )}
           <button
             onClick={handleToggle}

@@ -16,6 +16,7 @@ import {
 import { useGetAssignmentsQuery, Assignment } from "@/lib/services/assignments";
 import { format } from "date-fns";
 import useCurrency from "@/lib/hooks/useCurrency";
+import { TutorDashboardContentSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
 const TutorDashboard = ({ user }: { user: any }) => {
   // 1. Fetch Assignments
@@ -39,6 +40,10 @@ const TutorDashboard = ({ user }: { user: any }) => {
   const ongoingProjects = ongoingData?.data || [];
   const availableAssignments = availableData?.data || [];
   const { format: formatAmount } = useCurrency();
+
+  if (ongoingLoading || availableLoading) {
+    return <TutorDashboardContentSkeleton />;
+  }
 
   const activeBudgetTotal = ongoingProjects.reduce(
     (sum, assignment) => sum + (assignment.budget ?? assignment.estimatedCost ?? 0),
