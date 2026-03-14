@@ -17,7 +17,13 @@ interface QuizProps {
   onComplete: (quizSummary: any) => void;
 }
 
-export default function Quiz({ subject, topics, questions, isSubmitting = false, onComplete }: QuizProps) {
+export default function Quiz({
+  subject,
+  topics,
+  questions,
+  isSubmitting = false,
+  onComplete,
+}: QuizProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes in seconds
@@ -35,28 +41,28 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
     }
 
     setHasSubmitted(true);
-    
+
     // Calculate score
     const score = answers.reduce((acc, answer, index) => {
       return acc + (answer === questions[index].correctAnswer ? 1 : 0);
     }, 0);
-    
+
     // Calculate topic performance
     const topicPerformance: Record<string, { total: number; correct: number }> = {};
-    
+
     questions.forEach((question, index) => {
       const topic = question.topic;
       if (!topicPerformance[topic]) {
         topicPerformance[topic] = { total: 0, correct: 0 };
       }
-      
+
       topicPerformance[topic].total += 1;
-      
+
       if (answers[index] !== undefined && answers[index] === question.correctAnswer) {
         topicPerformance[topic].correct += 1;
       }
     });
-    
+
     // Generate detailed answers array with questions and options
     const detailedAnswers = questions.map((question, index) => ({
       questionId: question.id,
@@ -64,23 +70,25 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
       options: question.options,
       selectedAnswer: answers[index] !== undefined ? answers[index] : null,
       correctAnswer: question.correctAnswer,
-      topic: question.topic
+      topic: question.topic,
     }));
 
     // Generate summary
     const summary = {
       score,
       totalQuestions: questions.length,
-      answeredQuestions: answers.filter(a => a !== undefined).length,
+      answeredQuestions: answers.filter((a) => a !== undefined).length,
       correctAnswers: score,
-      incorrectAnswers: answers.filter((a, i) => a !== undefined && a !== questions[i].correctAnswer).length,
+      incorrectAnswers: answers.filter(
+        (a, i) => a !== undefined && a !== questions[i].correctAnswer
+      ).length,
       topicPerformance,
       timeSpent: 3600 - timeLeft,
-      answers: detailedAnswers
+      answers: detailedAnswers,
     };
-    
+
     console.log('Generated quiz summary:', summary);
-    
+
     // Call the onComplete callback with the summary object directly
     onComplete(summary);
   }, [answers, hasSubmitted, isSubmitting, onComplete, questions, timeLeft]);
@@ -121,36 +129,38 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
   return (
     <div className="flex mt-10">
       <div className="flex-1 pr-6 space-y-6 w-[550px] flex flex-col justify-between">
-        <div className='mt-10'>
-        <h2 className="text-xl font-semibold">{questions[currentQuestion].question}</h2>
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold">{questions[currentQuestion].question}</h2>
 
-        <div className="space-y-3 mt-4">
-          {questions[currentQuestion].options.map((option, index) => (
-            <div
-              key={index}
-              onClick={() => handleAnswer(index)}
-              className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                answers[currentQuestion] === index
-                  ? 'border-primary-300'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center">
-                <span className={`w-8 h-8 flex items-center justify-center rounded-md mr-3 ${
-                  answers[currentQuestion] === index ? 'bg-primary-100' : 'bg-gray-100'
-                }`}>
-                  {String.fromCharCode(65 + index)}
-                </span>
-                {option}
+          <div className="space-y-3 mt-4">
+            {questions[currentQuestion].options.map((option, index) => (
+              <div
+                key={index}
+                onClick={() => handleAnswer(index)}
+                className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
+                  answers[currentQuestion] === index
+                    ? 'border-primary-300'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center">
+                  <span
+                    className={`w-8 h-8 flex items-center justify-center rounded-md mr-3 ${
+                      answers[currentQuestion] === index ? 'bg-primary-100' : 'bg-gray-100'
+                    }`}
+                  >
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  {option}
+                </div>
+                {answers[currentQuestion] === index && (
+                  <div className="w-4 h-4 rounded-full bg-primary-300 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
               </div>
-              {answers[currentQuestion] === index && (
-               <div className="w-4 h-4 rounded-full bg-primary-300 flex items-center justify-center">
-               <Check className="h-3 w-3 text-white" />
-             </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         </div>
         <div className="flex flex-col space-y-3 mt-6">
           <div className="flex justify-between items-center">
@@ -165,13 +175,13 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
             <button
               onClick={() => handleNavigation(currentQuestion + 1)}
               disabled={currentQuestion === questions.length - 1}
-              className={`px-6 py-2 rounded-full ${currentQuestion===questions.length-1? 'bg-gray-100 text-gray-600': 'bg-primary-300 text-white'}  disabled:opacity-50`}
+              className={`px-6 py-2 rounded-full ${currentQuestion === questions.length - 1 ? 'bg-gray-100 text-gray-600' : 'bg-primary-300 text-white'}  disabled:opacity-50`}
               type="button"
             >
               Next
             </button>
           </div>
-          
+
           {currentQuestion === questions.length - 1 && (
             <button
               onClick={handleSubmit}
@@ -222,14 +232,19 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
         <div>
           <h3 className="font-medium mb-3 flex items-center justify-between">
             Quiz Questions List
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </h3>
           <div className="max-h-96 overflow-y-auto space-y-2 pr-[10px]">
@@ -238,8 +253,8 @@ export default function Quiz({ subject, topics, questions, isSubmitting = false,
                 key={index}
                 onClick={() => handleNavigation(index)}
                 className={`p-3 rounded-full border flex items-center cursor-pointer ${
-                  currentQuestion === index 
-                    ? 'bg-white border-gray-300 font-medium' 
+                  currentQuestion === index
+                    ? 'bg-white border-gray-300 font-medium'
                     : answers[index] !== undefined
                       ? 'bg-primary-100 border-primary-200 text-primary-700'
                       : 'bg-gray-50 border-gray-200 text-gray-500'

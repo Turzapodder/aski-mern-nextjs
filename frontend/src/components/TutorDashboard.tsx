@@ -16,6 +16,7 @@ import {
 import { useGetAssignmentsQuery, Assignment } from '@/lib/services/assignments';
 import { format } from 'date-fns';
 import useCurrency from '@/lib/hooks/useCurrency';
+import { TutorDashboardContentSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
 const TutorDashboard = ({ user }: { user: any }) => {
   // 1. Fetch Assignments

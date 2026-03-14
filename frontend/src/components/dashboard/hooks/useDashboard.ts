@@ -8,15 +8,11 @@ export function useDashboard() {
 
   const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
 
-  const assignmentIds = useMemo(
-    () => assignments.map((a) => a._id),
-    [assignments]
-  );
+  const assignmentIds = useMemo(() => assignments.map((a) => a._id), [assignments]);
 
-  const { data: latestStatusesData } =
-    useGetLatestSubmissionStatusByAssignmentsQuery(
-      assignmentIds.length ? { assignmentIds } : skipToken
-    );
+  const { data: latestStatusesData } = useGetLatestSubmissionStatusByAssignmentsQuery(
+    assignmentIds.length ? { assignmentIds } : skipToken
+  );
 
   const latestStatuses = latestStatusesData?.data || {};
 

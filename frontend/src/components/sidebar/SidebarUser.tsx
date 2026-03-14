@@ -13,10 +13,7 @@ export default function SidebarUser({ isCollapsed, user, onLogout }: Props) {
     <div className="p-4 border-t border-gray-200">
       {!isCollapsed ? (
         <div className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-          <Link
-            href="/user/profile"
-            className="flex items-center space-x-3 overflow-hidden flex-1"
-          >
+          <Link href="/user/profile" className="flex items-center space-x-3 overflow-hidden flex-1">
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {user?.profilePicture ? (
                 <Image
@@ -34,9 +31,7 @@ export default function SidebarUser({ isCollapsed, user, onLogout }: Props) {
             </div>
 
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold truncate">
-                {user?.name || 'User'}
-              </span>
+              <span className="text-sm font-bold truncate">{user?.name || 'User'}</span>
               <span className="text-xs text-gray-500">Visit Profile</span>
             </div>
           </Link>

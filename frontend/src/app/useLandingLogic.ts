@@ -1,4 +1,4 @@
-import { useRouter } from "nextjs-toploader/app";
+import { useRouter } from 'nextjs-toploader/app';
 import { useAppSelector } from '@/lib/hooks';
 
 export const useLandingLogic = () => {

@@ -20,10 +20,7 @@ export default function SidebarHeader({ isCollapsed, onToggle }: Props) {
           />
         )}
 
-        <button
-          onClick={onToggle}
-          className="p-1 rounded-lg hover:bg-gray-200 transition-colors"
-        >
+        <button onClick={onToggle} className="p-1 rounded-lg hover:bg-gray-200 transition-colors">
           {isCollapsed ? <Menu size={20} /> : <CopyMinus size={20} />}
         </button>
       </div>

@@ -65,4 +65,4 @@ export default function TopStats({ assignments }: { assignments: Assignment[] })
       ))}
     </div>
   );
-};
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from "nextjs-toploader/app";
+import { useRouter } from 'nextjs-toploader/app';
 import { useLogoutUserMutation, useGetUserQuery } from '@/lib/services/auth';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { toggleSidebar } from '@/lib/features/ui/uiSlice';
@@ -55,11 +55,7 @@ export default function MainSidebar({ activeItem, onToggle }: Props) {
 
       <SidebarMenu items={items} isCollapsed={isCollapsed} />
 
-      <SidebarUser
-        isCollapsed={isCollapsed}
-        user={userData?.user}
-        onLogout={handleLogout}
-      />
+      <SidebarUser isCollapsed={isCollapsed} user={userData?.user} onLogout={handleLogout} />
     </aside>
   );
 }

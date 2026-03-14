@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Menu, X } from 'lucide-react';
 
 export const LandingNavbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -9,10 +9,10 @@ export const LandingNavbar = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const navLinks = [
-    { name: "Find Tutors", href: "#" },
-    { name: "How it Works", href: "#" },
-    { name: "Success Stories", href: "#" },
-    { name: "Resources", href: "#" },
+    { name: 'Find Tutors', href: '#' },
+    { name: 'How it Works', href: '#' },
+    { name: 'Success Stories', href: '#' },
+    { name: 'Resources', href: '#' },
   ];
 
   return (
