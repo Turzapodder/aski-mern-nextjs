@@ -1,6 +1,6 @@
-import React from "react";
-import Link from "next/link";
-import Image from "next/image";
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export const LandingFooter = () => {
   return (
@@ -8,9 +8,7 @@ export const LandingFooter = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row justify-between items-start gap-12 mb-16">
           <div className="max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-6">
-              Join Aski and excel in your studies today.
-            </h2>
+            <h2 className="text-2xl font-bold mb-6">Join Aski and excel in your studies today.</h2>
             <div className="flex items-center gap-2 bg-gray-900 p-1.5 rounded-full border border-gray-800">
               <input
                 type="email"
@@ -26,64 +24,37 @@ export const LandingFooter = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-16 text-sm text-gray-400 w-full lg:w-auto">
             <div className="space-y-4">
               <h4 className="text-white font-bold">Platform</h4>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Find Tutors
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Post Assignment
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 How it Works
               </Link>
             </div>
             <div className="space-y-4">
               <h4 className="text-white font-bold">Company</h4>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 About Us
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Careers
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Blog
               </Link>
             </div>
             <div className="space-y-4">
               <h4 className="text-white font-bold">Support</h4>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Help Center
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Contact Us
               </Link>
-              <Link
-                href="#"
-                className="block hover:text-white transition-colors"
-              >
+              <Link href="#" className="block hover:text-white transition-colors">
                 Terms
               </Link>
             </div>

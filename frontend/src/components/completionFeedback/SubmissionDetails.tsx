@@ -13,7 +13,6 @@ export default function SubmissionDetails({ submission }: any) {
 
   return (
     <div className="space-y-4">
-
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Files</p>
 
@@ -59,9 +58,7 @@ export default function SubmissionDetails({ submission }: any) {
       {submissionNotes && (
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">Tutor notes</p>
-          <p className="text-sm text-gray-600 whitespace-pre-line">
-            {submissionNotes}
-          </p>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{submissionNotes}</p>
         </div>
       )}
     </div>

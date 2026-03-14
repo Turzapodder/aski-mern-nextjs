@@ -18,9 +18,7 @@ export default function SidebarMenu({ items, isCollapsed }: Props) {
     <nav className="flex-1 overflow-hidden p-4 space-y-6">
       <div>
         {!isCollapsed && (
-          <h3 className="text-sm text-black uppercase tracking-wider mb-3">
-            MAIN MENU
-          </h3>
+          <h3 className="text-sm text-black uppercase tracking-wider mb-3">MAIN MENU</h3>
         )}
 
         <ul className="space-y-1">

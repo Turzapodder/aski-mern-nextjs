@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import Image from "next/image";
+import Image from 'next/image';
 import {
   UserRoundPen,
   BookOpenCheck,
@@ -10,34 +10,32 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-} from "lucide-react";
-import MultiSelect from "@/components/MultiSelect";
-import Quiz from "@/components/Quiz";
-import { Skeleton } from "@/components/ui/skeleton";
-import { subjectTopics } from "@/constants/subjectTopics";
-import { countries } from "countries-list";
-import {
-  useTutorOnboardingLogic,
-  QuizSummary,
-} from "./useTutorOnboardingLogic";
+} from 'lucide-react';
+import MultiSelect from '@/components/MultiSelect';
+import Quiz from '@/components/Quiz';
+import { Skeleton } from '@/components/ui/skeleton';
+import { subjectTopics } from '@/constants/subjectTopics';
+import { countries } from 'countries-list';
+import { useTutorOnboardingLogic } from './hooks/useTutorOnboardingLogic';
+import { QuizSummary } from '@/types/quiz';
 
 const steps = [
   {
     id: 1,
-    title: "Personal Info",
-    description: "Tell us about yourself",
+    title: 'Personal Info',
+    description: 'Tell us about yourself',
     icon: UserRoundPen,
   },
   {
     id: 2,
-    title: "Take a little Quiz",
-    description: "Prove how smart you are",
+    title: 'Take a little Quiz',
+    description: 'Prove how smart you are',
     icon: BookOpenCheck,
   },
   {
     id: 3,
-    title: "Approval Summary",
-    description: "You are almost done!",
+    title: 'Approval Summary',
+    description: 'You are almost done!',
     icon: CircleCheck,
   },
 ];
@@ -83,9 +81,7 @@ export const TutorOnboardingClient = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full name*
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full name*</label>
                   <input
                     type="text"
                     name="name"
@@ -95,16 +91,12 @@ export const TutorOnboardingClient = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                   {formik.touched.name && formik.errors.name && (
-                    <div className="text-red-500 text-sm mt-1">
-                      {formik.errors.name}
-                    </div>
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.name}</div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email*
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
                   <input
                     type="email"
                     name="email"
@@ -114,9 +106,7 @@ export const TutorOnboardingClient = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                   {formik.touched.email && formik.errors.email && (
-                    <div className="text-red-500 text-sm mt-1">
-                      {formik.errors.email}
-                    </div>
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.email}</div>
                   )}
                 </div>
 
@@ -133,9 +123,7 @@ export const TutorOnboardingClient = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                   {formik.touched.phoneNumber && formik.errors.phoneNumber && (
-                    <div className="text-red-500 text-sm mt-1">
-                      {formik.errors.phoneNumber}
-                    </div>
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.phoneNumber}</div>
                   )}
                 </div>
               </div>
@@ -146,9 +134,7 @@ export const TutorOnboardingClient = () => {
                     <div className="flex flex-col items-center space-y-3">
                       <div className="relative w-32 h-32 rounded-full overflow-hidden bg-yellow-400">
                         <Image
-                          src={URL.createObjectURL(
-                            formik.values.profilePicture as Blob,
-                          )}
+                          src={URL.createObjectURL(formik.values.profilePicture as Blob)}
                           alt="Profile"
                           fill
                           sizes="128px"
@@ -160,7 +146,7 @@ export const TutorOnboardingClient = () => {
                         type="button"
                         onClick={() => {
                           const fileInput = document.getElementById(
-                            "profile-upload",
+                            'profile-upload'
                           ) as HTMLInputElement;
                           if (fileInput) fileInput.click();
                         }}
@@ -193,7 +179,7 @@ export const TutorOnboardingClient = () => {
                         type="button"
                         onClick={() => {
                           const fileInput = document.getElementById(
-                            "profile-upload",
+                            'profile-upload'
                           ) as HTMLInputElement;
                           if (fileInput) fileInput.click();
                         }}
@@ -217,13 +203,10 @@ export const TutorOnboardingClient = () => {
                     onChange={(event) => {
                       const file = event.currentTarget.files?.[0];
                       if (file) {
-                        if (
-                          file.type === "image/jpeg" ||
-                          file.type === "image/png"
-                        ) {
-                          formik.setFieldValue("profilePicture", file);
+                        if (file.type === 'image/jpeg' || file.type === 'image/png') {
+                          formik.setFieldValue('profilePicture', file);
                         } else {
-                          alert("Only JPG or PNG files are allowed");
+                          alert('Only JPG or PNG files are allowed');
                         }
                       }
                     }}
@@ -245,9 +228,7 @@ export const TutorOnboardingClient = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
               {formik.touched.university && formik.errors.university && (
-                <div className="text-red-500 text-sm mt-1">
-                  {formik.errors.university}
-                </div>
+                <div className="text-red-500 text-sm mt-1">{formik.errors.university}</div>
               )}
             </div>
 
@@ -265,9 +246,7 @@ export const TutorOnboardingClient = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 {formik.touched.degree && formik.errors.degree && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {formik.errors.degree}
-                  </div>
+                  <div className="text-red-500 text-sm mt-1">{formik.errors.degree}</div>
                 )}
               </div>
               <div>
@@ -283,17 +262,13 @@ export const TutorOnboardingClient = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 {formik.touched.gpa && formik.errors.gpa && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {formik.errors.gpa}
-                  </div>
+                  <div className="text-red-500 text-sm mt-1">{formik.errors.gpa}</div>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Country*
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Country*</label>
               <select
                 name="country"
                 onChange={(e) => {
@@ -311,9 +286,7 @@ export const TutorOnboardingClient = () => {
                 ))}
               </select>
               {formik.touched.country && formik.errors.country && (
-                <div className="text-red-500 text-sm mt-1">
-                  {formik.errors.country}
-                </div>
+                <div className="text-red-500 text-sm mt-1">{formik.errors.country}</div>
               )}
             </div>
 
@@ -326,9 +299,9 @@ export const TutorOnboardingClient = () => {
                   name="subject"
                   value={formik.values.subject}
                   onChange={(e) => {
-                    formik.setFieldValue("subject", e.target.value);
-                    formik.setFieldValue("topics", []);
-                    setErrorMessage(""); // Clear error when subject changes
+                    formik.setFieldValue('subject', e.target.value);
+                    formik.setFieldValue('topics', []);
+                    setErrorMessage(''); // Clear error when subject changes
                   }}
                   onBlur={formik.handleBlur}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-600 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300"
@@ -341,9 +314,7 @@ export const TutorOnboardingClient = () => {
                   ))}
                 </select>
                 {formik.touched.subject && formik.errors.subject && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {formik.errors.subject}
-                  </div>
+                  <div className="text-red-500 text-sm mt-1">{formik.errors.subject}</div>
                 )}
               </div>
 
@@ -356,13 +327,11 @@ export const TutorOnboardingClient = () => {
                     options={getSubjectTopics(formik.values.subject)}
                     placeholder="Choose topics"
                     onChange={(selected) => {
-                      formik.setFieldValue("topics", selected);
+                      formik.setFieldValue('topics', selected);
                     }}
                   />
                   {formik.touched.topics && formik.errors.topics && (
-                    <div className="text-red-500 text-sm mt-1">
-                      {formik.errors.topics}
-                    </div>
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.topics}</div>
                   )}
                 </div>
               )}
@@ -376,15 +345,10 @@ export const TutorOnboardingClient = () => {
                 <div className="space-y-1 text-center">
                   {formik.values.certificate ? (
                     <div className="text-sm text-gray-600">
-                      <p>
-                        Selected file:{" "}
-                        {(formik.values.certificate as File).name}
-                      </p>
+                      <p>Selected file: {(formik.values.certificate as File).name}</p>
                       <button
                         type="button"
-                        onClick={() =>
-                          formik.setFieldValue("certificate", null)
-                        }
+                        onClick={() => formik.setFieldValue('certificate', null)}
                         className="text-red-500 hover:text-red-700 mt-2"
                       >
                         Remove file
@@ -419,7 +383,7 @@ export const TutorOnboardingClient = () => {
                           className="mt-4 px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
                           onClick={() => {
                             const fileInput = document.getElementById(
-                              "file-upload",
+                              'file-upload'
                             ) as HTMLInputElement;
                             if (fileInput) fileInput.click();
                           }}
@@ -435,9 +399,9 @@ export const TutorOnboardingClient = () => {
                             const file = event.currentTarget.files?.[0];
                             if (file) {
                               if (file.size <= 10 * 1024 * 1024) {
-                                formik.setFieldValue("certificate", file);
+                                formik.setFieldValue('certificate', file);
                               } else {
-                                alert("File size should be less than 10MB");
+                                alert('File size should be less than 10MB');
                               }
                             }
                           }}
@@ -469,7 +433,7 @@ export const TutorOnboardingClient = () => {
               questions={quizQuestions}
               isSubmitting={isSubmitting || applicationSubmitted}
               onComplete={(quizSummary: QuizSummary) => {
-                console.log("Quiz completed with summary:", quizSummary);
+                console.log('Quiz completed with summary:', quizSummary);
                 if (!isSubmitting && !applicationSubmitted) {
                   handleFinalSubmit(quizSummary);
                 }
@@ -481,28 +445,28 @@ export const TutorOnboardingClient = () => {
         if (existingApplication) {
           const getStatusColor = (status: string) => {
             switch (status) {
-              case "pending":
-                return "text-yellow-600 bg-yellow-100";
-              case "under_review":
-                return "text-blue-600 bg-blue-100";
-              case "approved":
-                return "text-green-600 bg-green-100";
-              case "rejected":
-                return "text-red-600 bg-red-100";
+              case 'pending':
+                return 'text-yellow-600 bg-yellow-100';
+              case 'under_review':
+                return 'text-blue-600 bg-blue-100';
+              case 'approved':
+                return 'text-green-600 bg-green-100';
+              case 'rejected':
+                return 'text-red-600 bg-red-100';
               default:
-                return "text-gray-600 bg-gray-100";
+                return 'text-gray-600 bg-gray-100';
             }
           };
 
           const getStatusIcon = (status: string) => {
             switch (status) {
-              case "pending":
+              case 'pending':
                 return <Clock className="h-14 w-14 text-yellow-500" />;
-              case "under_review":
+              case 'under_review':
                 return <AlertTriangle className="h-14 w-14 text-blue-500" />;
-              case "approved":
+              case 'approved':
                 return <CheckCircle2 className="h-14 w-14 text-green-500" />;
-              case "rejected":
+              case 'rejected':
                 return <XCircle className="h-14 w-14 text-red-500" />;
               default:
                 return <AlertTriangle className="h-14 w-14 text-gray-400" />;
@@ -516,34 +480,26 @@ export const TutorOnboardingClient = () => {
                   <div className="mb-4 flex justify-center">
                     {getStatusIcon(existingApplication.applicationStatus)}
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                    Application Status
-                  </h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-4">Application Status</h2>
                   <div
                     className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(
-                      existingApplication.applicationStatus,
+                      existingApplication.applicationStatus
                     )}`}
                   >
-                    {existingApplication.applicationStatus
-                      .charAt(0)
-                      .toUpperCase() +
-                      existingApplication.applicationStatus
-                        .slice(1)
-                        .replace("_", " ")}
+                    {existingApplication.applicationStatus.charAt(0).toUpperCase() +
+                      existingApplication.applicationStatus.slice(1).replace('_', ' ')}
                   </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Application Details
-                  </h3>
+                  <h3 className="text-lg font-semibold mb-4">Application Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Applicant Name</p>
                       <p className="font-medium">
                         {existingApplication.personalInfo?.name ||
                           existingApplication.user?.name ||
-                          "N/A"}
+                          'N/A'}
                       </p>
                     </div>
                     <div>
@@ -551,62 +507,57 @@ export const TutorOnboardingClient = () => {
                       <p className="font-medium break-all">
                         {existingApplication.personalInfo?.email ||
                           existingApplication.user?.email ||
-                          "N/A"}
+                          'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Subject</p>
                       <p className="font-medium">
-                        {existingApplication.academicInfo?.subject || "N/A"}
+                        {existingApplication.academicInfo?.subject || 'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Topics</p>
                       <p className="font-medium">
-                        {existingApplication.academicInfo?.topics?.join(", ") ||
-                          "N/A"}
+                        {existingApplication.academicInfo?.topics?.join(', ') || 'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Submitted</p>
                       <p className="font-medium">
-                        {new Date(
-                          existingApplication.createdAt,
-                        ).toLocaleDateString()}
+                        {new Date(existingApplication.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Application ID</p>
-                      <p className="font-medium text-xs">
-                        {existingApplication._id}
-                      </p>
+                      <p className="font-medium text-xs">{existingApplication._id}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-center">
-                  {existingApplication.applicationStatus === "pending" && (
+                  {existingApplication.applicationStatus === 'pending' && (
                     <p className="text-gray-600 mb-4">
-                      Your application is being reviewed. We&apos;ll contact you
-                      within 24-48 hours with an update.
+                      Your application is being reviewed. We&apos;ll contact you within 24-48 hours
+                      with an update.
                     </p>
                   )}
-                  {existingApplication.applicationStatus === "under_review" && (
+                  {existingApplication.applicationStatus === 'under_review' && (
                     <p className="text-gray-600 mb-4">
-                      Your application is currently under detailed review.
-                      We&apos;ll notify you once the review is complete.
+                      Your application is currently under detailed review. We&apos;ll notify you
+                      once the review is complete.
                     </p>
                   )}
-                  {existingApplication.applicationStatus === "approved" && (
+                  {existingApplication.applicationStatus === 'approved' && (
                     <p className="text-green-600 mb-4">
-                      Congratulations! Your application has been approved.
-                      Welcome to our tutor community!
+                      Congratulations! Your application has been approved. Welcome to our tutor
+                      community!
                     </p>
                   )}
-                  {existingApplication.applicationStatus === "rejected" && (
+                  {existingApplication.applicationStatus === 'rejected' && (
                     <p className="text-red-600 mb-4">
-                      Unfortunately, your application was not approved at this
-                      time. You may reapply after 30 days.
+                      Unfortunately, your application was not approved at this time. You may reapply
+                      after 30 days.
                     </p>
                   )}
 
@@ -643,14 +594,12 @@ export const TutorOnboardingClient = () => {
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-              Thank you for the request, we&apos;ll get in contact within 1
-              hour.
+              Thank you for the request, we&apos;ll get in contact within 1 hour.
             </h2>
 
             <p className="text-gray-600 mb-8 max-w-2xl">
-              Our team will verify your application and credentials. You&apos;ll
-              receive an email confirmation shortly with next steps for your
-              tutor onboarding process.
+              Our team will verify your application and credentials. You&apos;ll receive an email
+              confirmation shortly with next steps for your tutor onboarding process.
             </p>
 
             <div className="mt-4">
@@ -659,8 +608,7 @@ export const TutorOnboardingClient = () => {
                 onClick={logoutAndGoHome}
                 className="px-6 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-black transition-colors"
               >
-                Check your inbox{" "}
-                {countdown > 0 && `(Redirecting in ${countdown}s)`}
+                Check your inbox {countdown > 0 && `(Redirecting in ${countdown}s)`}
               </button>
             </div>
           </div>
@@ -681,75 +629,69 @@ export const TutorOnboardingClient = () => {
           </div>
         </div>
       ) : (
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:min-h-[760px]">
-          <div className="w-full lg:w-80 bg-gray-50 p-4 sm:p-6 lg:p-8 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
-            <div className="mb-8">
-              <h1 className="text-xl sm:text-2xl font-bold">
-                Tutor Application
-              </h1>
-            </div>
-            <div className="space-y-3 sm:space-y-4">
-              {steps.map((step, index) => (
-                <div key={step.id} className="relative">
-                  <div
-                    className={`flex items-center space-x-3 pt-4 ${
-                      step.id === currentStep
-                        ? "text-primary-950"
-                        : step.id < currentStep
-                          ? "text-primary-950"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    <step.icon className="h-6 w-6 z-10 relative" />
-                    <div>
-                      <p className="font-medium">{step.title}</p>
-                      <p className="text-xs">{step.description}</p>
-                    </div>
-                  </div>
-
-                  {index < steps.length - 1 && (
-                    <div className="absolute left-3 w-0.5 h-[20px] sm:h-[25px] -ml-[1px] bg-gray-300"></div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-            <form onSubmit={formik.handleSubmit} className="w-full">
-              <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">
-                {steps[currentStep - 1]?.title}
-              </h2>
-              {renderStepContent()}
-              {!existingApplication && (
-                <div className="mt-6 sticky bottom-0 bg-white py-4">
-                  {currentStep !== 2 && showSubmit && !applicationSubmitted && (
-                    <button
-                      type="submit"
-                      disabled={
-                        isSubmitting || (currentStep === 1 && !formik.isValid)
-                      }
-                      className="w-full bg-primary-500 text-white rounded-lg px-4 py-2 hover:bg-primary-950 hover:text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+        <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:min-h-[760px]">
+            <div className="w-full lg:w-80 bg-gray-50 p-4 sm:p-6 lg:p-8 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
+              <div className="mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold">Tutor Application</h1>
+              </div>
+              <div className="space-y-3 sm:space-y-4">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="relative">
+                    <div
+                      className={`flex items-center space-x-3 pt-4 ${
+                        step.id === currentStep
+                          ? 'text-primary-950'
+                          : step.id < currentStep
+                            ? 'text-primary-950'
+                            : 'text-gray-400'
+                      }`}
                     >
-                      {isSubmitting
-                        ? "Processing..."
-                        : currentStep === 3
-                          ? "Submit Application"
-                          : "Continue to Quiz"}
-                    </button>
-                  )}
-                  {errorMessage && currentStep === 1 && (
-                    <div className="mt-2 text-red-600 text-sm text-center">
-                      {errorMessage}
+                      <step.icon className="h-6 w-6 z-10 relative" />
+                      <div>
+                        <p className="font-medium">{step.title}</p>
+                        <p className="text-xs">{step.description}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </form>
+
+                    {index < steps.length - 1 && (
+                      <div className="absolute left-3 w-0.5 h-[20px] sm:h-[25px] -ml-[1px] bg-gray-300"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+              <form onSubmit={formik.handleSubmit} className="w-full">
+                <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6">
+                  {steps[currentStep - 1]?.title}
+                </h2>
+                {renderStepContent()}
+                {!existingApplication && (
+                  <div className="mt-6 sticky bottom-0 bg-white py-4">
+                    {currentStep !== 2 && showSubmit && !applicationSubmitted && (
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || (currentStep === 1 && !formik.isValid)}
+                        className="w-full bg-primary-500 text-white rounded-lg px-4 py-2 hover:bg-primary-950 hover:text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting
+                          ? 'Processing...'
+                          : currentStep === 3
+                            ? 'Submit Application'
+                            : 'Continue to Quiz'}
+                      </button>
+                    )}
+                    {errorMessage && currentStep === 1 && (
+                      <div className="mt-2 text-red-600 text-sm text-center">{errorMessage}</div>
+                    )}
+                  </div>
+                )}
+              </form>
+            </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

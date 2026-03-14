@@ -10,18 +10,17 @@ export default function FeedbackActions({
 }: any) {
   return (
     <div className="mt-6 space-y-4">
-
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Rating</p>
 
         <div className="flex gap-2">
-          {[1,2,3,4,5].map((value) => (
+          {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
               onClick={() => setRating(value)}
               className={(rating ?? 0) >= value ? 'text-amber-500' : 'text-gray-300'}
             >
-              <Star className="h-5 w-5 fill-current"/>
+              <Star className="h-5 w-5 fill-current" />
             </button>
           ))}
         </div>
@@ -30,7 +29,7 @@ export default function FeedbackActions({
       <textarea
         rows={4}
         value={comments}
-        onChange={(e)=>setComments(e.target.value)}
+        onChange={(e) => setComments(e.target.value)}
         className="w-full border rounded-lg p-2 text-sm"
       />
 
@@ -41,7 +40,6 @@ export default function FeedbackActions({
       >
         {loading ? 'Submitting...' : 'Approve & complete'}
       </button>
-
     </div>
   );
 }

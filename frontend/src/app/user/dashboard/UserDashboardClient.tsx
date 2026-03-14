@@ -3,9 +3,10 @@
 import React from 'react';
 import PostAssignmentModal from '@/components/PostAssignmentModal';
 import { ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
+import DashboardComponent from '@/components/DashboardComponent';
 import TutorDashboard from '@/components/TutorDashboard';
 import { useUserDashboardLogic } from './useUserDashboardLogic';
-import DashboardComponent from '@/components/dashboard/DashboardComponent';
+import { DashboardPageSkeleton } from '@/components/dashboard/DashboardSkeletons';
 
 export const UserDashboardClient = () => {
   const {
@@ -18,6 +19,10 @@ export const UserDashboardClient = () => {
     prevMonth,
     nextMonth,
   } = useUserDashboardLogic();
+
+  if (!userData?.user) {
+    return <DashboardPageSkeleton />;
+  }
 
   const today = new Date();
 
@@ -100,8 +105,8 @@ export const UserDashboardClient = () => {
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-3">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-                <div key={day} className="py-2 font-medium">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                <div key={`weekday-${index}-${day}`} className="py-2 font-medium">
                   {day}
                 </div>
               ))}

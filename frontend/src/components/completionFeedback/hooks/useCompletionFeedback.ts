@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  useRequestRevisionMutation,
-  useSubmitFeedbackMutation,
-} from '@/lib/services/assignments';
+import { useRequestRevisionMutation, useSubmitFeedbackMutation } from '@/lib/services/assignments';
 import { useMarkSubmissionUnderReviewMutation } from '@/lib/services/submissions';
 
 export function useCompletionFeedback(assignment: any, onCompleted?: any) {

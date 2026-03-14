@@ -3,7 +3,6 @@ import FeedbackActions from './FeedbackActions';
 import { useCompletionFeedback } from './hooks/useCompletionFeedback';
 
 const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
-
   const {
     rating,
     setRating,
@@ -11,15 +10,12 @@ const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
     setComments,
     latestSubmission,
     feedbackLoading,
-    handleSubmitFeedback
+    handleSubmitFeedback,
   } = useCompletionFeedback(assignment, onCompleted);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">
-
-      <h2 className="text-xl font-semibold mb-4">
-        Submission review
-      </h2>
+      <h2 className="text-xl font-semibold mb-4">Submission review</h2>
 
       <SubmissionDetails submission={latestSubmission} />
 
@@ -33,7 +29,6 @@ const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
           loading={feedbackLoading}
         />
       )}
-
     </div>
   );
 };

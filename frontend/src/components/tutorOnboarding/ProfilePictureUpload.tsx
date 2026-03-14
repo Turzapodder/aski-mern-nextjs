@@ -7,7 +7,11 @@ interface ProfilePictureUploadProps {
   onFileChange: (file: File) => void;
 }
 
-export function ProfilePictureUpload({ name, profilePicture, onFileChange }: ProfilePictureUploadProps) {
+export function ProfilePictureUpload({
+  name,
+  profilePicture,
+  onFileChange,
+}: ProfilePictureUploadProps) {
   const openPicker = () => {
     (document.getElementById('profile-upload') as HTMLInputElement)?.click();
   };
@@ -43,9 +47,7 @@ export function ProfilePictureUpload({ name, profilePicture, onFileChange }: Pro
         <div className="flex flex-col items-center space-y-3">
           <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
             {name ? (
-              <span className="text-5xl font-bold text-black">
-                {name.charAt(0).toUpperCase()}
-              </span>
+              <span className="text-5xl font-bold text-black">{name.charAt(0).toUpperCase()}</span>
             ) : (
               <Rabbit className="h-8 w-8 text-black" />
             )}

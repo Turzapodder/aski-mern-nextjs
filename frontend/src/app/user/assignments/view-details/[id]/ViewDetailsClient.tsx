@@ -493,10 +493,7 @@ export const ViewDetailsClient = () => {
             )}
 
           {showCompletionFeedback && (
-            <CompletionFeedback
-              assignment={assignment}
-              submissionStatus={latestSubmissionStatus}
-            />
+            <CompletionFeedback assignment={assignment} submissionStatus={latestSubmissionStatus} />
           )}
 
           {showProposal && isTutorRole && assignment && (
