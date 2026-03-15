@@ -72,23 +72,21 @@ const UploadProjectForm = ({
         {requestedTutorName && <TutorRequestBanner tutorName={requestedTutorName} />}
 
         {/* Project Title */}
-         <div className="mb-1.5 flex items-center justify-between sm:mb-2">
-            <label className="block text-gray-900 font-medium text-sm sm:text-base">
-              Project Title <span className="text-red-500">*</span>
-            </label>
-            <span className="text-xs text-gray-400 sm:text-sm">
-              {fields.title.length}/250
-            </span>
-          </div>
-          <input
-            type="text"
-            placeholder="e.g. Calculus Homework Help"
-            value={fields.title}
-            onChange={(e) => setFields((prev) => ({ ...prev, title: e.target.value }))}
-            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
-            maxLength={250}
-            required
-          />
+        <div className="mb-1.5 flex items-center justify-between sm:mb-2">
+          <label className="block text-gray-900 font-medium text-sm sm:text-base">
+            Project Title <span className="text-red-500">*</span>
+          </label>
+          <span className="text-xs text-gray-400 sm:text-sm">{fields.title.length}/250</span>
+        </div>
+        <input
+          type="text"
+          placeholder="e.g. Calculus Homework Help"
+          value={fields.title}
+          onChange={(e) => setFields((prev) => ({ ...prev, title: e.target.value }))}
+          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent text-sm sm:text-base"
+          maxLength={250}
+          required
+        />
 
         {/* Project Description */}
         <div className="mb-5 sm:mb-6">
