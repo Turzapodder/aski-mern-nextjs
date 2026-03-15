@@ -2,11 +2,11 @@
 
 import React from 'react';
 import PostAssignmentModal from '@/components/PostAssignmentModal';
-import { ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
-import DashboardComponent from '@/components/DashboardComponent';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import TutorDashboard from '@/components/TutorDashboard';
 import { useUserDashboardLogic } from './useUserDashboardLogic';
 import { DashboardPageSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import DashboardComponent from '@/components/dashboard/DashboardComponent';
 
 export const UserDashboardClient = () => {
   const {
