@@ -8,4 +8,4 @@ const origin = trimTrailingSlash(rawApiUrl.replace(/\/api\/?$/i, ''));
 export const apiOrigin = origin;
 
 // API root used by REST calls
-export const apiBaseUrl = `${origin}/api`;
+export const apiBaseUrl = typeof window !== 'undefined' ? '/api' : `${origin}/api`;
