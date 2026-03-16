@@ -37,6 +37,14 @@ const assignmentSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  requestOneToOneSession: {
+    type: Boolean,
+    default: false
+  },
+  videoExplanation: {
+    type: Boolean,
+    default: false
+  },
   
   // File attachments
   attachments: [{

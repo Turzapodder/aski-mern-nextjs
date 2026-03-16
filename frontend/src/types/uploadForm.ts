@@ -19,4 +19,6 @@ export interface AssignmentFormData {
   topics: string[];
   budget?: number;
   files: File[];
+  requestOneToOneSession: boolean;
+  videoExplanation: boolean;
 }

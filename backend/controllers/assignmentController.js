@@ -21,6 +21,17 @@ const parseNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const parseBoolean = (value, fallback = false) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+  if (typeof value === 'number') return value === 1;
+  return fallback;
+};
+
 const sanitizeText = (value) => (typeof value === "string" ? value.trim() : "");
 
 const isUddoktaMockModeEnabled = () => {
@@ -487,7 +498,19 @@ class AssignmentController {
   // Create a new assignment
   static createAssignment = async (req, res) => {
     try {
-      const { title, description, subject, topics, deadline, estimatedCost, priority, tags, requestedTutor } = req.body;
+      const {
+        title,
+        description,
+        subject,
+        topics,
+        deadline,
+        estimatedCost,
+        priority,
+        tags,
+        requestedTutor,
+        requestOneToOneSession,
+        videoExplanation,
+      } = req.body;
       const studentId = req.user._id;
 
       // Validate required fields
@@ -539,6 +562,8 @@ class AssignmentController {
         deadline: new Date(deadline),
         estimatedCost: parsedEstimatedCost,
         budget: parsedEstimatedCost,
+        requestOneToOneSession: parseBoolean(requestOneToOneSession, false),
+        videoExplanation: parseBoolean(videoExplanation, false),
         priority: priority || 'medium',
         tags: Array.isArray(tags) ? tags : (tags ? [tags] : []),
         attachments,

@@ -38,9 +38,9 @@ export default function SidebarMenu({ items, isCollapsed }: Props) {
                   alt={item.name}
                   width={30}
                   height={30}
-                  className={`w-[30px] h-[30px] object-contain ${
+                  className={`w-7.5 h-7.5 object-contain ${
                     !isCollapsed && 'mr-3'
-                  } ${item.active ? 'brightness-0 invert' : ''}`}
+                  }`}
                 />
 
                 {!isCollapsed && <span>{item.name}</span>}

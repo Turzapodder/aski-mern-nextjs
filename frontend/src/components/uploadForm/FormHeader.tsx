@@ -10,7 +10,7 @@ export function FormHeader({ requestedTutorName }: FormHeaderProps) {
           'Request a Proposal'
         ) : (
           <>
-            Post a <span className="text-secondary-500">New Project</span>
+            Post a <span className="text-secondary-500">New Task</span>
           </>
         )}
       </h2>

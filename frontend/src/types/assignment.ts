@@ -87,6 +87,8 @@ export interface Assignment {
   };
   paymentStatus?: 'pending' | 'paid' | 'refunded' | 'disputed' | string;
   paymentAmount?: number;
+  requestOneToOneSession?: boolean;
+  videoExplanation?: boolean;
   paymentGateway?: {
     provider?: string;
     invoiceId?: string;
@@ -155,6 +157,8 @@ export interface CreateAssignmentRequest {
   attachments?: File[];
   files?: File[];
   requestedTutor?: string;
+  requestOneToOneSession?: boolean;
+  videoExplanation?: boolean;
 }
 
 export interface AssignmentFilters {

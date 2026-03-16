@@ -1,6 +1,9 @@
 'use client';
 import { useState } from 'react';
+import { Info } from 'lucide-react';
 import useCurrency from '@/lib/hooks/useCurrency';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FormHeader } from './FormHeader';
 import { TutorRequestBanner } from './TutorRequestBanner';
 import { AdvancedSection } from './AdvancedSection';
@@ -29,13 +32,23 @@ const UploadProjectForm = ({
     deadline: '',
     subject: '',
     budget: undefined as number | undefined,
+    requestOneToOneSession: false,
+    videoExplanation: false,
   });
 
   const fileUpload = useFileUpload();
   const topicsHook = useTopics();
 
   const resetAll = () => {
-    setFields({ title: '', description: '', deadline: '', subject: '', budget: undefined });
+    setFields({
+      title: '',
+      description: '',
+      deadline: '',
+      subject: '',
+      budget: undefined,
+      requestOneToOneSession: false,
+      videoExplanation: false,
+    });
     fileUpload.reset();
     topicsHook.reset();
   };
@@ -52,6 +65,8 @@ const UploadProjectForm = ({
     ...fields,
     topics: topicsHook.topics,
     files: fileUpload.files,
+    requestOneToOneSession: fields.requestOneToOneSession,
+    videoExplanation: fields.videoExplanation,
   });
 
   const handleToggleAdvanced = () => {
@@ -153,6 +168,50 @@ const UploadProjectForm = ({
             onUploadAreaClick={fileUpload.openFilePicker}
           />
         )}
+
+        <div className="mb-5 sm:mb-6 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <label className="text-gray-900 font-medium text-sm sm:text-base">Support Add-ons</label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200"
+                    aria-label="More information about support add-ons"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-55 text-xs leading-relaxed">
+                  Selecting these add-ons may increase the final price a little.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="space-y-2.5">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-md p-1.5 hover:bg-white">
+              <Checkbox
+                checked={fields.requestOneToOneSession}
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
+                  setFields((prev) => ({ ...prev, requestOneToOneSession: checked === true }))
+                }
+              />
+              <span className="text-sm text-gray-700">Request 1:1 Session</span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-md p-1.5 hover:bg-white">
+              <Checkbox
+                checked={fields.videoExplanation}
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
+                  setFields((prev) => ({ ...prev, videoExplanation: checked === true }))
+                }
+              />
+              <span className="text-sm text-gray-700">Video explanation</span>
+            </label>
+          </div>
+        </div>
 
         {/* Submit Error */}
         {submitError && (

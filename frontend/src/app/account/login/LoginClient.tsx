@@ -22,12 +22,13 @@ export const LoginClient = () => {
       <div className="max-w-6xl w-full mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-lg overflow-hidden">
         <div className="flex flex-col lg:flex-row">
           <div className="w-full lg:w-1/2 p-5 sm:p-8 lg:p-12 flex flex-col justify-between">
-            <div className="flex gap-3 items-center mt-2 sm:mt-5 mb-8 sm:mb-12 lg:mb-20">
+            <div className="flex items-center mt-2 sm:mt-5 mb-8 sm:mb-12 lg:mb-20">
               <img
                 src="/assets/main-logo.svg"
                 alt="logo"
-                className="min-w-[30px] min-h-[30px] w-[110px] sm:w-[120px] object-contain"
+                className="min-w-7.5 min-h-7.5  sm:w-[120px] object-contain"
               />
+              <span>Aski</span>
             </div>
             <div className="mb-8">
               <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 uppercase">

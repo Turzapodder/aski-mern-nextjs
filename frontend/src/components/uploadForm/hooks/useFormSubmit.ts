@@ -34,6 +34,8 @@ export function useFormSubmit({
       subject: formData.subject || 'General',
       deadline: formData.deadline || new Date().toISOString(),
       estimatedCost: formData.budget || 0,
+      requestOneToOneSession: !!formData.requestOneToOneSession,
+      videoExplanation: !!formData.videoExplanation,
       priority: 'medium',
       status,
       ...(requestedTutorId ? { requestedTutor: requestedTutorId } : {}),
