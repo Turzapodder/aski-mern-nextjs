@@ -10,6 +10,7 @@ interface UserProfile {
   status: string;
   walletBalance: number;
 }
+import Cookies from 'js-cookie';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -37,6 +38,10 @@ const authSlice = createSlice({
       state.user = null;
       state.userRole = null;
       state.isAuthenticated = false;
+      if (typeof window !== 'undefined') {
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+      }
     },
     setUserProfile: (state, action: PayloadAction<UserProfile>) => {
       state.user = action.payload;

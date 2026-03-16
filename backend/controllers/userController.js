@@ -326,7 +326,11 @@ class UserController {
 
     //Profile or Logged in User
     static userProfile = async (req, res) => {
-        res.send({"user": req.user})
+        res.send({
+            "user": req.user,
+            access_token: req.cookies?.accessToken,
+            refresh_token: req.cookies?.refreshToken,
+        })
     }
 
     //Change Password
@@ -600,6 +604,8 @@ class UserController {
                 onboardingStatus: req.user.onboardingStatus,
                 status: req.user.status,
             },
+            access_token: req.cookies?.accessToken,
+            refresh_token: req.cookies?.refreshToken,
         });
     }
 

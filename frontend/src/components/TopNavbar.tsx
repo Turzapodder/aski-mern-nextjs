@@ -15,6 +15,7 @@ import { openModal } from '@/lib/features/ui/uiSlice';
 import { useSocket } from '@/lib/hooks/useSocket';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { logout } from '@/lib/features/auth/authSlice';
 import { assignmentsApi } from '@/lib/services/assignments';
 import { submissionsApi } from '@/lib/services/submissions';
 import { proposalsApi } from '@/lib/services/proposals';
@@ -64,9 +65,9 @@ const TopNavbar = ({
         description: incoming.message,
         action: incoming.link
           ? {
-              label: 'View',
-              onClick: () => router.push(incoming.link),
-            }
+            label: 'View',
+            onClick: () => router.push(incoming.link),
+          }
           : undefined,
       });
 
@@ -134,6 +135,7 @@ const TopNavbar = ({
   const handleLogout = async () => {
     try {
       await logoutUser({}).unwrap();
+      dispatch(logout());
       router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -287,9 +289,8 @@ const TopNavbar = ({
                             className="w-full text-left flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                           >
                             <div
-                              className={`w-2 h-2 rounded-full mt-2 ${
-                                notification.isRead ? 'bg-gray-300' : 'bg-primary-400'
-                              }`}
+                              className={`w-2 h-2 rounded-full mt-2 ${notification.isRead ? 'bg-gray-300' : 'bg-primary-400'
+                                }`}
                             ></div>
                             <div className="flex-1">
                               <p className="text-sm font-medium text-gray-900">
