@@ -217,7 +217,7 @@ export const useLoginLogic = () => {
 
   const handleGoogleLogin = () => {
     if (!loginRole) return;
-    window.open(`${apiOrigin}/auth/google?role=${loginRole}`, '_self');
+    window.open(`/auth/google?role=${loginRole}`, '_self');
   };
 
   return {
