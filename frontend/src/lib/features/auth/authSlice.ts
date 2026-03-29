@@ -45,6 +45,7 @@ const authSlice = createSlice({
     },
     setUserProfile: (state, action: PayloadAction<UserProfile>) => {
       state.user = action.payload;
+      state.isAuthenticated = true;
     },
   },
 });
