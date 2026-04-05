@@ -91,6 +91,13 @@ export const useLoginLogic = () => {
           dispatch(setCredentials({ user: profile, role }));
         }
 
+        // Use server-computed destination if available, otherwise compute from profile.
+        const serverDest = searchParams.get('dest');
+        if (serverDest) {
+          router.replace(serverDest);
+          return;
+        }
+
         if (role === 'admin') {
           router.replace('/admin');
           return;
@@ -117,7 +124,7 @@ export const useLoginLogic = () => {
     };
 
     syncOAuthSession();
-  }, [oauthStatus, dispatch, router]);
+  }, [oauthStatus, dispatch, router, searchParams]);
 
   useEffect(() => {
     if (loginRole === 'admin') return;

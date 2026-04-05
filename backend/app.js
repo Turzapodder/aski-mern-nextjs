@@ -552,8 +552,21 @@ const startServer = async () => {
             ? "tutor"
             : "user";
 
+          // Compute the correct destination based on role and onboarding status.
+          let destination = "/user/dashboard";
+          if (user.roles?.includes("admin")) {
+            destination = "/admin";
+          } else if (
+            user.roles?.includes("tutor") &&
+            user.onboardingStatus &&
+            user.onboardingStatus !== "completed" &&
+            user.onboardingStatus !== "approved"
+          ) {
+            destination = "/account/tutor-onboarding";
+          }
+
           // Route through login to let frontend domain establish auth marker cookies.
-          res.redirect(`${frontendHost}/account/login?role=${roleHint}&oauth=success`);
+          res.redirect(`${frontendHost}/account/login?role=${roleHint}&oauth=success&dest=${encodeURIComponent(destination)}`);
         } catch (error) {
           logger.error("Google OAuth callback error:", error);
           if (!res.headersSent) {

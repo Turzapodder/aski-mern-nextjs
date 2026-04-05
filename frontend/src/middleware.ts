@@ -94,6 +94,12 @@ export function middleware(request: NextRequest) {
   }
 
   if (path === '/account/login') {
+    // Let OAuth callback through so the client-side syncOAuthSession logic can run.
+    const oauthParam = request.nextUrl.searchParams.get('oauth');
+    if (oauthParam === 'success') {
+      return NextResponse.next();
+    }
+
     const requestedRole = request.nextUrl.searchParams.get('role')?.trim().toLowerCase() || null;
     const normalizedRole =
       requestedRole === 'admin'
