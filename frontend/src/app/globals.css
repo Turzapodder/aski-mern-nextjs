@@ -139,6 +139,16 @@
 }
 
 @layer utilities {
+  @keyframes skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-skeleton-shimmer {
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
   .gray-bg {
     background-color: #f6f6f6;
   }

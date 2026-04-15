@@ -16,6 +16,7 @@ import {
   GraduationCap,
   MapPin,
   Edit,
+  Bookmark,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReportModal from '@/components/ReportModal';
@@ -37,6 +38,8 @@ export const TutorProfileClient = () => {
     tutorData,
     availability,
     detailItems,
+    isBookmarked,
+    handleToggleBookmark,
     handleSendMessage,
     isCreatingChat,
   } = useTutorProfileLogic();
@@ -74,7 +77,7 @@ export const TutorProfileClient = () => {
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
             <div className="flex flex-col sm:flex-row gap-5 mb-6">
               <div className="relative shrink-0">
-                <div className="w-[88px] h-[88px] rounded-2xl overflow-hidden relative">
+                <div className="w-22 h-22 rounded-2xl overflow-hidden relative">
                   <Image
                     src={tutorData.profileImage}
                     alt={tutorData.name}
@@ -89,7 +92,7 @@ export const TutorProfileClient = () => {
                 )}
               </div>
 
-              <div className="flex-grow">
+              <div className="grow">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -156,23 +159,17 @@ export const TutorProfileClient = () => {
                         Report profile
                       </button>
                     )}
-                    <button className="text-gray-400 hover:text-purple-600 transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                        <span className="w-4 h-6 border-2 border-purple-300 border-t-0 border-r-0 rotate-[-45deg] translate-y-[-2px]"></span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="#A855F7"
-                          stroke="none"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="lucide lucide-bookmark"
-                        >
-                          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-                        </svg>
+                    <button
+                      onClick={handleToggleBookmark}
+                      className="text-gray-400 hover:text-purple-600 transition-colors"
+                      aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isBookmarked ? 'bg-amber-50 text-amber-600' : 'bg-purple-50'
+                        }`}
+                      >
+                        <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-amber-500' : ''}`} />
                       </div>
                     </button>
                   </div>

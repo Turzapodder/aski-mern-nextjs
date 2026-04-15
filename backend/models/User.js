@@ -103,6 +103,14 @@ const userSchema = new mongoose.Schema(
     studentProfile: { type: StudentProfileSchema, default: {} },
     tutorProfile: { type: TutorProfileSchema, default: {} },
 
+    // Saved tutors for quick access from tutor discovery/profile pages
+    bookmarkedTutors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+    ],
+
     // Wallet
     wallet: {
       availableBalance: { type: Number, default: 0, min: 0 },
@@ -196,6 +204,7 @@ userSchema.index({ roles: 1 });
 userSchema.index({ status: 1 });
 userSchema.index({ onboardingStatus: 1 });
 userSchema.index({ "publicStats.averageRating": -1 });
+userSchema.index({ bookmarkedTutors: 1 });
 
 // Middleware: Update lastSeen on any modification
 userSchema.pre("save", function (next) {

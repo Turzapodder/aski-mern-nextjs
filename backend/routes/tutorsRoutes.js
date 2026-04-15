@@ -13,6 +13,10 @@ router.get("/profile/:identifier", TutorsController.getPublicTutorProfile);
 router.use(AccessTokenAutoRefresh);
 router.use(checkUserAuth);
 
+router.get("/bookmarks", TutorsController.listBookmarkedTutors);
+router.post("/bookmarks/:tutorId", TutorsController.addBookmarkedTutor);
+router.delete("/bookmarks/:tutorId", TutorsController.removeBookmarkedTutor);
+
 router.patch("/me/availability", TutorsController.updateAvailability);
 router.patch("/me/settings", TutorsController.updateSettings);
 

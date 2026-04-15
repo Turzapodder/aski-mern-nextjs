@@ -1,5 +1,6 @@
 import UserModel from "../models/User.js";
 import { validateAvailability } from "../utils/tutorAvailability.js";
+import mongoose from "mongoose";
 
 const escapeRegex = (value) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -44,6 +45,190 @@ const buildPublicTutor = (tutor) => ({
 });
 
 class TutorsController {
+  static listBookmarkedTutors = async (req, res) => {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      const viewer = await UserModel.findById(userId)
+        .select("bookmarkedTutors")
+        .lean();
+
+      const bookmarkedIds = Array.isArray(viewer?.bookmarkedTutors)
+        ? viewer.bookmarkedTutors.map((id) => id.toString())
+        : [];
+
+      if (bookmarkedIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          bookmarkedTutorIds: [],
+        });
+      }
+
+      const tutors = await UserModel.find({
+        _id: { $in: bookmarkedIds },
+        roles: "tutor",
+        onboardingStatus: { $in: ["approved", "completed"] },
+        status: { $in: ["active", "approved"] },
+      })
+        .select(
+          [
+            "name",
+            "profileImage",
+            "about",
+            "tutorProfile.bio",
+            "tutorProfile.hourlyRate",
+            "tutorProfile.skills",
+            "tutorProfile.expertiseSubjects",
+            "publicStats",
+          ].join(" ")
+        )
+        .lean();
+
+      const tutorMap = new Map(
+        tutors.map((tutor) => [tutor._id.toString(), tutor])
+      );
+
+      const formattedTutors = bookmarkedIds
+        .map((id) => tutorMap.get(id))
+        .filter(Boolean)
+        .map((tutor) => ({
+          id: tutor._id,
+          name: tutor.name,
+          avatar: tutor.profileImage,
+          bio: tutor.tutorProfile?.bio || tutor.about || "",
+          publicStats: tutor.publicStats || {},
+          hourlyRate: tutor.tutorProfile?.hourlyRate || 0,
+          skills: tutor.tutorProfile?.skills || [],
+          subjects: tutor.tutorProfile?.expertiseSubjects || [],
+        }));
+
+      return res.status(200).json({
+        success: true,
+        data: formattedTutors,
+        bookmarkedTutorIds: formattedTutors.map((tutor) => tutor.id.toString()),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: "Unable to fetch bookmarked tutors",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
+
+  static addBookmarkedTutor = async (req, res) => {
+    try {
+      const userId = req.user?._id;
+      const { tutorId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid tutor id",
+          code: "INVALID_TUTOR_ID",
+        });
+      }
+
+      const tutor = await UserModel.findOne({
+        _id: tutorId,
+        roles: "tutor",
+        onboardingStatus: { $in: ["approved", "completed"] },
+        status: { $in: ["active", "approved"] },
+      })
+        .select("_id")
+        .lean();
+
+      if (!tutor) {
+        return res.status(404).json({
+          success: false,
+          error: "Tutor not found",
+          code: "TUTOR_NOT_FOUND",
+        });
+      }
+
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        { $addToSet: { bookmarkedTutors: tutorId } },
+        { new: true }
+      )
+        .select("bookmarkedTutors")
+        .lean();
+
+      return res.status(200).json({
+        success: true,
+        bookmarkedTutorIds: (updatedUser?.bookmarkedTutors || []).map((id) =>
+          id.toString()
+        ),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: "Unable to bookmark tutor",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
+
+  static removeBookmarkedTutor = async (req, res) => {
+    try {
+      const userId = req.user?._id;
+      const { tutorId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid tutor id",
+          code: "INVALID_TUTOR_ID",
+        });
+      }
+
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        { $pull: { bookmarkedTutors: tutorId } },
+        { new: true }
+      )
+        .select("bookmarkedTutors")
+        .lean();
+
+      return res.status(200).json({
+        success: true,
+        bookmarkedTutorIds: (updatedUser?.bookmarkedTutors || []).map((id) =>
+          id.toString()
+        ),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: "Unable to remove bookmarked tutor",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
+
   static getPublicTutorProfile = async (req, res) => {
     try {
       const { identifier } = req.params;

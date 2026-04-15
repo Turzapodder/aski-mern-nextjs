@@ -1,31 +1,28 @@
 import React from 'react';
 import Image from 'next/image';
-import {
-  CheckCircle,
-  Flame,
-  Star,
-  BookOpen,
-  User,
-  GraduationCap,
-} from 'lucide-react';
+import { Bookmark, CheckCircle, Flame, Star, BookOpen, User, GraduationCap } from 'lucide-react';
 import { Teacher } from '../../../types/TutorsList';
 import useCurrency from '@/lib/hooks/useCurrency';
 
 interface TeacherCardProps {
   teacher: Teacher;
+  isBookmarked?: boolean;
+  onToggleBookmark?: (tutorId: string) => void;
 }
 
-export const TeacherCard: React.FC<TeacherCardProps> = ({ teacher }) => {
+export const TeacherCard: React.FC<TeacherCardProps> = ({
+  teacher,
+  isBookmarked = false,
+  onToggleBookmark,
+}) => {
   const { format: formatAmount } = useCurrency();
 
   return (
     <div className="rounded-2xl p-6 relative flex flex-col h-full transition-transform hover:scale-[1.01] duration-200 bg-white text-gray-900 border border-gray-100 shadow-sm">
       <div className="flex items-start justify-between mb-4">
         <div className="flex gap-3">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-xl overflow-hidden">
-              <Image src={teacher.image} alt={teacher.name} fill className="object-cover" />
-            </div>
+          <div className="relative w-20 h-20 rounded-xl overflow-hidden">
+            <Image src={teacher.image} alt={teacher.name} fill className="object-cover" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -80,10 +77,17 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({ teacher }) => {
             </span>
           </div>
         </div>
-        <button className="p-1.5 rounded-full transition-colors hover:bg-gray-100 text-gray-400">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-          </svg>
+        <button
+          type="button"
+          onClick={() => onToggleBookmark?.(teacher.id)}
+          className={`p-1.5 rounded-full transition-colors ${
+            isBookmarked
+              ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+              : 'text-gray-400 hover:bg-gray-100'
+          }`}
+          aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+        >
+          <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-amber-500' : ''}`} />
         </button>
       </div>
 
@@ -107,7 +111,7 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({ teacher }) => {
       </div>
 
       <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-baseline gap-1">
+        <div className="flex items-center gap-1">
           <Flame className="w-5 h-5 text-orange-500 fill-orange-500" />
           {teacher.price > 0 ? (
             <>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetUserQuery } from '@/lib/services/auth';
 import { useCreateChatMutation } from '@/lib/services/chat';
+import { useTutorBookmarks } from '@/lib/hooks/useTutorBookmarks';
 import { toast } from 'sonner';
 import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
@@ -54,6 +55,7 @@ export const useTutorProfileLogic = () => {
   const canRequestProposal = !viewer || !viewer.roles?.includes('tutor');
   const isOwner = Boolean(viewer?._id && tutor?._id && viewer._id === tutor._id);
   const [createChat, { isLoading: isCreatingChat }] = useCreateChatMutation();
+  const { bookmarkedSet, toggleBookmark } = useTutorBookmarks();
 
   const handleSendMessage = async () => {
     if (!viewer) {
@@ -203,6 +205,21 @@ export const useTutorProfileLogic = () => {
     return items.filter((item) => item.value);
   }, [tutor]);
 
+  const isBookmarked = Boolean(tutor?._id && bookmarkedSet.has(String(tutor._id)));
+
+  const handleToggleBookmark = async () => {
+    if (!tutor?._id) return;
+
+    try {
+      const result = await toggleBookmark(String(tutor._id));
+      if (result?.requiresAuth) {
+        router.push('/login');
+      }
+    } catch {
+      toast.error('Unable to update bookmark right now.');
+    }
+  };
+
   return {
     router,
     tutor,
@@ -219,6 +236,8 @@ export const useTutorProfileLogic = () => {
     tutorData,
     availability,
     detailItems,
+    isBookmarked,
+    handleToggleBookmark,
     handleSendMessage,
     isCreatingChat,
   };
