@@ -23,7 +23,7 @@ export default function DashboardComponent() {
       <TopStats assignments={assignments} />
 
       <div className="mb-12">
-        <UploadProjectForm />
+        <UploadProjectForm maxWidth='w-full' />
       </div>
 
       <ProjectSection

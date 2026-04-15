@@ -28,7 +28,6 @@ export const LoginClient = () => {
                 alt="logo"
                 className="min-w-7.5 min-h-7.5  sm:w-[120px] object-contain"
               />
-              <span>Aski</span>
             </div>
             <div className="mb-8">
               <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 uppercase">

@@ -125,7 +125,16 @@ class TutorsController {
 
   static listTutors = async (req, res) => {
     try {
-      const { subject, minRating, maxRate, skills, availability } = req.query;
+      const {
+        search,
+        subject,
+        minRating,
+        maxRate,
+        skills,
+        availability,
+        sortBy,
+        sortOrder,
+      } = req.query;
 
       const query = {
         roles: "tutor",
@@ -135,9 +144,20 @@ class TutorsController {
 
       if (subject) {
         query["tutorProfile.expertiseSubjects"] = new RegExp(
-          `^${escapeRegex(subject)}$`,
+          escapeRegex(String(subject).trim()),
           "i"
         );
+      }
+
+      const sanitizedSearch = String(search || "").trim();
+      if (sanitizedSearch) {
+        const searchRegex = new RegExp(escapeRegex(sanitizedSearch), "i");
+        query.$or = [
+          { name: searchRegex },
+          { "tutorProfile.expertiseSubjects": searchRegex },
+          { "tutorProfile.skills": searchRegex },
+          { "tutorProfile.bio": searchRegex },
+        ];
       }
 
       if (minRating) {
@@ -183,6 +203,19 @@ class TutorsController {
         }
       }
 
+      const normalizedSortBy = String(sortBy || "rating").trim().toLowerCase();
+      const normalizedSortOrder = String(sortOrder || "desc").trim().toLowerCase();
+      const sortDirection = normalizedSortOrder === "asc" ? 1 : -1;
+
+      const sortMap = {
+        rating: "publicStats.averageRating",
+        hourlyrate: "tutorProfile.hourlyRate",
+        subject: "tutorProfile.expertiseSubjects.0",
+      };
+
+      const sortField =
+        sortMap[normalizedSortBy] || "publicStats.averageRating";
+
       const tutors = await UserModel.find(query)
         .select(
           [
@@ -196,7 +229,7 @@ class TutorsController {
             "publicStats",
           ].join(" ")
         )
-        .sort({ "publicStats.averageRating": -1 })
+        .sort({ [sortField]: sortDirection, _id: 1 })
         .limit(20)
         .lean();
 
