@@ -213,433 +213,455 @@ export const ViewDetailsClient = () => {
   const showDeadlineCountdown = timerActiveStatuses.includes(assignment.status);
 
   return (
-    <div className="w-full mx-auto px-4 py-6 sm:px-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
-                {assignment.status === 'completed' && (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    Assignment completed
+    <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6">
+      <div className="space-y-6">
+        <div className="">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-gray-600 mb-2">Assignment Details</p>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
+                </div>
+                {assignment.status && (
+                  <span
+                    className={`inline-flex capitalize items-center rounded-full px-3 py-2 text-xs font-semibold
+      ${assignment.status === 'completed'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-gray-100 text-gray-600'
+                      }
+    `}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full mr-2
+        ${assignment.status === 'completed'
+                          ? 'bg-emerald-600'
+                          : assignment.status === 'in-progress'
+                            ? 'bg-blue-500 animate-pulse'
+                            : 'bg-gray-500'
+                        }
+      `}
+                    ></span>
+
+                    Status: {assignment.status}
                   </span>
                 )}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Clock size={16} />
-                    <span>{formatDeadline(assignment.deadline, showDeadlineCountdown)}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <MapPin size={16} />
-                    <span>{assignment.student?.name || 'Student'}</span>
-                  </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center space-x-1">
+                  <Clock size={16} />
+                  <span>{formatDeadline(assignment.deadline, showDeadlineCountdown)}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <MapPin size={16} />
+                  <span>{assignment.student?.name || 'Student'}</span>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <button className="w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
-                  <Heart size={16} />
-                </button>
-              </div>
             </div>
-
-            <div className="text-sm text-gray-600 mb-4 flex items-center">
-              <span className="text-primary-300 font-medium">Report assignment issue</span>{' '}
-              <button
-                onClick={() => setReportOpen(true)}
-                className="text-gray-400 hover:text-gray-600 p-2"
-              >
-                <Flag size={16} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button className="w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
+                <Heart size={16} />
               </button>
             </div>
+          </div>
 
-            {!isTutorRole && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
-                <div className="relative overflow-x-auto">
-                  <div className="min-w-[640px]">
-                    <div className="absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0">
-                      <div
-                        className="absolute top-0 left-0 h-full bg-primary-500"
-                        style={{ width: progressWidth }}
-                      ></div>
-                    </div>
+          <div className="text-sm text-gray-600 mb-4 flex items-center">
+            <span className="text-primary-300 font-medium">Report assignment issue</span>{' '}
+            <button
+              onClick={() => setReportOpen(true)}
+              className="text-gray-400 hover:text-gray-600 p-2"
+            >
+              <Flag size={16} />
+            </button>
+          </div>
 
-                    <div className="relative z-10 flex justify-between">
-                      {workflowSteps.map((step, index) => {
-                        const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
-                        const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
-                        const StepIcon = step.icon;
-                        const circleClass = isComplete
-                          ? 'bg-primary-500 text-white'
-                          : isCurrent
-                            ? 'bg-white border-2 border-primary-500 text-primary-500'
-                            : 'bg-white border border-gray-200 text-gray-400';
-                        const labelClass =
-                          isAssignmentCompleted || isCurrent ? 'text-gray-900' : 'text-gray-700';
-                        const statusClass =
-                          isAssignmentCompleted || isComplete || isCurrent
-                            ? 'text-primary-300 font-medium'
-                            : 'text-gray-400';
-                        const statusText = isAssignmentCompleted
+          {!isTutorRole && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
+              <div className="relative overflow-x-auto">
+                <div className="min-w-[640px]">
+                  <div className="absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0">
+                    <div
+                      className="absolute top-0 left-0 h-full bg-primary-500"
+                      style={{ width: progressWidth }}
+                    ></div>
+                  </div>
+
+                  <div className="relative z-10 flex justify-between">
+                    {workflowSteps.map((step, index) => {
+                      const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
+                      const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
+                      const StepIcon = step.icon;
+                      const circleClass = isComplete
+                        ? 'bg-primary-500 text-white'
+                        : isCurrent
+                          ? 'bg-white border-2 border-primary-500 text-primary-500'
+                          : 'bg-white border border-gray-200 text-gray-400';
+                      const labelClass =
+                        isAssignmentCompleted || isCurrent ? 'text-gray-900' : 'text-gray-700';
+                      const statusClass =
+                        isAssignmentCompleted || isComplete || isCurrent
+                          ? 'text-primary-300 font-medium'
+                          : 'text-gray-400';
+                      const statusText = isAssignmentCompleted
+                        ? 'Completed'
+                        : isComplete
                           ? 'Completed'
-                          : isComplete
-                            ? 'Completed'
-                            : isCurrent
-                              ? 'In Progress'
-                              : 'Pending';
+                          : isCurrent
+                            ? 'In Progress'
+                            : 'Pending';
 
-                        return (
-                          <div key={step.id} className="flex flex-col items-center w-24">
-                            <div
-                              className={`w-10 h-10 rounded-full ${circleClass} flex items-center justify-center mb-2 shadow-sm transition-colors`}
-                            >
-                              <StepIcon size={18} />
-                            </div>
-                            <div className={`text-xs font-medium ${labelClass} text-center`}>
-                              {step.label}
-                            </div>
-                            <div className={`text-xs ${statusClass}`}>{statusText}</div>
+                      return (
+                        <div key={step.id} className="flex flex-col items-center w-24">
+                          <div
+                            className={`w-10 h-10 rounded-full ${circleClass} flex items-center justify-center mb-2 shadow-sm transition-colors`}
+                          >
+                            <StepIcon size={18} />
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className={`text-xs font-medium ${labelClass} text-center`}>
+                            {step.label}
+                          </div>
+                          <div className={`text-xs ${statusClass}`}>{statusText}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Assignment Description</h2>
-            <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center">
-                  <Star size={20} className="text-secondary-300" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
-                  </div>
-                  <div className="text-sm text-gray-600">Estimated Cost</div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <Clock size={20} className="text-primary-300" />
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-gray-900 capitalize">
-                    {assignment.priority} Priority
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize">{assignment.subject}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">Status:</span>{' '}
-                <span className="capitalize">{assignment.status}</span>
-              </div>
-              {latestSubmissionStatus === 'under_review' && (
-                <div className="text-sm text-amber-700 mt-1">
-                  <span className="font-medium">Review status:</span> Under review
-                </div>
-              )}
-              <div className="text-sm text-gray-600 mt-1">
-                <span className="font-medium">Created:</span>{' '}
-                {new Date(assignment.createdAt).toLocaleDateString()}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">
-                <span className="font-medium">Payment:</span>{' '}
-                <span className="capitalize">{assignment.paymentStatus}</span>
-              </div>
-            </div>
-          </div>
-
-          {assignment.topics && assignment.topics.length > 0 && (
-            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Topics</h2>
-
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Topics Covered</h3>
-                <div className="flex flex-wrap gap-2">
-                  {assignment.topics.map((topic: string, index: number) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                    >
-                      {topic}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Activity</h2>
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Assignment Description</h2>
+          <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
+        </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Views:</span>
-                <span className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
-                  <span className="font-medium">{assignment.viewCount || 0}</span>
-                </span>
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center">
+                <Star size={20} className="text-secondary-300" />
               </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Proposals Submitted:</span>
-                <span className="font-medium">{assignment.proposalCount || 0}</span>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+                </div>
+                <div className="text-sm text-gray-600">Estimated Cost</div>
               </div>
+            </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">In Discussion:</span>
-                <span className="font-medium">{assignment.discussionCount || 0}</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                <Clock size={20} className="text-primary-300" />
               </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Hired:</span>
-                {assignment.assignedTutor ? (
-                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                    Hired
-                  </span>
-                ) : (
-                  <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
-                    Not Yet
-                  </span>
-                )}
+              <div>
+                <div className="text-lg font-semibold text-gray-900 capitalize">
+                  {assignment.priority} Priority
+                </div>
+                <div className="text-sm text-gray-600 capitalize">{assignment.subject}</div>
               </div>
             </div>
           </div>
 
-          {showPaymentSection && (
-            <PaymentComponent
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Status:</span>{' '}
+              <span className="capitalize">{assignment.status}</span>
+            </div>
+            {latestSubmissionStatus === 'under_review' && (
+              <div className="text-sm text-amber-700 mt-1">
+                <span className="font-medium">Review status:</span> Under review
+              </div>
+            )}
+            <div className="text-sm text-gray-600 mt-1">
+              <span className="font-medium">Created:</span>{' '}
+              {new Date(assignment.createdAt).toLocaleDateString()}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">
+              <span className="font-medium">Payment:</span>{' '}
+              <span className="capitalize">{assignment.paymentStatus}</span>
+            </div>
+          </div>
+        </div>
+
+        {assignment.topics && assignment.topics.length > 0 && (
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Topics</h2>
+
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Topics Covered</h3>
+              <div className="flex flex-wrap gap-2">
+                {assignment.topics.map((topic: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Activity</h2>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Views:</span>
+              <span className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
+                <span className="font-medium">{assignment.viewCount || 0}</span>
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Proposals Submitted:</span>
+              <span className="font-medium">{assignment.proposalCount || 0}</span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">In Discussion:</span>
+              <span className="font-medium">{assignment.discussionCount || 0}</span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Hired:</span>
+              {assignment.assignedTutor ? (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                  Hired
+                </span>
+              ) : (
+                <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
+                  Not Yet
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {showPaymentSection && (
+          <PaymentComponent
+            assignment={assignment}
+            onPaymentComplete={() => {
+              refetch();
+            }}
+            currency={currency}
+          />
+        )}
+
+        {showPaymentComplete && (
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
+            <p className="text-sm text-gray-600">
+              Paid amount:{' '}
+              {formatAmount(
+                assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
+              )}
+            </p>
+          </div>
+        )}
+
+        {isAssignmentTutor && assignment.paymentStatus !== 'paid' && (
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Awaiting payment</h2>
+            <p className="text-sm text-gray-600">
+              The student must complete payment before you can submit work.
+            </p>
+          </div>
+        )}
+
+        {isAssignmentTutor && assignment.paymentStatus === 'paid' && canTutorSubmitWork && (
+          <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
+        )}
+
+        {isAssignmentTutor && assignment.status === 'submitted' && (
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Submission sent</h2>
+            <p className="text-sm text-gray-600">
+              Your submission is with the student for review. You will be notified if revisions
+              are requested.
+            </p>
+          </div>
+        )}
+
+        {isAssignmentTutor &&
+          ['submitted', 'completed', 'revision_requested'].includes(assignment.status) && (
+            <SubmissionReviewSummary
               assignment={assignment}
-              onPaymentComplete={() => {
-                refetch();
-              }}
-              currency={currency}
+              submissionStatus={latestSubmissionStatus}
             />
           )}
 
-          {showPaymentComplete && (
+        {isAssignmentStudent &&
+          assignment.assignedTutor &&
+          assignment.paymentStatus === 'paid' &&
+          [
+            'in_progress',
+            'submission_pending',
+            'revision_requested',
+            'assigned',
+            'overdue',
+          ].includes(assignment.status) && (
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Work in progress</h2>
               <p className="text-sm text-gray-600">
-                Paid amount:{' '}
-                {formatAmount(
-                  assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
-                )}
+                Your tutor is working on the assignment. We will notify you when the submission is
+                ready.
               </p>
             </div>
           )}
 
-          {isAssignmentTutor && assignment.paymentStatus !== 'paid' && (
-            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Awaiting payment</h2>
-              <p className="text-sm text-gray-600">
-                The student must complete payment before you can submit work.
-              </p>
+        {showCompletionFeedback && (
+          <CompletionFeedback assignment={assignment} submissionStatus={latestSubmissionStatus} />
+        )}
+
+        {showProposal && isTutorRole && assignment && (
+          <SendProposalModal
+            isOpen={showProposal}
+            onClose={() => setShowProposal(false)}
+            assignment={assignment}
+            currency={currency}
+          />
+        )}
+
+        {isAssignmentStudent && (
+          <div className="mt-6">
+            <ProposalsList assignmentId={assignment._id} isStudent={true} currency={currency} />
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">Budget:</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">
+              {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
             </div>
-          )}
-
-          {isAssignmentTutor && assignment.paymentStatus === 'paid' && canTutorSubmitWork && (
-            <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
-          )}
-
-          {isAssignmentTutor && assignment.status === 'submitted' && (
-            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Submission sent</h2>
-              <p className="text-sm text-gray-600">
-                Your submission is with the student for review. You will be notified if revisions
-                are requested.
-              </p>
+            <div className="text-sm text-gray-500 mb-4 capitalize">
+              {assignment.priority} priority
             </div>
-          )}
+          </div>
+        </div>
 
-          {isAssignmentTutor &&
-            ['submitted', 'completed', 'revision_requested'].includes(assignment.status) && (
-              <SubmissionReviewSummary
-                assignment={assignment}
-                submissionStatus={latestSubmissionStatus}
-              />
-            )}
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
 
-          {isAssignmentStudent &&
-            assignment.assignedTutor &&
-            assignment.paymentStatus === 'paid' &&
-            [
-              'in_progress',
-              'submission_pending',
-              'revision_requested',
-              'assigned',
-              'overdue',
-            ].includes(assignment.status) && (
-              <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Work in progress</h2>
-                <p className="text-sm text-gray-600">
-                  Your tutor is working on the assignment. We will notify you when the submission is
-                  ready.
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
+              <span className="text-sm text-gray-600">
+                {assignment.student?.name || 'Student Name'}
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
+              <span className="text-sm text-gray-600">
+                Email: {assignment.student?.email || 'student@example.com'}
+              </span>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200">
+              <div className="text-sm text-gray-900 font-medium mb-1 capitalize">
+                {assignment.subject}
+              </div>
+              <div className="text-sm text-gray-600 mb-3 capitalize">
+                {assignment.status} Assignment
+              </div>
+
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="pt-2">
+                  <div className="font-medium text-gray-900">Deadline:</div>
+                  <div>{new Date(assignment.deadline).toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+            {assignment.requestedTutor && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="text-sm font-medium text-gray-900 mb-2">Requested Tutor</div>
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <UserIcon size={16} className="text-gray-400" />
+                    <span>{assignment.requestedTutor.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleRequestedTutorProfile(assignment)}
+                    className="text-xs font-semibold text-primary-400 hover:text-primary-500"
+                  >
+                    View profile
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  This assignment request is visible only to the selected tutor.
                 </p>
               </div>
             )}
-
-          {showCompletionFeedback && (
-            <CompletionFeedback assignment={assignment} submissionStatus={latestSubmissionStatus} />
-          )}
-
-          {showProposal && isTutorRole && assignment && (
-            <SendProposalModal
-              isOpen={showProposal}
-              onClose={() => setShowProposal(false)}
-              assignment={assignment}
-              currency={currency}
-            />
-          )}
-
-          {isAssignmentStudent && (
-            <div className="mt-6">
-              <ProposalsList assignmentId={assignment._id} isStudent={true} currency={currency} />
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <div className="text-center">
-              <div className="text-sm text-gray-600 mb-2">Budget:</div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">
-                {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
-              </div>
-              <div className="text-sm text-gray-500 mb-4 capitalize">
-                {assignment.priority} priority
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
-                <span className="text-sm text-gray-600">
-                  {assignment.student?.name || 'Student Name'}
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
-                <span className="text-sm text-gray-600">
-                  Email: {assignment.student?.email || 'student@example.com'}
-                </span>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-900 font-medium mb-1 capitalize">
-                  {assignment.subject}
-                </div>
-                <div className="text-sm text-gray-600 mb-3 capitalize">
-                  {assignment.status} Assignment
-                </div>
-
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="pt-2">
-                    <div className="font-medium text-gray-900">Deadline:</div>
-                    <div>{new Date(assignment.deadline).toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-              {assignment.requestedTutor && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm font-medium text-gray-900 mb-2">Requested Tutor</div>
-                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <UserIcon size={16} className="text-gray-400" />
-                      <span>{assignment.requestedTutor.name}</span>
-                    </div>
-                    <button
-                      onClick={() => handleRequestedTutorProfile(assignment)}
-                      className="text-xs font-semibold text-primary-400 hover:text-primary-500"
-                    >
-                      View profile
-                    </button>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    This assignment request is visible only to the selected tutor.
-                  </p>
-                </div>
-              )}
-              {isTutorRole && assignment.student?._id && (
-                <button
-                  onClick={() => setReportStudentOpen(true)}
-                  className="mt-4 w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-100"
-                >
-                  Report student profile
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Resources</h3>
-
-            <div className="space-y-3">
-              {assignment.attachments && assignment.attachments.length > 0 && (
-                <>
-                  {assignment.attachments.map((attachment: any, index: number) => (
-                    <a
-                      key={index}
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                    >
-                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                        <FileText size={20} className="text-primary-600" />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {attachment.originalName}
-                        </div>
-                        <div className="text-xs text-gray-500">Attachment</div>
-                      </div>
-                      <div className="text-primary-600">
-                        <Copy size={16} />
-                      </div>
-                    </a>
-                  ))}
-                </>
-              )}
-              {(!assignment.attachments || assignment.attachments.length === 0) && (
-                <div className="text-sm text-gray-500">No attachments available.</div>
-              )}
-            </div>
-            {isTutorRole && canTutorSubmitProposal && (
+            {isTutorRole && assignment.student?._id && (
               <button
-                onClick={handleSendProposal}
-                className="bg-secondary-300 my-3 w-full flex justify-center hover:bg-secondary-200 text-gray-900 px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                onClick={() => setReportStudentOpen(true)}
+                className="mt-4 w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-100"
               >
-                <Send size={16} />
-                <span>Send Proposal</span>
+                Report student profile
               </button>
             )}
-            {isTutorRole && !canTutorSubmitProposal && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                This assignment is not accepting proposals right now.
-              </div>
-            )}
           </div>
         </div>
+
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resources</h3>
+
+          <div className="space-y-3">
+            {assignment.attachments && assignment.attachments.length > 0 && (
+              <>
+                {assignment.attachments.map((attachment: any, index: number) => (
+                  <a
+                    key={index}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                  >
+                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <FileText size={20} className="text-primary-600" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {attachment.originalName}
+                      </div>
+                      <div className="text-xs text-gray-500">Attachment</div>
+                    </div>
+                    <div className="text-primary-600">
+                      <Copy size={16} />
+                    </div>
+                  </a>
+                ))}
+              </>
+            )}
+            {(!assignment.attachments || assignment.attachments.length === 0) && (
+              <div className="text-sm text-gray-500">No attachments available.</div>
+            )}
+          </div>
+          {isTutorRole && canTutorSubmitProposal && (
+            <button
+              onClick={handleSendProposal}
+              className="bg-secondary-300 my-3 w-full flex justify-center hover:bg-secondary-200 text-gray-900 px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+            >
+              <Send size={16} />
+              <span>Send Proposal</span>
+            </button>
+          )}
+          {isTutorRole && !canTutorSubmitProposal && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              This assignment is not accepting proposals right now.
+            </div>
+          )}
+        </div>
       </div>
+
 
       {assignment && (
         <ReportModal
