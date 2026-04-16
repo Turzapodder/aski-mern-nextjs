@@ -16,6 +16,10 @@ import {
   Award,
   AlertCircle,
   User as UserIcon,
+  Wallet,
+  ChartLine,
+  Eye,
+  MessagesSquare,
 } from 'lucide-react';
 import SendProposalModal from '@/components/SendProposalModal';
 import ProposalsList from '@/components/ProposalsList';
@@ -213,7 +217,7 @@ export const ViewDetailsClient = () => {
   const showDeadlineCountdown = timerActiveStatuses.includes(assignment.status);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 sm:px-6">
+    <div className="w-full mx-auto px-4 py-6 sm:px-6">
       <div className="space-y-6">
         <div className="">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
@@ -221,14 +225,14 @@ export const ViewDetailsClient = () => {
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
                   <p className="text-sm text-gray-600 mb-2">Assignment Details</p>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
                 </div>
                 {assignment.status && (
                   <span
                     className={`inline-flex capitalize items-center rounded-full px-3 py-2 text-xs font-semibold
       ${assignment.status === 'completed'
                         ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-gray-100 text-gray-600'
+                        : 'bg-gray-200 text-gray-600'
                       }
     `}
                   >
@@ -237,7 +241,7 @@ export const ViewDetailsClient = () => {
         ${assignment.status === 'completed'
                           ? 'bg-emerald-600'
                           : assignment.status === 'in-progress'
-                            ? 'bg-blue-500 animate-pulse'
+                            ? 'bg-orange-500 animate-pulse'
                             : 'bg-gray-500'
                         }
       `}
@@ -258,11 +262,11 @@ export const ViewDetailsClient = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {/* <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button className="w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
                 <Heart size={16} />
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="text-sm text-gray-600 mb-4 flex items-center">
@@ -274,68 +278,143 @@ export const ViewDetailsClient = () => {
               <Flag size={16} />
             </button>
           </div>
-
-          {!isTutorRole && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
-              <div className="relative overflow-x-auto">
-                <div className="min-w-[640px]">
-                  <div className="absolute top-5 left-0 right-0 h-1.5 bg-gray-200 z-0">
-                    <div
-                      className="absolute top-0 left-0 h-full bg-primary-500"
-                      style={{ width: progressWidth }}
-                    ></div>
+          <div className='grid grid-cols-1 lg:grid-cols-12 gap-10'>
+            <div className='lg:col-span-8 space-y-10'>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-primary-600 text-white p-8 rounded-xl editorial-shadow flex flex-col justify-between h-40 group hover:bg-primary-container transition-colors">
+                  <div className="flex justify-between items-start">
+                    <Wallet size={24} />
+                    <span className="text-xs font-bold uppercase tracking-widest bg-white/10 px-2 py-1 rounded">Budget</span>
                   </div>
-
-                  <div className="relative z-10 flex justify-between">
-                    {workflowSteps.map((step, index) => {
-                      const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
-                      const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
-                      const StepIcon = step.icon;
-                      const circleClass = isComplete
-                        ? 'bg-primary-500 text-white'
-                        : isCurrent
-                          ? 'bg-white border-2 border-primary-500 text-primary-500'
-                          : 'bg-white border border-gray-200 text-gray-400';
-                      const labelClass =
-                        isAssignmentCompleted || isCurrent ? 'text-gray-900' : 'text-gray-700';
-                      const statusClass =
-                        isAssignmentCompleted || isComplete || isCurrent
-                          ? 'text-primary-300 font-medium'
-                          : 'text-gray-400';
-                      const statusText = isAssignmentCompleted
-                        ? 'Completed'
-                        : isComplete
-                          ? 'Completed'
-                          : isCurrent
-                            ? 'In Progress'
-                            : 'Pending';
-
-                      return (
-                        <div key={step.id} className="flex flex-col items-center w-24">
-                          <div
-                            className={`w-10 h-10 rounded-full ${circleClass} flex items-center justify-center mb-2 shadow-sm transition-colors`}
-                          >
-                            <StepIcon size={18} />
-                          </div>
-                          <div className={`text-xs font-medium ${labelClass} text-center`}>
-                            {step.label}
-                          </div>
-                          <div className={`text-xs ${statusClass}`}>{statusText}</div>
-                        </div>
-                      );
-                    })}
+                  <div>
+                    <p className="text-sm font-medium opacity-70 mb-1">Estimated Budget</p>
+                    <p className="text-4xl font-bold tracking-tight">$150.00</p>
+                  </div>
+                </div>
+                <div className="bg-white p-8 rounded-xl border border-outline-variant editorial-shadow flex flex-col justify-between h-40">
+                  <div className="flex justify-between items-start">
+                    <ChartLine size={24} color='red' />
+                    <span className="text-xs font-bold uppercase tracking-widest bg-red-100 text-error px-2 py-1 rounded">Urgent</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-on-surface-variant mb-1">Priority Level</p>
+                    <p className="text-4xl font-bold tracking-tight text-primary">High</p>
                   </div>
                 </div>
               </div>
+              {!isTutorRole && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
+                  <div className="relative overflow-x-auto pb-6 pt-2">
+                    <div className="min-w-[900px] relative px-4">
+                      {/* Connecting Line */}
+                      <div className="absolute top-[50%] left-[100px] right-[100px] h-[3px] -translate-y-1/2 bg-gray-200 z-0">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-primary-500 transition-all duration-500"
+                          style={{ width: progressWidth }}
+                        ></div>
+                      </div>
+
+                      {/* Cards */}
+                      <div className="relative z-10 flex justify-between items-center gap-4">
+                        {workflowSteps.map((step, index) => {
+                          const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
+                          const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
+                          const StepIcon = step.icon;
+
+                          let bgClass = "bg-gray-300 shadow-sm";
+                          let iconClass = "text-gray-400";
+                          let labelClass = "text-white";
+                          let statusClass = "text-gray-100";
+
+                          if (isComplete) {
+                            bgClass = "bg-gradient-to-r from-primary-400 to-primary-600 shadow-md shadow-primary-500/20";
+                            iconClass = "text-primary-500";
+                            labelClass = "text-white";
+                            statusClass = "text-primary-100";
+                          } else if (isCurrent) {
+                            bgClass = "bg-gray-400 shadow-md";
+                            iconClass = "text-gray-500";
+                            labelClass = "text-white";
+                            statusClass = "text-gray-100";
+                          }
+
+                          const statusText = isAssignmentCompleted
+                            ? 'Completed'
+                            : isComplete
+                              ? 'Completed'
+                              : isCurrent
+                                ? 'In Progress'
+                                : 'Pending';
+
+                          return (
+                            <div
+                              key={step.id}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-[20px] w-[170px] ${bgClass} transition-all duration-300 hover:-translate-y-1`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-white flex flex-shrink-0 items-center justify-center shadow-sm">
+                                <StepIcon size={16} className={iconClass} strokeWidth={2.5} />
+                              </div>
+                              <div className="flex flex-col text-left overflow-hidden">
+                                <span className={`text-[13px] font-semibold leading-tight truncate ${labelClass}`}>
+                                  {step.label}
+                                </span>
+                                <span className={`text-[11px] font-medium leading-tight mt-0.5 ${statusClass}`}>
+                                  {statusText}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Assignment Description</h2>
+                <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
+              </div>
+              <section className="bg-surface-container-lowest p-10 rounded-xl editorial-shadow border border-outline-variant/30">
+                <h3 className="text-2xl font-bold text-primary mb-8">Project Activity</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-outline-variant/30">
+                      <Eye size={24} />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold tracking-tight text-primary">24</p>
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Views</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-outline-variant/30">
+                      <FileText size={24} />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold tracking-tight text-primary">3</p>
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Proposals</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
+                    <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+                      <MessagesSquare size={24} />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold tracking-tight text-primary">Active</p>
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Discussion</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
-          )}
+            <div className='lg:col-span-4 space-y-10'></div>
+          </div>
+
+
         </div>
 
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Assignment Description</h2>
-          <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
-        </div>
+
 
         <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
