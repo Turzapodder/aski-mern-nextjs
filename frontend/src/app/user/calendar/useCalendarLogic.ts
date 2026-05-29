@@ -5,6 +5,7 @@ export type AssignmentCalendarItem = {
   id: string;
   title: string;
   deadline: string;
+  createdAt?: string;
   status: string;
   assignedTutorName?: string;
   studentName?: string;
@@ -17,6 +18,7 @@ export type SessionCalendarItem = {
   scheduledTime: string;
   duration: number;
   subject: string;
+  status?: string;
 };
 
 export const createUserId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -90,16 +92,25 @@ export const useCalendarLogic = () => {
         const deadline = new Date(assignment.deadline);
         if (Number.isNaN(deadline.getTime())) return;
 
+        // Multi-day span: from createdAt (when posted) to deadline
+        let startDate = assignment.createdAt ? new Date(assignment.createdAt) : new Date(deadline.getTime() - 3 * 24 * 60 * 60 * 1000);
+        if (Number.isNaN(startDate.getTime()) || startDate > deadline) {
+          startDate = new Date(deadline.getTime() - 24 * 60 * 60 * 1000); // 1 day default span if invalid
+        }
+
         const counterpart = assignment.assignedTutorName || assignment.studentName || 'Assignment';
 
         mergedEvents.push({
           id: eventId++,
-          startDate: deadline.toISOString(),
+          startDate: startDate.toISOString(),
           endDate: deadline.toISOString(),
           title: assignment.title,
           color: 'red',
-          description: `Deadline with ${counterpart}`,
+          description: `Deadline with ${counterpart} (Status: ${assignment.status})`,
           user: ensureUser(counterpart),
+          redirectUrl: `/user/assignments/view-details/${assignment.id}`,
+          type: 'assignment',
+          status: assignment.status,
         });
       });
 
@@ -118,8 +129,11 @@ export const useCalendarLogic = () => {
           endDate: endDate.toISOString(),
           title: `Session with ${counterpart}`,
           color: 'blue',
-          description: session.subject,
+          description: `Subject: ${session.subject} (Status: ${session.status || 'Scheduled'})`,
           user: ensureUser(counterpart),
+          redirectUrl: '/user/messages',
+          type: 'session',
+          status: session.status || 'scheduled',
         });
       });
 

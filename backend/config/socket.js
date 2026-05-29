@@ -267,6 +267,15 @@ class SocketManager {
           return;
         }
 
+        // Enforce chat locked check
+        if (chat.isLockedUntil && new Date() < new Date(chat.isLockedUntil)) {
+          socket.emit('error', {
+            code: 'CHAT_LOCKED',
+            message: 'This chat is locked until the session starts.'
+          });
+          return;
+        }
+
         const gate = await this.canTutorSendMessage(chat, socket.user);
         if (!gate.allowed) {
           socket.emit('error', { message: gate.reason || 'Message not allowed' });

@@ -4,15 +4,13 @@ import React, { useState, useMemo } from 'react';
 import {
   AlertCircle,
   BookOpen,
-  Search,
-  Flag,
-  ArrowUpDown,
-  Filter
+  ArrowUpDown
 } from 'lucide-react';
 import SendProposalModal from '@/components/SendProposalModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAssignmentsLogic } from '@/lib/hooks/useAssignmentsLogic';
 import AssignmentCard from './AssignmentCard';
+import { AdvancedFilter, FilterField } from '@/components/AdvancedFilter';
 
 export const AssignmentsClient = () => {
   const {
@@ -41,10 +39,39 @@ export const AssignmentsClient = () => {
   const [searchInput, setSearchInput] = useState(actualSearchTerm);
   const [sortOrder, setSortOrder] = useState('newest');
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchTerm(searchInput);
-  };
+  const filterFields: FilterField[] = [
+    {
+      id: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'created', label: 'Created' },
+        { value: 'proposal_received', label: 'Proposal Received' },
+        { value: 'proposal_accepted', label: 'Proposal Accepted' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'submission_pending', label: 'Submission Pending' },
+        { value: 'revision_requested', label: 'Revision Requested' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'assigned', label: 'Assigned' },
+        { value: 'submitted', label: 'Submitted' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'overdue', label: 'Overdue' },
+        { value: 'disputed', label: 'Disputed' },
+      ],
+    },
+    {
+      id: 'priority',
+      label: 'Priority',
+      type: 'select',
+      options: [
+        { value: 'urgent', label: 'Urgent' },
+        { value: 'high', label: 'High' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'low', label: 'Low' },
+      ],
+    },
+  ];
 
   const sortedAssignments = useMemo(() => {
     const sorted = [...assignments];
@@ -109,78 +136,29 @@ export const AssignmentsClient = () => {
           <p className="text-gray-500 text-lg">Discover and manage assignment opportunities.</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/60 mb-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            
-            <form onSubmit={handleSearchSubmit} className="flex-1 relative flex">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search assignments by title or topics..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border-0 rounded-l-xl focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all outline-none text-gray-700 font-medium"
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-r-xl transition-colors shrink-0"
-              >
-                Search
-              </button>
-            </form>
-
-            <div className="w-px bg-gray-100 hidden lg:block mx-1"></div>
-
-            <div className="flex flex-col sm:flex-row gap-3 lg:w-auto">
-              <div className="relative group shrink-0 min-w-40">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full pl-9 pr-10 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all outline-none text-gray-700 font-medium appearance-none cursor-pointer relative"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="created">Created</option>
-                  <option value="proposal_received">Proposal received</option>
-                  <option value="proposal_accepted">Proposal accepted</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="submission_pending">Submission pending</option>
-                  <option value="revision_requested">Revision requested</option>
-                  <option value="pending">Pending</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="disputed">Disputed</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-
-              <div className="relative group shrink-0 min-w-37.5">
-                <Flag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full pl-9 pr-10 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all outline-none text-gray-700 font-medium appearance-none cursor-pointer relative"
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-            </div>
-            
-          </div>
+        <div className="mb-6">
+          <AdvancedFilter
+            searchPlaceholder="Search assignments by title or topics..."
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            onSearchSubmit={() => setSearchTerm(searchInput)}
+            fields={filterFields}
+            filterValues={{
+              status: statusFilter,
+              priority: priorityFilter,
+            }}
+            onFilterChange={(id, value) => {
+              if (id === 'status') setStatusFilter(value);
+              if (id === 'priority') setPriorityFilter(value);
+            }}
+            onReset={() => {
+              setSearchInput('');
+              setSearchTerm('');
+              setStatusFilter('all');
+              setPriorityFilter('all');
+            }}
+            onApply={() => setSearchTerm(searchInput)}
+          />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 px-1">

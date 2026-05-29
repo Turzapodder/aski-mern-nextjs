@@ -2,14 +2,14 @@ import React from 'react';
 import { Clock, Calendar, DollarSign, Eye, Send, Flag, Activity, Tag } from 'lucide-react';
 import { getPriorityColor, getStatusColor, formatDate } from '@/lib/hooks/useAssignmentsLogic';
 
-const AssignmentCard = ({ 
-  assignment, 
-  latestStatus, 
-  isTutor, 
-  currentUser, 
-  formatAmount, 
-  handleViewDetails, 
-  handleSendProposal 
+const AssignmentCard = ({
+  assignment,
+  latestStatus,
+  isTutor,
+  currentUser,
+  formatAmount,
+  handleViewDetails,
+  handleSendProposal
 }: any) => {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 group">
@@ -63,18 +63,18 @@ const AssignmentCard = ({
               <Calendar className="w-4 h-4 text-gray-400" />
               <span><strong className="font-medium text-gray-700">Due:</strong> {formatDate(assignment.deadline)}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span><strong className="font-medium text-gray-700">Posted:</strong> {formatDate(assignment.createdAt)}</span>
-            </div>
-            {(assignment.budget ?? assignment.estimatedCost) > 0 && (
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-4 h-4 text-gray-400" />
-                <span className="font-bold text-gray-900">
-                  {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
-                </span>
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span><strong className="font-medium text-gray-700">Posted:</strong> {formatDate(assignment.createdAt)}</span>
               </div>
-            )}</div>
+              {(assignment.budget ?? assignment.estimatedCost) > 0 && (
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                  <span className="font-bold text-gray-900">
+                    {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+                  </span>
+                </div>
+              )}</div>
             <div className="flex items-center space-x-2 ">
               <span className="text-gray-400">By</span>
               <span className="font-medium text-gray-700 bg-white px-2 py-0.5 rounded shadow-sm border border-gray-100">{assignment.student.name}</span>

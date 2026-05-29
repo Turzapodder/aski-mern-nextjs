@@ -60,12 +60,6 @@ export const WalletClient = () => {
     );
   }
 
-  if (!isTutor) {
-    return (
-      <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">Access Denied</div>
-    );
-  }
-
   return (
     <div className="min-h-screen">
       <div className="relative overflow-hidden">

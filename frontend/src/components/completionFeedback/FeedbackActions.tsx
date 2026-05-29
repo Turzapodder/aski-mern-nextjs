@@ -1,5 +1,7 @@
 import { Star } from 'lucide-react';
 
+const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
 export default function FeedbackActions({
   rating,
   setRating,
@@ -9,36 +11,57 @@ export default function FeedbackActions({
   loading,
 }: any) {
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-6 pt-5 border-t border-gray-100 space-y-5">
+      {/* Rating */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Rating</p>
-
-        <div className="flex gap-2">
+        <p className="text-sm font-semibold text-gray-900 mb-2">Rate the tutor&apos;s work</p>
+        <div className="flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
+              type="button"
               onClick={() => setRating(value)}
-              className={(rating ?? 0) >= value ? 'text-amber-500' : 'text-gray-300'}
+              className="group p-0.5 transition-transform hover:scale-110"
             >
-              <Star className="h-5 w-5 fill-current" />
+              <Star
+                className={`h-7 w-7 transition-colors ${
+                  (rating ?? 0) >= value
+                    ? 'text-amber-400 fill-amber-400'
+                    : 'text-gray-200 fill-gray-200 group-hover:text-amber-200 group-hover:fill-amber-200'
+                }`}
+              />
             </button>
           ))}
+          {rating && (
+            <span className="ml-2 text-sm font-semibold text-amber-600">
+              {ratingLabels[rating]}
+            </span>
+          )}
         </div>
       </div>
 
-      <textarea
-        rows={4}
-        value={comments}
-        onChange={(e) => setComments(e.target.value)}
-        className="w-full border rounded-lg p-2 text-sm"
-      />
+      {/* Comments */}
+      <div>
+        <label htmlFor="feedback-comments" className="text-sm font-semibold text-gray-900 mb-2 block">
+          Comments <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <textarea
+          id="feedback-comments"
+          rows={3}
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          placeholder="Share your experience working with this tutor..."
+          className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-primary-300 focus:ring-2 focus:ring-primary-100 outline-none transition-all resize-none"
+        />
+      </div>
 
+      {/* Submit */}
       <button
         disabled={loading || !rating}
         onClick={onComplete}
-        className="w-full rounded-lg bg-primary-500 px-4 py-3 text-sm font-semibold text-white"
+        className="w-full rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 text-sm font-bold text-white transition-colors"
       >
-        {loading ? 'Submitting...' : 'Approve & complete'}
+        {loading ? 'Submitting...' : 'Approve & Complete Assignment'}
       </button>
     </div>
   );

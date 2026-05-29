@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, UnknownAction } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import { authApi } from './services/auth';
 import { chatApi } from './services/chat';
@@ -16,22 +16,35 @@ import authReducer from './features/auth/authSlice';
 import uiReducer from './features/ui/uiSlice';
 import { rtkToastMiddleware } from './middleware/rtkToastMiddleware';
 
+// 1. Combine all reducers
+const combinedReducer = combineReducers({
+  auth: authReducer,
+  ui: uiReducer,
+  [authApi.reducerPath]: authApi.reducer,
+  [chatApi.reducerPath]: chatApi.reducer,
+  [tutorApi.reducerPath]: tutorApi.reducer,
+  [studentApi.reducerPath]: studentApi.reducer,
+  [profileApi.reducerPath]: profileApi.reducer,
+  [assignmentsApi.reducerPath]: assignmentsApi.reducer,
+  [submissionsApi.reducerPath]: submissionsApi.reducer,
+  [proposalsApi.reducerPath]: proposalsApi.reducer,
+  [customOffersApi.reducerPath]: customOffersApi.reducer,
+  [reportsApi.reducerPath]: reportsApi.reducer,
+  [notificationsApi.reducerPath]: notificationsApi.reducer,
+});
+
+// 2. Define rootReducer that resets the entire Redux state (including RTK Query cache) to undefined on logout
+const rootReducer = (state: ReturnType<typeof combinedReducer> | undefined, action: UnknownAction) => {
+  if (action.type === 'auth/logout') {
+    // Setting state to undefined forces Redux to re-initialize every slice to its initialState,
+    // which completely wipes all cached data and avoids caching leakage when switching users.
+    state = undefined;
+  }
+  return combinedReducer(state, action);
+};
+
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    ui: uiReducer,
-    [authApi.reducerPath]: authApi.reducer,
-    [chatApi.reducerPath]: chatApi.reducer,
-    [tutorApi.reducerPath]: tutorApi.reducer,
-    [studentApi.reducerPath]: studentApi.reducer,
-    [profileApi.reducerPath]: profileApi.reducer,
-    [assignmentsApi.reducerPath]: assignmentsApi.reducer,
-    [submissionsApi.reducerPath]: submissionsApi.reducer,
-    [proposalsApi.reducerPath]: proposalsApi.reducer,
-    [customOffersApi.reducerPath]: customOffersApi.reducer,
-    [reportsApi.reducerPath]: reportsApi.reducer,
-    [notificationsApi.reducerPath]: notificationsApi.reducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       rtkToastMiddleware,
@@ -54,3 +67,4 @@ setupListeners(store.dispatch);
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+

@@ -8,6 +8,7 @@ const router = express.Router();
 // Public endpoints
 router.get("/", TutorsController.listTutors);
 router.get("/profile/:identifier", TutorsController.getPublicTutorProfile);
+router.get("/profile/:tutorId/slots", TutorsController.getAvailableSlots);
 
 // Protected endpoints
 router.use(AccessTokenAutoRefresh);

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Filter, Bookmark } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTutorBookmarks } from '@/lib/hooks/useTutorBookmarks';
 import {
@@ -13,15 +13,13 @@ import {
 import {
   TeacherCard,
   SortDropdown,
-  SearchBar,
-  FilterPanel,
 } from './components';
 import { SortOption } from '../../types/TutorsList';
+import { AdvancedFilter, FilterField } from '@/components/AdvancedFilter';
 
 export const TutorComponent = () => {
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('rating-desc');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
 
   // Use custom hooks
@@ -37,8 +35,15 @@ export const TutorComponent = () => {
   } = useTutorBookmarks();
   const teachers = useTeacherSections(showBookmarkedOnly ? bookmarkedTutors : tutors);
 
-  const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    updateFilter(key, value);
+  const filterFields: FilterField[] = [
+    { id: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Mathematics' },
+    { id: 'minRating', label: 'Min Rating', type: 'number', placeholder: 'e.g. 4.5' },
+    { id: 'maxRate', label: 'Max Rate', type: 'number', placeholder: 'e.g. 1500' },
+    { id: 'skills', label: 'Skills', type: 'text', placeholder: 'e.g. Algebra, Calculus' },
+  ];
+
+  const handleFilterChange = (key: string, value: any) => {
+    updateFilter(key as any, value);
   };
 
   const handleToggleBookmarkTutor = async (tutorId: string) => {
@@ -61,7 +66,7 @@ export const TutorComponent = () => {
   };
 
   return (
-    <div className="max-w-400 mx-auto p-6 md:p-8  pt-2 md:pt-2">
+    <div className="max-w-400 mx-auto p-6 md:p-8 pt-2 md:pt-2">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-4">
         <div>
@@ -71,49 +76,47 @@ export const TutorComponent = () => {
             with.
           </p>
         </div>
-
       </div>
 
-      {/* Search & Controls Section */}
-      <div className="flex flex-col md:flex-row gap-4 mb-10 items-center">
-        <SearchBar searchInput={searchInput} onSearchChange={setSearchInput} />
+      {/* Reusable Advanced Filter component */}
+      <div className="mb-6">
+        <AdvancedFilter
+          searchPlaceholder="Search teachers by name or keywords..."
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          fields={filterFields}
+          filterValues={filters}
+          onFilterChange={handleFilterChange}
+          onReset={clearFilters}
+          onApply={() => {}}
+        />
+      </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+      {/* Sorting & Filter Summaries Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 px-1">
+        <div className="text-sm font-medium text-gray-500 bg-white/60 px-3 py-1.5 rounded-xl inline-block border border-gray-100">
+          Found <span className="text-gray-900 font-bold">{teachers.length}</span> amazing teachers
+        </div>
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           <SortDropdown sortBy={sortBy} onSortChange={setSortBy} />
-
-          <button
-            onClick={() => setFiltersOpen((prev) => !prev)}
-            className={`p-3 bg-white rounded-xl shadow-sm ring-1 ring-gray-100 hover:bg-gray-50 ${
-              filtersOpen ? 'ring-purple-200' : ''
-            }`}
-          >
-            <Filter className="w-5 h-5 text-gray-600" />
-          </button>
-
+          
           <button
             onClick={handleToggleBookmarkedView}
-            className={`p-3 rounded-xl shadow-sm ring-1 transition-colors ${
+            className={`p-2.5 rounded-xl shadow-sm ring-1 transition-colors flex items-center gap-2 text-sm font-bold ${
               showBookmarkedOnly
-                ? 'bg-amber-50 ring-amber-200 hover:bg-amber-100'
-                : 'bg-white ring-gray-100 hover:bg-gray-50'
+                ? 'bg-amber-50 ring-amber-200 text-amber-700 hover:bg-amber-100'
+                : 'bg-white ring-gray-100 text-gray-600 hover:bg-gray-50'
             }`}
             title={showBookmarkedOnly ? 'Show all tutors' : 'Show bookmarked tutors'}
           >
             <Bookmark
-              className={`w-5 h-5 ${showBookmarkedOnly ? 'fill-amber-500 text-amber-600' : 'text-gray-600'}`}
+              className={`w-4 h-4 ${showBookmarkedOnly ? 'fill-amber-500 text-amber-600' : 'text-gray-600'}`}
             />
+            <span>{showBookmarkedOnly ? 'Bookmarked' : 'Bookmarks'}</span>
           </button>
         </div>
       </div>
-
-      {/* Filter Panel */}
-      {filtersOpen && (
-        <FilterPanel
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onClearFilters={clearFilters}
-        />
-      )}
 
       {/* Loading State */}
       {(loading || (showBookmarkedOnly && loadingBookmarks)) && (

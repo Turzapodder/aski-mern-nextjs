@@ -66,6 +66,9 @@ export interface TutorProfile {
   availableDays?: string[];
   availableTimeSlots?: Array<string | { day: string; slots: string[] }>;
   hourlyRate?: number;
+  halfHourlyRate?: number;
+  allowedSessionDurations?: number[];
+  offdays?: string[];
   teachingMode?: 'Online' | 'Offline' | 'Hybrid';
   achievements?: string;
   bio?: string;

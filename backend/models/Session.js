@@ -14,7 +14,19 @@ const sessionSchema = new mongoose.Schema(
     },
     subject: { type: String, trim: true, required: true },
     scheduledTime: { type: Date, required: true },
+    endTime: { type: Date, required: true },
     duration: { type: Number, min: 1, required: true },
+    slot: { type: String, required: true },
+    price: { type: Number, required: true, min: 0 },
+    billingType: {
+      type: String,
+      enum: ["hourly", "half_hourly"],
+      required: true,
+    },
+    chat: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "chat",
+    },
     status: {
       type: String,
       enum: ["scheduled", "completed", "cancelled"],

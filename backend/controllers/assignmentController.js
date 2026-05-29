@@ -809,13 +809,13 @@ class AssignmentController {
       };
 
       if (status === "IN_PROGRESS") {
-        filter.status = { $in: ["assigned", "submitted", "proposal_accepted", "in_progress", "submission_pending", "revision_requested"] };
+        filter.status = { $in: ["created", "proposal_received", "proposal_accepted", "in_progress", "submission_pending", "revision_requested", "assigned", "submitted", "completed", "overdue", "disputed", "resolved"] };
       } else if (status) {
         filter.status = status;
       }
 
       const assignments = await AssignmentModel.find(filter)
-        .select("title deadline status student assignedTutor")
+        .select("title deadline status student assignedTutor createdAt")
         .populate("student", "name")
         .populate("assignedTutor", "name")
         .sort({ deadline: 1 })
@@ -825,6 +825,7 @@ class AssignmentController {
         id: assignment._id,
         title: assignment.title,
         deadline: assignment.deadline,
+        createdAt: assignment.createdAt,
         status: assignment.status,
         assignedTutorName: assignment.assignedTutor?.name || "",
         studentName: assignment.student?.name || "",
@@ -2062,6 +2063,78 @@ class AssignmentController {
             await TransactionModel.create(transactions);
           }
         }
+      }
+
+      // --- Update tutor publicStats (averageRating, totalReviews, completedProjects, successRate) ---
+      if (assignment.assignedTutor) {
+        try {
+          const tutorId = assignment.assignedTutor;
+
+          // Aggregate all completed assignments for this tutor that have a feedback rating
+          const ratingAgg = await AssignmentModel.aggregate([
+            {
+              $match: {
+                assignedTutor: tutorId,
+                status: "completed",
+                "feedback.rating": { $exists: true, $ne: null },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                averageRating: { $avg: "$feedback.rating" },
+                totalReviews: { $sum: 1 },
+              },
+            },
+          ]);
+
+          const completedCount = await AssignmentModel.countDocuments({
+            assignedTutor: tutorId,
+            status: "completed",
+          });
+
+          const totalProjectCount = await AssignmentModel.countDocuments({
+            assignedTutor: tutorId,
+            status: { $nin: ["draft", "cancelled"] },
+          });
+
+          const avg = ratingAgg.length > 0 ? ratingAgg[0].averageRating : 0;
+          const reviews = ratingAgg.length > 0 ? ratingAgg[0].totalReviews : 0;
+          const successRate =
+            totalProjectCount > 0
+              ? Math.round((completedCount / totalProjectCount) * 100)
+              : 0;
+
+          await UserModel.updateOne(
+            { _id: tutorId },
+            {
+              $set: {
+                "publicStats.averageRating": Math.round(avg * 10) / 10,
+                "publicStats.totalReviews": reviews,
+                "publicStats.completedProjects": completedCount,
+                "publicStats.totalProjects": totalProjectCount,
+                "publicStats.successRate": successRate,
+              },
+            }
+          );
+        } catch (statsErr) {
+          // Non-critical: don't fail the request if stats update fails
+          console.error("Failed to update tutor publicStats:", statsErr);
+        }
+      }
+
+      // Also update the student's completedProjects count
+      try {
+        const studentCompletedCount = await AssignmentModel.countDocuments({
+          student: userId,
+          status: "completed",
+        });
+        await UserModel.updateOne(
+          { _id: userId },
+          { $set: { "publicStats.completedProjects": studentCompletedCount } }
+        );
+      } catch (studentStatsErr) {
+        console.error("Failed to update student stats:", studentStatsErr);
       }
 
       if (assignment.assignedTutor) {

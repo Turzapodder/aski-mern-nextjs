@@ -1,3 +1,4 @@
+import { Star, CheckCircle } from 'lucide-react';
 import SubmissionDetails from './SubmissionDetails';
 import FeedbackActions from './FeedbackActions';
 import { useCompletionFeedback } from './hooks/useCompletionFeedback';
@@ -13,12 +14,63 @@ const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
     handleSubmitFeedback,
   } = useCompletionFeedback(assignment, onCompleted);
 
+  const isCompleted = assignment.status === 'completed';
+  const existingFeedback = assignment.feedback;
+
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
-      <h2 className="text-xl font-semibold mb-4">Submission review</h2>
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <h2 className="text-lg font-bold text-gray-900 mb-4">
+        {isCompleted ? 'Completed — Your Feedback' : 'Submission Review'}
+      </h2>
 
       <SubmissionDetails submission={latestSubmission} />
 
+      {/* Show existing feedback if assignment is already completed */}
+      {isCompleted && existingFeedback?.rating && (
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+              <CheckCircle size={16} className="text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Feedback submitted</p>
+              <p className="text-xs text-gray-400">
+                {existingFeedback.feedbackDate
+                  ? new Date(existingFeedback.feedbackDate).toLocaleDateString(undefined, {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : ''}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Star
+                key={value}
+                className={`h-5 w-5 ${
+                  existingFeedback.rating >= value
+                    ? 'text-amber-400 fill-amber-400'
+                    : 'text-gray-200 fill-gray-200'
+                }`}
+              />
+            ))}
+            <span className="ml-2 text-sm font-semibold text-gray-700">
+              {existingFeedback.rating}/5
+            </span>
+          </div>
+
+          {existingFeedback.comments && (
+            <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3 mt-2 leading-relaxed">
+              &ldquo;{existingFeedback.comments}&rdquo;
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Show feedback form only when assignment is submitted (not yet completed) */}
       {assignment.status === 'submitted' && (
         <FeedbackActions
           rating={rating}

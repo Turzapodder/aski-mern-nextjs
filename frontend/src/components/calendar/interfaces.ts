@@ -14,6 +14,9 @@ export interface IEvent {
   color: TEventColor;
   description: string;
   user: IUser;
+  redirectUrl?: string;
+  type?: 'assignment' | 'session' | 'manual';
+  status?: string;
 }
 
 export interface ICalendarCell {

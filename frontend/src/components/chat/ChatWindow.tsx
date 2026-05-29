@@ -92,6 +92,48 @@ const ChatWindow = () => {
   const [newMessage, setNewMessage] = useState('');
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [offerModalMode, setOfferModalMode] = useState<'create' | 'edit'>('create');
+  
+  // Real-time chat lock countdown timer
+  const [lockTimeRemaining, setLockTimeRemaining] = useState<number>(0);
+
+  useEffect(() => {
+    if (!selectedChat?.isLockedUntil) {
+      setLockTimeRemaining(0);
+      return;
+    }
+
+    const lockDate = new Date(selectedChat.isLockedUntil);
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = lockDate.getTime() - now.getTime();
+      if (diff <= 0) {
+        setLockTimeRemaining(0);
+        refreshChats();
+      } else {
+        setLockTimeRemaining(diff);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [selectedChat?.isLockedUntil, refreshChats]);
+
+  const formatLockTime = (ms: number) => {
+    const totalSecs = Math.floor(ms / 1000);
+    const days = Math.floor(totalSecs / 86400);
+    const hours = Math.floor((totalSecs % 86400) / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    if (mins > 0 || hours > 0 || days > 0) parts.push(`${mins}m`);
+    parts.push(`${secs}s`);
+
+    return parts.join(' ');
+  };
   const [offerTitle, setOfferTitle] = useState('');
   const [offerDescription, setOfferDescription] = useState('');
   const [offerBudget, setOfferBudget] = useState('');
@@ -473,7 +515,7 @@ const ChatWindow = () => {
           {isTutor && (
             <button
               onClick={() => openOfferModal('create')}
-              disabled={tutorBlocked || Boolean(activeOffer)}
+              disabled={tutorBlocked || Boolean(activeOffer) || lockTimeRemaining > 0}
               className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               <BadgeDollarSign className="h-4 w-4" />
@@ -906,7 +948,22 @@ const ChatWindow = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-gray-100">
+      <div className="p-4 bg-white border-t border-gray-100 relative">
+        {lockTimeRemaining > 0 && (
+          <div className="absolute inset-0 z-20 bg-white/85 backdrop-blur-md flex flex-col items-center justify-center text-center p-4">
+            <div className="bg-purple-600/10 border border-purple-500/20 text-purple-700 px-6 py-4 rounded-2xl flex flex-col items-center gap-1.5 shadow-sm max-w-sm animate-in fade-in zoom-in duration-200">
+              <Calendar className="w-6 h-6 text-purple-600 animate-pulse" />
+              <span className="font-bold text-sm text-gray-900 mt-1">Chat Session Locked</span>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                This room is locked until the booked session time begins. Countdown until unlock:
+              </p>
+              <div className="mt-2.5 px-4 py-1.5 bg-purple-600 text-white rounded-full font-bold text-xs shadow-md animate-bounce">
+                {formatLockTime(lockTimeRemaining)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {tutorBlocked && (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
             Waiting for the student to start the conversation.

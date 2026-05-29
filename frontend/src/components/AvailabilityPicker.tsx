@@ -214,6 +214,94 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
                     </div>
                     {errorMessage && <p className="text-xs text-rose-500">{errorMessage}</p>}
                   </div>
+
+                  {/* Dynamic Auto-Generator Wizard */}
+                  <div className="mt-3 pt-3 border-t border-gray-100/60">
+                    <details className="group">
+                      <summary className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer list-none flex items-center gap-1 select-none">
+                        <span>⚡ Auto-Generate Time Blocks</span>
+                        <span className="transition-transform group-open:rotate-180">▼</span>
+                      </summary>
+                      <div className="mt-3 p-3 rounded-lg bg-gray-50/50 border border-gray-150 space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-400 block mb-1">Start Hour</label>
+                            <select
+                              id={`gen-start-${day}`}
+                              defaultValue="09"
+                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            >
+                              {Array.from({ length: 24 }).map((_, i) => {
+                                const h = i.toString().padStart(2, '0');
+                                return <option key={h} value={h}>{h}:00</option>;
+                              })}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-400 block mb-1">End Hour</label>
+                            <select
+                              id={`gen-end-${day}`}
+                              defaultValue="17"
+                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            >
+                              {Array.from({ length: 24 }).map((_, i) => {
+                                const h = i.toString().padStart(2, '0');
+                                return <option key={h} value={h}>{h}:00</option>;
+                              })}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-medium text-gray-400 block mb-1">Duration</label>
+                            <select
+                              id={`gen-size-${day}`}
+                              defaultValue="60"
+                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            >
+                              <option value="30">30 mins</option>
+                              <option value="60">60 mins</option>
+                            </select>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const startVal = Number((document.getElementById(`gen-start-${day}`) as HTMLSelectElement)?.value || '9');
+                            const endVal = Number((document.getElementById(`gen-end-${day}`) as HTMLSelectElement)?.value || '17');
+                            const durationVal = Number((document.getElementById(`gen-size-${day}`) as HTMLSelectElement)?.value || '60');
+                            
+                            if (startVal >= endVal) {
+                              alert('Start hour must be before end hour');
+                              return;
+                            }
+
+                            const generated: string[] = [];
+                            let curr = startVal * 60;
+                            const limit = endVal * 60;
+
+                            while (curr + durationVal <= limit) {
+                              const sh = Math.floor(curr / 60).toString().padStart(2, '0');
+                              const sm = (curr % 60).toString().padStart(2, '0');
+                              curr += durationVal;
+                              const eh = Math.floor(curr / 60).toString().padStart(2, '0');
+                              const em = (curr % 60).toString().padStart(2, '0');
+                              generated.push(`${sh}:${sm}-${eh}:${em}`);
+                            }
+
+                            onChange({
+                              days: value.days,
+                              slotsByDay: {
+                                ...value.slotsByDay,
+                                [day]: generated
+                              }
+                            });
+                          }}
+                          className="w-full py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm"
+                        >
+                          Auto-Generate Blocks
+                        </button>
+                      </div>
+                    </details>
+                  </div>
                 </div>
               )}
             </div>

@@ -41,6 +41,7 @@ export interface Chat {
     }[];
   };
   unreadCount?: number;
+  isLockedUntil?: string;
   createdAt: string;
   updatedAt: string;
 }

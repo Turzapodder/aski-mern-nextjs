@@ -92,10 +92,13 @@ export const useTutorOnboardingLogic = () => {
   const [isFlowReady, setIsFlowReady] = useState(false);
   const hasTriggeredLogoutRef = useRef(false);
 
+  const [initialFormValues, setInitialFormValues] = useState<Partial<FormData>>({});
+
   const [generateQuiz] = useGenerateQuizMutation();
   const [submitApplication] = useSubmitTutorApplicationMutation();
   const [logoutUser] = useLogoutUserMutation();
-  const { data: userData, isSuccess: userSuccess } = useGetUserQuery();
+  const { data: userData, isSuccess: userSuccess, isLoading: userLoading } = useGetUserQuery();
+
   const logoutAndGoHome = useCallback(async () => {
     if (hasTriggeredLogoutRef.current) return;
     hasTriggeredLogoutRef.current = true;
@@ -117,18 +120,53 @@ export const useTutorOnboardingLogic = () => {
     isError: applicationError,
   } = useGetTutorApplicationStatusQuery();
 
+  // Load onboarding draft state from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // 1. Restore form values
+    const savedFormValues = localStorage.getItem('tutor_onboarding_form_values');
+    if (savedFormValues) {
+      try {
+        const parsed = JSON.parse(savedFormValues);
+        setInitialFormValues(parsed);
+      } catch (err) {
+        console.error('Failed to parse onboarding form values draft:', err);
+      }
+    }
+
+    // 2. Restore step status and quiz draft
+    const savedDraft = localStorage.getItem('tutor_onboarding_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.currentStep && (draft.currentStep === 1 || draft.currentStep === 2)) {
+          setCurrentStep(draft.currentStep);
+        }
+        if (draft.tempFormData) {
+          setTempFormData(draft.tempFormData);
+        }
+        if (draft.quizQuestions) {
+          setQuizQuestions(draft.quizQuestions);
+        }
+      } catch (err) {
+        console.error('Failed to parse tutor onboarding draft:', err);
+      }
+    }
+  }, []);
+
   const formik = useFormik<FormData>({
     enableReinitialize: true,
     initialValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      phoneNumber: '',
-      university: '',
-      degree: '',
-      gpa: '',
-      country: '',
-      subject: '',
-      topics: [],
+      name: initialFormValues.name || user?.name || '',
+      email: initialFormValues.email || user?.email || '',
+      phoneNumber: initialFormValues.phoneNumber || '',
+      university: initialFormValues.university || '',
+      degree: initialFormValues.degree || '',
+      gpa: initialFormValues.gpa || '',
+      country: initialFormValues.country || '',
+      subject: initialFormValues.subject || '',
+      topics: initialFormValues.topics || [],
       quizSummary: null,
       certificate: null,
       profilePicture: null,
@@ -238,6 +276,11 @@ export const useTutorOnboardingLogic = () => {
 
       if (response.status === 'success') {
         console.log('Application submitted successfully:', response);
+        // Clear drafts on successful final submission
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tutor_onboarding_draft');
+          localStorage.removeItem('tutor_onboarding_form_values');
+        }
         setCurrentStep(3);
       } else {
         throw new Error(response.message || 'Failed to submit application');
@@ -251,12 +294,62 @@ export const useTutorOnboardingLogic = () => {
     }
   };
 
+  // Auto-save form inputs (Step 1)
+  useEffect(() => {
+    if (typeof window === 'undefined' || currentStep !== 1) return;
+
+    const formValues = {
+      name: formik.values.name,
+      email: formik.values.email,
+      phoneNumber: formik.values.phoneNumber,
+      university: formik.values.university,
+      degree: formik.values.degree,
+      gpa: formik.values.gpa,
+      country: formik.values.country,
+      subject: formik.values.subject,
+      topics: formik.values.topics,
+    };
+    localStorage.setItem('tutor_onboarding_form_values', JSON.stringify(formValues));
+  }, [
+    formik.values.name,
+    formik.values.email,
+    formik.values.phoneNumber,
+    formik.values.university,
+    formik.values.degree,
+    formik.values.gpa,
+    formik.values.country,
+    formik.values.subject,
+    formik.values.topics,
+    currentStep,
+  ]);
+
+  // Auto-save step draft (Steps 1 & 2 / Quiz progress)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Step 3 represents final submission and is handled strictly by the database query state. Wipes the local storage drafts.
+    if (currentStep === 3) {
+      localStorage.removeItem('tutor_onboarding_draft');
+      localStorage.removeItem('tutor_onboarding_form_values');
+      return;
+    }
+
+    const draft = {
+      currentStep,
+      tempFormData,
+      quizQuestions,
+    };
+    localStorage.setItem('tutor_onboarding_draft', JSON.stringify(draft));
+  }, [currentStep, tempFormData, quizQuestions]);
+
+  // Sync user profile query data to state
   useEffect(() => {
     if (userData && userSuccess) {
       setUser(userData.user);
     }
   }, [userData, userSuccess]);
 
+  // Handle backend existing application redirects and state
   useEffect(() => {
     if (applicationData && applicationSuccess) {
       if (applicationData.application?.applicationStatus === 'approved') {
@@ -265,19 +358,24 @@ export const useTutorOnboardingLogic = () => {
       }
 
       setExistingApplication(applicationData.application);
-      // If user has an existing application, show approval summary first
+      // Database-approved or pending applications force step 3
       setCurrentStep(3);
     }
   }, [applicationData, applicationSuccess, router]);
 
+  // Eliminate race-conditions and flickers: only render when all queries have loaded and no active redirects are taking place
   useEffect(() => {
-    if (applicationLoading) return;
+    const isApproved = applicationData?.application?.applicationStatus === 'approved';
+    if (isApproved) return; // Keep rendering loading skeleton while redirecting
 
-    if (applicationSuccess || applicationError) {
+    if (applicationLoading || userLoading) return;
+
+    if ((applicationSuccess || applicationError) && (userSuccess || !userData)) {
       setIsFlowReady(true);
     }
-  }, [applicationLoading, applicationSuccess, applicationError]);
+  }, [applicationLoading, userLoading, applicationSuccess, applicationError, userSuccess, userData, applicationData]);
 
+  // Countdown timer for Step 3
   useEffect(() => {
     if (currentStep === 3 && countdown > 0) {
       const timer = setTimeout(() => {
@@ -307,3 +405,4 @@ export const useTutorOnboardingLogic = () => {
     router,
   };
 };
+

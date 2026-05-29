@@ -2,6 +2,7 @@
 
 import TopStats from './components/TopStats';
 import ProjectSection from './components/ProjectSection';
+import HireTutorsSection from './components/HireTutorsSection';
 import { StudentDashboardContentSkeleton } from '@/components/dashboard/DashboardSkeletons';
 import UploadProjectForm from '../uploadForm';
 import { useDashboard } from './hooks/useDashboard';
@@ -25,6 +26,9 @@ export default function DashboardComponent() {
       <div className="mb-12">
         <UploadProjectForm maxWidth='w-full' />
       </div>
+
+      {/* Featured top tutors section (Middle section) */}
+      <HireTutorsSection />
 
       <ProjectSection
         title="Ongoing Projects"

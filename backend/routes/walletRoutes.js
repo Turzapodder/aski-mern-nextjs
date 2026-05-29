@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(AccessTokenAutoRefresh);
 router.use(checkUserAuth);
 
+router.get("/overview", WalletController.getWalletOverview);
 router.post("/withdraw", WalletController.requestWithdrawal);
 
 export default router;

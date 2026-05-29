@@ -442,6 +442,9 @@ class UserController {
                 name, 
                 bio, 
                 hourlyRate, 
+                halfHourlyRate,
+                allowedSessionDurations,
+                offdays,
                 experienceYears, 
                 expertiseSubjects, 
                 skills,
@@ -488,6 +491,23 @@ class UserController {
                 const parsedRate = parseOptionalNumber(hourlyRate);
                 if (parsedRate !== undefined) {
                     user.tutorProfile.hourlyRate = parsedRate;
+                }
+
+                const parsedHalfHourlyRate = parseOptionalNumber(halfHourlyRate);
+                if (parsedHalfHourlyRate !== undefined) {
+                    user.tutorProfile.halfHourlyRate = parsedHalfHourlyRate;
+                }
+
+                if (allowedSessionDurations !== undefined) {
+                    user.tutorProfile.allowedSessionDurations = Array.isArray(allowedSessionDurations)
+                        ? allowedSessionDurations.map(Number).filter(Boolean)
+                        : [30, 60];
+                }
+
+                if (offdays !== undefined) {
+                    user.tutorProfile.offdays = Array.isArray(offdays)
+                        ? offdays.filter((d) => typeof d === "string")
+                        : [];
                 }
 
                 const parsedExperience = parseOptionalNumber(experienceYears);

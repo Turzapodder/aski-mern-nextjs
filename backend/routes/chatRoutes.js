@@ -4,6 +4,7 @@ import MessageController from '../controllers/messageController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
 import { uploadChatFiles } from '../config/s3Config.js';
+import { enforceChatLock } from '../middlewares/chatGatekeeper.js';
 
 const router = express.Router();
 
@@ -23,8 +24,8 @@ router.delete('/:chatId/participants/:participantId', ChatController.removeParti
 router.post('/:chatId/leave', ChatController.leaveChat);
 
 // Message routes
-router.post('/:chatId/messages', MessageController.sendMessage);
-router.post('/:chatId/messages/file', uploadChatFiles.array('files', 5), MessageController.sendFileMessage);
+router.post('/:chatId/messages', enforceChatLock, MessageController.sendMessage);
+router.post('/:chatId/messages/file', uploadChatFiles.array('files', 5), enforceChatLock, MessageController.sendFileMessage);
 router.get('/:chatId/messages', MessageController.getChatMessages);
 router.post('/:chatId/messages/read', MessageController.markMessagesAsRead);
 router.put('/messages/:messageId', MessageController.editMessage);

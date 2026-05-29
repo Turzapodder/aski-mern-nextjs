@@ -9,5 +9,6 @@ router.use(AccessTokenAutoRefresh);
 router.use(checkUserAuth);
 
 router.get("/upcoming", SessionController.getUpcomingSessions);
+router.post("/book", SessionController.bookSession);
 
 export default router;

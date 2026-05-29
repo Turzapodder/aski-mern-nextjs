@@ -43,7 +43,14 @@ export function EventDetailsDialog({ event, children }: IProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{event.title}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <span>{event.title}</span>
+            {event.status && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-700 capitalize">
+                {event.status.replace('_', ' ')}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[80vh]">
@@ -51,7 +58,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
             <div className="flex items-start gap-2">
               <User className="mt-1 size-4 shrink-0 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Responsible</p>
+                <p className="text-sm font-medium">Counterparty</p>
                 <p className="text-sm text-muted-foreground">{event.user.name}</p>
               </div>
             </div>
@@ -71,7 +78,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
             <div className="flex items-start gap-2">
               <Clock className="mt-1 size-4 shrink-0 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">End Date</p>
+                <p className="text-sm font-medium">End Date/Deadline</p>
                 <p className="text-sm text-muted-foreground">
                   {format(endDate, 'EEEE dd MMMM')}
                   <span className="mx-1">at</span>
@@ -83,24 +90,34 @@ export function EventDetailsDialog({ event, children }: IProps) {
             <div className="flex items-start gap-2">
               <Text className="mt-1 size-4 shrink-0 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Description</p>
+                <p className="text-sm font-medium">Summary / Description</p>
                 <p className="text-sm text-muted-foreground">{event.description}</p>
               </div>
             </div>
           </div>
         </ScrollArea>
         <div className="flex justify-end gap-2">
-          <AddEditEventDialog event={event}>
-            <Button variant="outline">Edit</Button>
-          </AddEditEventDialog>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              deleteEvent(event.id);
-            }}
-          >
-            Delete
-          </Button>
+          {event.redirectUrl ? (
+            <Button asChild className="bg-primary-500 hover:bg-primary-600 text-white font-bold px-4 py-2 rounded-xl transition-all">
+              <a href={event.redirectUrl}>
+                {event.type === 'session' ? 'Go to Messages / Live Session' : 'View Assignment Details'}
+              </a>
+            </Button>
+          ) : (
+            <>
+              <AddEditEventDialog event={event}>
+                <Button variant="outline">Edit</Button>
+              </AddEditEventDialog>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  deleteEvent(event.id);
+                }}
+              >
+                Delete
+              </Button>
+            </>
+          )}
         </div>
         <DialogClose />
       </DialogContent>

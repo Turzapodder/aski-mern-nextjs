@@ -1,4 +1,5 @@
 import UserModel from "../models/User.js";
+import SessionModel from "../models/Session.js";
 import { validateAvailability } from "../utils/tutorAvailability.js";
 import mongoose from "mongoose";
 
@@ -630,6 +631,190 @@ class TutorsController {
       return res.status(500).json({
         success: false,
         error: "Unable to update settings",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
+
+  static getAvailableSlots = async (req, res) => {
+    try {
+      const { tutorId } = req.params;
+      const { date } = req.query;
+
+      if (!tutorId || !mongoose.Types.ObjectId.isValid(tutorId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid tutor id",
+          code: "INVALID_TUTOR_ID",
+        });
+      }
+
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({
+          success: false,
+          error: "Valid date parameter in YYYY-MM-DD format is required",
+          code: "INVALID_DATE",
+        });
+      }
+
+      const parsedDate = new Date(date);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid date",
+          code: "INVALID_DATE",
+        });
+      }
+
+      const tutor = await UserModel.findOne({ _id: tutorId, roles: "tutor" })
+        .select("tutorProfile status onboardingStatus")
+        .lean();
+
+      if (!tutor || !isTutorApproved(tutor)) {
+        return res.status(404).json({
+          success: false,
+          error: "Tutor not found or inactive",
+          code: "TUTOR_NOT_FOUND",
+        });
+      }
+
+      const tutorProfile = tutor.tutorProfile || {};
+      const {
+        availableDays = [],
+        availableTimeSlots = [],
+        offdays = [],
+        hourlyRate = 0,
+        halfHourlyRate = hourlyRate / 2,
+      } = tutorProfile;
+
+      if (offdays.includes(date)) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: "Tutor is away/off on this date",
+        });
+      }
+
+      const weekdayNames = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ];
+      const dayOfWeek = weekdayNames[parsedDate.getDay()];
+
+      if (!availableDays.includes(dayOfWeek)) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: "Tutor does not work on this weekday",
+        });
+      }
+
+      const daySlotsEntry = availableTimeSlots.find(
+        (entry) =>
+          entry &&
+          typeof entry.day === "string" &&
+          entry.day.trim() === dayOfWeek
+      );
+      const configuredSlots =
+        daySlotsEntry && Array.isArray(daySlotsEntry.slots)
+          ? daySlotsEntry.slots
+          : [];
+
+      if (configuredSlots.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: "No slots configured for this weekday",
+        });
+      }
+
+      const startOfDay = new Date(parsedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(parsedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const currentDate = new Date();
+      const currentDateStart = new Date();
+      currentDateStart.setHours(0, 0, 0, 0);
+
+      const isPastDate = startOfDay < currentDateStart;
+      const isToday = startOfDay.getTime() === currentDateStart.getTime();
+
+      const bookedSessions = await SessionModel.find({
+        tutor: tutorId,
+        scheduledTime: { $gte: startOfDay, $lte: endOfDay },
+        status: { $ne: "cancelled" },
+      })
+        .select("scheduledTime endTime slot")
+        .lean();
+
+      const bookedSlotStrings = new Set(bookedSessions.map((s) => s.slot));
+
+      const resultSlots = configuredSlots.map((slotStr) => {
+        const match = slotStr.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+        let duration = 60;
+        let billingType = "hourly";
+        let price = hourlyRate;
+
+        if (match) {
+          const sh = Number(match[1]);
+          const sm = Number(match[2]);
+          const eh = Number(match[3]);
+          const em = Number(match[4]);
+
+          const startMin = sh * 60 + sm;
+          const endMin = eh * 60 + em;
+          duration = endMin - startMin;
+
+          if (duration <= 30) {
+            billingType = "half_hourly";
+            price = halfHourlyRate || hourlyRate / 2;
+          } else {
+            billingType = "hourly";
+            price = hourlyRate;
+          }
+        }
+
+        let isBooked = bookedSlotStrings.has(slotStr);
+
+        if (!isBooked) {
+          if (isPastDate) {
+            isBooked = true;
+          } else if (isToday && match) {
+            const sh = Number(match[1]);
+            const sm = Number(match[2]);
+            const currentHour = currentDate.getHours();
+            const currentMin = currentDate.getMinutes();
+
+            if (sh < currentHour || (sh === currentHour && sm <= currentMin)) {
+              isBooked = true;
+            }
+          }
+        }
+
+        return {
+          slot: slotStr,
+          duration,
+          billingType,
+          price,
+          isBooked,
+        };
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: resultSlots,
+      });
+    } catch (error) {
+      console.error("Error in getAvailableSlots:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Unable to calculate available slots",
         code: "SERVER_ERROR",
       });
     }

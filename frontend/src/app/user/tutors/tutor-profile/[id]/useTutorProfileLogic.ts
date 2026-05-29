@@ -19,6 +19,9 @@ export interface PublicTutor {
     expertiseSubjects?: string[];
     skills?: string[];
     hourlyRate?: number;
+    halfHourlyRate?: number;
+    allowedSessionDurations?: number[];
+    offdays?: string[];
     experienceYears?: number;
     verificationStatus?: string;
     professionalTitle?: string;
@@ -240,5 +243,6 @@ export const useTutorProfileLogic = () => {
     handleToggleBookmark,
     handleSendMessage,
     isCreatingChat,
+    viewer,
   };
 };

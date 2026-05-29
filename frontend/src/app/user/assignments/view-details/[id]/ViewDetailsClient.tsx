@@ -2,12 +2,8 @@
 
 import React from 'react';
 import {
-  MapPin,
   Clock,
   Star,
-  Flag,
-  Heart,
-  Copy,
   FileText,
   Send,
   CheckCircle,
@@ -16,10 +12,6 @@ import {
   Award,
   AlertCircle,
   User as UserIcon,
-  Wallet,
-  ChartLine,
-  Eye,
-  MessagesSquare,
 } from 'lucide-react';
 import SendProposalModal from '@/components/SendProposalModal';
 import ProposalsList from '@/components/ProposalsList';
@@ -217,530 +209,340 @@ export const ViewDetailsClient = () => {
   const showDeadlineCountdown = timerActiveStatuses.includes(assignment.status);
 
   return (
-    <div className="w-full mx-auto px-4 py-6 sm:px-6">
-      <div className="space-y-6">
-        <div className="">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm text-gray-600 mb-2">Assignment Details</p>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
-                </div>
-                {assignment.status && (
-                  <span
-                    className={`inline-flex capitalize items-center rounded-full px-3 py-2 text-xs font-semibold
-      ${assignment.status === 'completed'
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-gray-200 text-gray-600'
-                      }
-    `}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full mr-2
-        ${assignment.status === 'completed'
-                          ? 'bg-emerald-600'
-                          : assignment.status === 'in-progress'
-                            ? 'bg-orange-500 animate-pulse'
-                            : 'bg-gray-500'
-                        }
-      `}
-                    ></span>
-
-                    Status: {assignment.status}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <Clock size={16} />
-                  <span>{formatDeadline(assignment.deadline, showDeadlineCountdown)}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <MapPin size={16} />
-                  <span>{assignment.student?.name || 'Student'}</span>
-                </div>
-              </div>
-            </div>
-            {/* <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button className="w-full sm:w-auto border border-primary-300 text-primary-300 hover:bg-primary-50 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
-                <Heart size={16} />
-              </button>
-            </div> */}
-          </div>
-
-          <div className="text-sm text-gray-600 mb-4 flex items-center">
-            <span className="text-primary-300 font-medium">Report assignment issue</span>{' '}
-            <button
-              onClick={() => setReportOpen(true)}
-              className="text-gray-400 hover:text-gray-600 p-2"
-            >
-              <Flag size={16} />
-            </button>
-          </div>
-          <div className='grid grid-cols-1 lg:grid-cols-12 gap-10'>
-            <div className='lg:col-span-8 space-y-10'>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-primary-600 text-white p-8 rounded-xl editorial-shadow flex flex-col justify-between h-40 group hover:bg-primary-container transition-colors">
-                  <div className="flex justify-between items-start">
-                    <Wallet size={24} />
-                    <span className="text-xs font-bold uppercase tracking-widest bg-white/10 px-2 py-1 rounded">Budget</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium opacity-70 mb-1">Estimated Budget</p>
-                    <p className="text-4xl font-bold tracking-tight">$150.00</p>
-                  </div>
-                </div>
-                <div className="bg-white p-8 rounded-xl border border-outline-variant editorial-shadow flex flex-col justify-between h-40">
-                  <div className="flex justify-between items-start">
-                    <ChartLine size={24} color='red' />
-                    <span className="text-xs font-bold uppercase tracking-widest bg-red-100 text-error px-2 py-1 rounded">Urgent</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-on-surface-variant mb-1">Priority Level</p>
-                    <p className="text-4xl font-bold tracking-tight text-primary">High</p>
-                  </div>
-                </div>
-              </div>
-              {!isTutorRole && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-700 mb-4">Assignment Progress</h3>
-                  <div className="relative overflow-x-auto pb-6 pt-2">
-                    <div className="min-w-[900px] relative px-4">
-                      {/* Connecting Line */}
-                      <div className="absolute top-[50%] left-[100px] right-[100px] h-[3px] -translate-y-1/2 bg-gray-200 z-0">
-                        <div
-                          className="absolute top-0 left-0 h-full bg-primary-500 transition-all duration-500"
-                          style={{ width: progressWidth }}
-                        ></div>
-                      </div>
-
-                      {/* Cards */}
-                      <div className="relative z-10 flex justify-between items-center gap-4">
-                        {workflowSteps.map((step, index) => {
-                          const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
-                          const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
-                          const StepIcon = step.icon;
-
-                          let bgClass = "bg-gray-300 shadow-sm";
-                          let iconClass = "text-gray-400";
-                          let labelClass = "text-white";
-                          let statusClass = "text-gray-100";
-
-                          if (isComplete) {
-                            bgClass = "bg-gradient-to-r from-primary-400 to-primary-600 shadow-md shadow-primary-500/20";
-                            iconClass = "text-primary-500";
-                            labelClass = "text-white";
-                            statusClass = "text-primary-100";
-                          } else if (isCurrent) {
-                            bgClass = "bg-gray-400 shadow-md";
-                            iconClass = "text-gray-500";
-                            labelClass = "text-white";
-                            statusClass = "text-gray-100";
-                          }
-
-                          const statusText = isAssignmentCompleted
-                            ? 'Completed'
-                            : isComplete
-                              ? 'Completed'
-                              : isCurrent
-                                ? 'In Progress'
-                                : 'Pending';
-
-                          return (
-                            <div
-                              key={step.id}
-                              className={`flex items-center gap-3 px-4 py-3 rounded-[20px] w-[170px] ${bgClass} transition-all duration-300 hover:-translate-y-1`}
-                            >
-                              <div className="w-8 h-8 rounded-full bg-white flex flex-shrink-0 items-center justify-center shadow-sm">
-                                <StepIcon size={16} className={iconClass} strokeWidth={2.5} />
-                              </div>
-                              <div className="flex flex-col text-left overflow-hidden">
-                                <span className={`text-[13px] font-semibold leading-tight truncate ${labelClass}`}>
-                                  {step.label}
-                                </span>
-                                <span className={`text-[11px] font-medium leading-tight mt-0.5 ${statusClass}`}>
-                                  {statusText}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Assignment Description</h2>
-                <p className="text-gray-700 leading-relaxed mb-4">{assignment.description}</p>
-              </div>
-              <section className="bg-surface-container-lowest p-10 rounded-xl editorial-shadow border border-outline-variant/30">
-                <h3 className="text-2xl font-bold text-primary mb-8">Project Activity</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
-                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-outline-variant/30">
-                      <Eye size={24} />
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold tracking-tight text-primary">24</p>
-                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Views</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
-                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-outline-variant/30">
-                      <FileText size={24} />
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold tracking-tight text-primary">3</p>
-                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Proposals</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-5 p-6 rounded-xl bg-surface-container-low border border-outline-variant/50">
-                    <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
-                      <MessagesSquare size={24} />
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold tracking-tight text-primary">Active</p>
-                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Discussion</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-            <div className='lg:col-span-4 space-y-10'></div>
-          </div>
-
-
+    <div className="w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Top Header - full width, outside grid */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-gray-400 mb-1">Assignment Details</p>
+          <h1 className="text-2xl sm:text-3xl font-bold italic text-gray-900 mb-2">{assignment.title}</h1>
+          <p className="text-sm text-gray-500 max-w-2xl leading-relaxed">
+            {assignment.description ? assignment.description.substring(0, 160) + (assignment.description.length > 160 ? '...' : '') : ''}
+          </p>
         </div>
+        <span className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm capitalize">
+          <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+          Status: {assignment.status.replace(/_/g, ' ')}
+        </span>
+      </div>
 
-
-
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center">
-                <Star size={20} className="text-secondary-300" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
-                </div>
-                <div className="text-sm text-gray-600">Estimated Cost</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                <Clock size={20} className="text-primary-300" />
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-gray-900 capitalize">
-                  {assignment.priority} Priority
-                </div>
-                <div className="text-sm text-gray-600 capitalize">{assignment.subject}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Status:</span>{' '}
-              <span className="capitalize">{assignment.status}</span>
-            </div>
-            {latestSubmissionStatus === 'under_review' && (
-              <div className="text-sm text-amber-700 mt-1">
-                <span className="font-medium">Review status:</span> Under review
-              </div>
-            )}
-            <div className="text-sm text-gray-600 mt-1">
-              <span className="font-medium">Created:</span>{' '}
-              {new Date(assignment.createdAt).toLocaleDateString()}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              <span className="font-medium">Payment:</span>{' '}
-              <span className="capitalize">{assignment.paymentStatus}</span>
-            </div>
-          </div>
-        </div>
-
-        {assignment.topics && assignment.topics.length > 0 && (
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Topics</h2>
-
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Topics Covered</h3>
-              <div className="flex flex-wrap gap-2">
-                {assignment.topics.map((topic: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Activity</h2>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Views:</span>
-              <span className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-primary-300 rounded-full"></div>
-                <span className="font-medium">{assignment.viewCount || 0}</span>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Milestones Card */}
+          <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base font-bold text-gray-900">Milestones</h3>
+              <span className="text-sm font-semibold text-gray-500">
+                {Math.round((currentStepIndex / (workflowSteps.length - 1)) * 100)}% Complete
               </span>
             </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Proposals Submitted:</span>
-              <span className="font-medium">{assignment.proposalCount || 0}</span>
+            <div className="relative overflow-x-auto">
+              <div className="min-w-[500px]">
+                <div className="absolute top-5 left-6 right-6 h-1 bg-gray-200 z-0 rounded-full">
+                  <div className="absolute top-0 left-0 h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: progressWidth }}></div>
+                </div>
+                <div className="relative z-10 flex justify-between">
+                  {workflowSteps.map((step, index) => {
+                    const isComplete = isAssignmentCompleted ? true : index < currentStepIndex;
+                    const isCurrent = !isAssignmentCompleted && index === currentStepIndex;
+                    const StepIcon = step.icon;
+                    return (
+                      <div key={step.id} className="flex flex-col items-center w-20">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1.5 transition-all ${
+                          isComplete ? 'bg-primary-500 text-white shadow-md' : isCurrent ? 'bg-primary-500 text-white shadow-md ring-4 ring-primary-100' : 'bg-white border-2 border-gray-200 text-gray-400'
+                        }`}>
+                          {isComplete ? <CheckCircle size={18} /> : <StepIcon size={16} />}
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isComplete || isCurrent ? 'text-gray-800' : 'text-gray-400'}`}>{step.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">In Discussion:</span>
-              <span className="font-medium">{assignment.discussionCount || 0}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Hired:</span>
-              {assignment.assignedTutor ? (
-                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                  Hired
-                </span>
-              ) : (
-                <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
-                  Not Yet
-                </span>
+          {/* Description + Budget/Priority side-by-side */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Description Card - takes 2 cols if budget exists, 3 if not */}
+            <div className={`bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 ${(assignment.budget || assignment.estimatedCost) ? 'md:col-span-2' : 'md:col-span-3'}`}>
+              <h3 className="text-base font-bold text-gray-900 mb-4">Description</h3>
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{assignment.description}</p>
+              {assignment.topics && assignment.topics.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-gray-100">
+                  <div className="flex flex-wrap gap-2">
+                    {assignment.topics.map((topic: string, index: number) => (
+                      <span key={index} className="px-3 py-1 bg-primary-100/50 text-primary-700 rounded-full text-xs font-medium">{topic}</span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Budget + Priority stacked - only shown when budget data exists */}
+            {(assignment.budget || assignment.estimatedCost) && (
+              <div className="md:col-span-1 flex flex-col gap-6">
+                {/* Budget Card */}
+                <div className="bg-primary-500 text-white rounded-2xl p-5 shadow-sm flex flex-col justify-between flex-1 min-h-[160px]">
+                  <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+                    <CreditCard size={18} />
+                  </div>
+                  <div className="mt-auto">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest opacity-80 mb-1">Estimated Budget</p>
+                    <p className="text-2xl font-bold">{formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}</p>
+                  </div>
+                </div>
+                {/* Priority Card */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between flex-1 min-h-[130px]">
+                  <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+                    <AlertCircle size={18} className="text-red-500" />
+                  </div>
+                  <div className="mt-auto">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Priority</p>
+                    <p className="text-lg font-bold text-gray-900 capitalize">{assignment.priority || 'Medium'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
 
-        {showPaymentSection && (
-          <PaymentComponent
-            assignment={assignment}
-            onPaymentComplete={() => {
-              refetch();
-            }}
-            currency={currency}
-          />
-        )}
-
-        {showPaymentComplete && (
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
-            <p className="text-sm text-gray-600">
-              Paid amount:{' '}
-              {formatAmount(
-                assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
-              )}
-            </p>
+          {/* Project Activity */}
+          <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100">
+            <h3 className="text-base font-bold text-gray-900 mb-5">Project Activity</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="border border-gray-100 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
+                  <Star size={16} className="text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-gray-900">{assignment.viewCount || 0}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Views</p>
+                </div>
+              </div>
+              <div className="border border-gray-100 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
+                  <FileText size={16} className="text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-gray-900">{assignment.proposalCount || 0}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Proposals</p>
+                </div>
+              </div>
+              <div className="border border-gray-100 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
+                  <MessageSquare size={16} className="text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-gray-900 capitalize">{assignment.discussionCount && assignment.discussionCount > 0 ? 'Active' : 'Pending'}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Discussion</p>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
 
-        {isAssignmentTutor && assignment.paymentStatus !== 'paid' && (
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Awaiting payment</h2>
-            <p className="text-sm text-gray-600">
-              The student must complete payment before you can submit work.
-            </p>
-          </div>
-        )}
-
-        {isAssignmentTutor && assignment.paymentStatus === 'paid' && canTutorSubmitWork && (
-          <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
-        )}
-
-        {isAssignmentTutor && assignment.status === 'submitted' && (
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Submission sent</h2>
-            <p className="text-sm text-gray-600">
-              Your submission is with the student for review. You will be notified if revisions
-              are requested.
-            </p>
-          </div>
-        )}
-
-        {isAssignmentTutor &&
-          ['submitted', 'completed', 'revision_requested'].includes(assignment.status) && (
-            <SubmissionReviewSummary
+          {showPaymentSection && (
+            <PaymentComponent
               assignment={assignment}
-              submissionStatus={latestSubmissionStatus}
+              onPaymentComplete={() => {
+                refetch();
+              }}
+              currency={currency}
             />
           )}
 
-        {isAssignmentStudent &&
-          assignment.assignedTutor &&
-          assignment.paymentStatus === 'paid' &&
-          [
-            'in_progress',
-            'submission_pending',
-            'revision_requested',
-            'assigned',
-            'overdue',
-          ].includes(assignment.status) && (
+          {showPaymentComplete && (
             <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Work in progress</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Payment completed</h2>
               <p className="text-sm text-gray-600">
-                Your tutor is working on the assignment. We will notify you when the submission is
-                ready.
+                Paid amount:{' '}
+                {formatAmount(
+                  assignment.paymentAmount ?? assignment.budget ?? assignment.estimatedCost ?? 0
+                )}
               </p>
             </div>
           )}
 
-        {showCompletionFeedback && (
-          <CompletionFeedback assignment={assignment} submissionStatus={latestSubmissionStatus} />
-        )}
-
-        {showProposal && isTutorRole && assignment && (
-          <SendProposalModal
-            isOpen={showProposal}
-            onClose={() => setShowProposal(false)}
-            assignment={assignment}
-            currency={currency}
-          />
-        )}
-
-        {isAssignmentStudent && (
-          <div className="mt-6">
-            <ProposalsList assignmentId={assignment._id} isStudent={true} currency={currency} />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">Budget:</div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {formatAmount(assignment.budget ?? assignment.estimatedCost ?? 0)}
+          {isAssignmentTutor && assignment.paymentStatus !== 'paid' && (
+            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Awaiting payment</h2>
+              <p className="text-sm text-gray-600">
+                The student must complete payment before you can submit work.
+              </p>
             </div>
-            <div className="text-sm text-gray-500 mb-4 capitalize">
-              {assignment.priority} priority
+          )}
+
+          {isAssignmentTutor && assignment.paymentStatus === 'paid' && canTutorSubmitWork && (
+            <TutorSubmissionPanel assignment={assignment} onSubmitted={() => refetch()} />
+          )}
+
+          {isAssignmentTutor && assignment.status === 'submitted' && (
+            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Submission sent</h2>
+              <p className="text-sm text-gray-600">
+                Your submission is with the student for review. You will be notified if revisions
+                are requested.
+              </p>
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h3>
+          {isAssignmentTutor &&
+            ['submitted', 'completed', 'revision_requested'].includes(assignment.status) && (
+              <SubmissionReviewSummary
+                assignment={assignment}
+                submissionStatus={latestSubmissionStatus}
+              />
+            )}
 
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
-              <span className="text-sm text-gray-600">
-                {assignment.student?.name || 'Student Name'}
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-primary-300 rounded-full"></div>
-              <span className="text-sm text-gray-600">
-                Email: {assignment.student?.email || 'student@example.com'}
-              </span>
-            </div>
-
-            <div className="pt-4 border-t border-gray-200">
-              <div className="text-sm text-gray-900 font-medium mb-1 capitalize">
-                {assignment.subject}
-              </div>
-              <div className="text-sm text-gray-600 mb-3 capitalize">
-                {assignment.status} Assignment
-              </div>
-
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="pt-2">
-                  <div className="font-medium text-gray-900">Deadline:</div>
-                  <div>{new Date(assignment.deadline).toLocaleString()}</div>
-                </div>
-              </div>
-            </div>
-            {assignment.requestedTutor && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="text-sm font-medium text-gray-900 mb-2">Requested Tutor</div>
-                <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <UserIcon size={16} className="text-gray-400" />
-                    <span>{assignment.requestedTutor.name}</span>
-                  </div>
-                  <button
-                    onClick={() => handleRequestedTutorProfile(assignment)}
-                    className="text-xs font-semibold text-primary-400 hover:text-primary-500"
-                  >
-                    View profile
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  This assignment request is visible only to the selected tutor.
+          {isAssignmentStudent &&
+            assignment.assignedTutor &&
+            assignment.paymentStatus === 'paid' &&
+            [
+              'in_progress',
+              'submission_pending',
+              'revision_requested',
+              'assigned',
+              'overdue',
+            ].includes(assignment.status) && (
+              <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Work in progress</h2>
+                <p className="text-sm text-gray-600">
+                  Your tutor is working on the assignment. We will notify you when the submission is
+                  ready.
                 </p>
               </div>
             )}
-            {isTutorRole && assignment.student?._id && (
+
+          {showCompletionFeedback && (
+            <CompletionFeedback assignment={assignment} submissionStatus={latestSubmissionStatus} />
+          )}
+
+          {showProposal && isTutorRole && assignment && (
+            <SendProposalModal
+              isOpen={showProposal}
+              onClose={() => setShowProposal(false)}
+              assignment={assignment}
+              currency={currency}
+            />
+          )}
+
+          {isAssignmentStudent && (
+            <div className="mt-6">
+              <ProposalsList assignmentId={assignment._id} isStudent={true} currency={currency} />
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+          {/* Student Profile Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3 relative">
+              <UserIcon size={28} className="text-primary-500" />
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 border-2 border-white rounded-full flex items-center justify-center">
+                <CheckCircle size={10} className="text-white" />
+              </span>
+            </div>
+            <h4 className="text-base font-bold text-gray-900">{assignment.student?.name || 'Student'}</h4>
+            <p className="text-xs text-gray-400 mb-4 truncate">{assignment.student?.email || 'student@example.com'}</p>
+            <div className="flex gap-2">
+              <button className="flex-1 bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">View Profile</button>
               <button
-                onClick={() => setReportStudentOpen(true)}
-                className="mt-4 w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-100"
+                onClick={() => setReportOpen(true)}
+                className="w-10 bg-primary-500 hover:bg-primary-600 text-white rounded-xl flex items-center justify-center transition-colors"
               >
+                <MessageSquare size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Timeline Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-5">
+              <Clock size={15} className="text-primary-500" />
+              <h4 className="text-sm font-bold text-gray-900">Timeline</h4>
+            </div>
+            <div className="space-y-4">
+              <div className="border-l-[3px] border-gray-200 pl-4 py-0.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Created</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {new Date(assignment.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+              <div className="border-l-[3px] border-red-400 pl-4 py-0.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-red-400 mb-0.5">Deadline</p>
+                <p className="text-sm font-bold text-red-500">
+                  {new Date(assignment.deadline).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+                <p className="text-xs text-red-400 mt-0.5">{formatDeadline(assignment.deadline, showDeadlineCountdown)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Resources Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-5">
+              <FileText size={15} className="text-primary-500" />
+              <h4 className="text-sm font-bold text-gray-900">Resources</h4>
+            </div>
+            <div className="space-y-2.5">
+              {assignment.attachments && assignment.attachments.length > 0 ? (
+                assignment.attachments.map((attachment: any, index: number) => (
+                  <a key={index} href={attachment.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border border-gray-100 group">
+                    <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-primary-500" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 truncate group-hover:text-primary-600 transition-colors">{attachment.originalName}</span>
+                  </a>
+                ))
+              ) : (
+                <p className="text-xs text-gray-400">No attachments available.</p>
+              )}
+            </div>
+            {/* Send Proposal / Requested Tutor */}
+            {assignment.requestedTutor && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 mb-2">Requested Tutor</p>
+                <div className="flex items-center justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <UserIcon size={14} className="text-gray-400" />
+                    <span className="text-xs font-medium">{assignment.requestedTutor.name}</span>
+                  </div>
+                  <button onClick={() => handleRequestedTutorProfile(assignment)} className="text-[10px] font-bold text-primary-500 hover:text-primary-600">View</button>
+                </div>
+              </div>
+            )}
+            {isTutorRole && canTutorSubmitProposal && (
+              <button onClick={handleSendProposal} className="mt-4 w-full bg-secondary-300 hover:bg-secondary-200 text-gray-900 font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors">
+                <Send size={14} />
+                <span>Send Proposal</span>
+              </button>
+            )}
+            {isTutorRole && !canTutorSubmitProposal && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700 font-medium">
+                This assignment is not accepting proposals right now.
+              </div>
+            )}
+            {isTutorRole && assignment.student?._id && (
+              <button onClick={() => setReportStudentOpen(true)} className="mt-3 w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition-colors">
                 Report student profile
               </button>
             )}
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resources</h3>
-
-          <div className="space-y-3">
-            {assignment.attachments && assignment.attachments.length > 0 && (
-              <>
-                {assignment.attachments.map((attachment: any, index: number) => (
-                  <a
-                    key={index}
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                  >
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <FileText size={20} className="text-primary-600" />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {attachment.originalName}
-                      </div>
-                      <div className="text-xs text-gray-500">Attachment</div>
-                    </div>
-                    <div className="text-primary-600">
-                      <Copy size={16} />
-                    </div>
-                  </a>
-                ))}
-              </>
-            )}
-            {(!assignment.attachments || assignment.attachments.length === 0) && (
-              <div className="text-sm text-gray-500">No attachments available.</div>
-            )}
-          </div>
-          {isTutorRole && canTutorSubmitProposal && (
-            <button
-              onClick={handleSendProposal}
-              className="bg-secondary-300 my-3 w-full flex justify-center hover:bg-secondary-200 text-gray-900 px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-            >
-              <Send size={16} />
-              <span>Send Proposal</span>
-            </button>
-          )}
-          {isTutorRole && !canTutorSubmitProposal && (
-            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              This assignment is not accepting proposals right now.
+          {/* Secure Best Pricing Card */}
+          <div className="bg-primary-500 text-white rounded-2xl p-6 shadow-sm">
+            <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center mb-4">
+              <Award size={18} />
             </div>
-          )}
+            <h4 className="text-sm font-bold mb-2">Secure Best Pricing</h4>
+            <p className="text-[11px] opacity-80 leading-relaxed">
+              Early assignment posting allows more tutors to bid, giving you a wider range of academic experts at competitive rates.
+            </p>
+          </div>
         </div>
       </div>
-
 
       {assignment && (
         <ReportModal

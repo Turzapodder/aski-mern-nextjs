@@ -290,6 +290,15 @@ class ProfileController {
         hourlyRate: data.hourlyRate
           ? Math.max(0, parseInt(data.hourlyRate))
           : undefined,
+        halfHourlyRate: data.halfHourlyRate
+          ? Math.max(0, parseInt(data.halfHourlyRate))
+          : undefined,
+        allowedSessionDurations: Array.isArray(data.allowedSessionDurations)
+          ? data.allowedSessionDurations.map(Number).filter(Boolean)
+          : [30, 60],
+        offdays: Array.isArray(data.offdays)
+          ? data.offdays.filter((d) => typeof d === "string")
+          : [],
         teachingMode: data.teachingMode || undefined,
         achievements: data.achievements?.trim() || undefined,
         bio: data.bio?.trim() || undefined,

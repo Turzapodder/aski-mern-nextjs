@@ -23,30 +23,53 @@ export const statusClasses: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
   COMPLETED: 'bg-emerald-100 text-emerald-700',
   FAILED: 'bg-rose-100 text-rose-700',
+  CANCELLED: 'bg-gray-100 text-gray-700',
 };
 
 export const weekLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-export const weekRatios = [0.35, 0.52, 0.62, 0.4, 0.7, 0.56, 0.45];
-export const snapshotRatios = [0.65, 0.38, 0.52, 0.7, 0.45, 0.6, 0.34];
 
 export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
-export const getTimeValue = (value?: string) => {
-  if (!value) return 0;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
-};
-
 export const useWalletLogic = () => {
-  const { data: userData, isLoading, refetch } = useGetUserQuery();
+  const { data: userData, isLoading: authLoading } = useGetUserQuery();
+  const [walletOverview, setWalletOverview] = useState<any>(null);
+  const [loadingOverview, setLoadingOverview] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const fetchWalletOverview = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/wallet/overview`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setWalletOverview(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching wallet overview:', err);
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWalletOverview();
+  }, []);
+
+  const refetch = () => {
+    setLoadingOverview(true);
+    fetchWalletOverview();
+  };
 
   const user = userData?.user;
   const isTutor = user?.roles?.includes('tutor');
 
-  const wallet = user?.wallet || {
+  const wallet = walletOverview?.wallet || {
     availableBalance: 0,
     escrowBalance: 0,
     totalEarnings: 0,
@@ -54,15 +77,13 @@ export const useWalletLogic = () => {
     bankDetails: {},
   };
 
-  const sortedHistory = useMemo(() => {
-    const withdrawalHistory: WithdrawalEntry[] = Array.isArray(wallet.withdrawalHistory)
-      ? wallet.withdrawalHistory
-      : [];
+  const dynamicTransactions = walletOverview?.transactions || [];
 
-    return [...withdrawalHistory].sort(
-      (a, b) => getTimeValue(b.requestedAt) - getTimeValue(a.requestedAt)
+  const sortedHistory = useMemo(() => {
+    return [...dynamicTransactions].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [wallet.withdrawalHistory]);
+  }, [dynamicTransactions]);
 
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(sortedHistory.length / pageSize));
@@ -84,20 +105,34 @@ export const useWalletLogic = () => {
     [sortedHistory]
   );
 
-  const trendBase = wallet.totalEarnings || wallet.availableBalance || wallet.escrowBalance || 1;
-  const trendFactor = clamp(trendBase / 5000, 0.8, 1.2);
+  const weeklyCashflow = walletOverview?.weeklyCashflow || {
+    labels: weekLabels,
+    earnings: Array(7).fill(0),
+    deposits: Array(7).fill(0),
+    withdrawals: Array(7).fill(0),
+  };
 
-  const earningsBars = weekRatios.map((ratio) =>
-    clamp(Math.round((22 + ratio * 90) * trendFactor), 20, 120)
+  const maxAmount = Math.max(
+    ...weeklyCashflow.earnings,
+    ...weeklyCashflow.deposits,
+    ...weeklyCashflow.withdrawals,
+    100
   );
-  const depositsBars = weekRatios.map((ratio) =>
-    clamp(Math.round((14 + ratio * 60) * trendFactor), 14, 95)
+
+  const earningsBars = weeklyCashflow.earnings.map((amount: number) =>
+    clamp(Math.round((amount / maxAmount) * 100), 20, 120)
   );
-  const snapshotBars = snapshotRatios.map((ratio) =>
-    clamp(Math.round((18 + ratio * 85) * trendFactor), 18, 110)
+
+  const depositsBars = weeklyCashflow.deposits.map((amount: number) =>
+    clamp(Math.round((amount / maxAmount) * 80), 14, 95)
+  );
+
+  const snapshotBars = weeklyCashflow.withdrawals.map((amount: number) =>
+    clamp(Math.round((amount / maxAmount) * 90), 18, 110)
   );
 
   const canWithdraw = wallet.availableBalance > 0;
+  const isLoading = authLoading || loadingOverview;
 
   return {
     userData,

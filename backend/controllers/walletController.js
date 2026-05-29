@@ -189,6 +189,103 @@ class WalletController {
       });
     }
   };
+
+  static getWalletOverview = async (req, res) => {
+    try {
+      const user = req.user;
+      
+      const dbUser = await UserModel.findById(user._id).select("wallet roles");
+      if (!dbUser) {
+        return res.status(404).json({
+          success: false,
+          error: "User not found",
+          code: "USER_NOT_FOUND",
+        });
+      }
+
+      // Fetch dynamic transactions list
+      const transactions = await TransactionModel.find({ userId: user._id })
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+      // Group weekly cashflow data based on actual transactions
+      const dailyEarnings = Array(7).fill(0);
+      const dailyDeposits = Array(7).fill(0);
+      const dailyWithdrawals = Array(7).fill(0);
+
+      const daysOfWeek = [];
+      const now = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        daysOfWeek.push(d.toLocaleDateString("en-US", { weekday: "short" }));
+      }
+
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(now.getDate() - 7);
+
+      const recentTx = await TransactionModel.find({
+        userId: user._id,
+        createdAt: { $gte: oneWeekAgo },
+        status: "completed",
+      });
+
+      recentTx.forEach((tx) => {
+        const txDate = new Date(tx.createdAt);
+        const diffTime = Math.abs(now - txDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) - 1;
+        const index = 6 - diffDays;
+        
+        if (index >= 0 && index < 7) {
+          if (tx.type === "escrow_release" || tx.type === "deposit") {
+            dailyEarnings[index] += tx.amount;
+          }
+          if (tx.type === "deposit") {
+            dailyDeposits[index] += tx.amount;
+          }
+          if (tx.type === "withdrawal") {
+            dailyWithdrawals[index] += tx.amount;
+          }
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          wallet: dbUser.wallet || {
+            availableBalance: 0,
+            escrowBalance: 0,
+            totalEarnings: 0,
+            withdrawalHistory: [],
+            bankDetails: {},
+          },
+          transactions: transactions.map((t) => ({
+            id: t._id,
+            type: t.type,
+            typeLabel: t.typeLabel,
+            amount: t.amount,
+            status: t.status.toUpperCase(),
+            createdAt: t.createdAt,
+            transactionId: t.gatewayId || t._id,
+          })),
+          weeklyCashflow: {
+            labels: daysOfWeek,
+            earnings: dailyEarnings,
+            deposits: dailyDeposits,
+            withdrawals: dailyWithdrawals,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Error fetching wallet overview:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Unable to retrieve wallet data",
+        code: "SERVER_ERROR",
+      });
+    }
+  };
 }
 
 export default WalletController;

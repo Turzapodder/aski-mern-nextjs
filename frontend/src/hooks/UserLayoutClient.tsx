@@ -24,6 +24,17 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
 
   const activeItem = useMemo(() => pathname?.split('/').pop() || 'dashboard', [pathname]);
 
+  const shouldRedirect = useMemo(() => {
+    if (!userData?.user) return false;
+    const user = userData.user;
+    const isTutorRedirect =
+      user.roles.includes('tutor') &&
+      user.onboardingStatus !== 'completed' &&
+      user.onboardingStatus !== 'approved';
+    const isAdminRedirect = user.roles.includes('admin');
+    return isTutorRedirect || isAdminRedirect;
+  }, [userData]);
+
   useEffect(() => {
     if (!userData?.user) {
       return;
@@ -70,9 +81,10 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
     console.log('Profile clicked');
   }, []);
 
-  if (isLoading) {
+  if (isLoading || shouldRedirect) {
     return <UserShellSkeleton />;
   }
+
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">

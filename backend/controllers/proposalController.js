@@ -128,6 +128,14 @@ class ProposalController {
         });
       }
 
+      // Check if assignment deadline has passed
+      if (assignment.deadline && new Date(assignment.deadline) < new Date()) {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Cannot submit a proposal because the assignment deadline has already passed'
+        });
+      }
+
       if (assignment.requestedTutor && assignment.requestedTutor.toString() !== tutorId.toString()) {
         return res.status(403).json({
           status: 'failed',

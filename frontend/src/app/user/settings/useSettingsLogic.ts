@@ -25,6 +25,9 @@ export type SettingsState = {
   professionalTitle: string;
   qualification: string;
   hourlyRate: number | undefined;
+  halfHourlyRate: number | undefined;
+  allowedSessionDurations: number[];
+  offdays: string[];
   experienceYears: number | undefined;
   expertiseSubjects: string[];
   skills: string[];
@@ -72,6 +75,9 @@ export const useSettingsLogic = () => {
     professionalTitle: '',
     qualification: '',
     hourlyRate: 0,
+    halfHourlyRate: undefined,
+    allowedSessionDurations: [30, 60],
+    offdays: [] as string[],
     experienceYears: 0,
     expertiseSubjects: [] as string[],
     skills: [] as string[],
@@ -147,6 +153,9 @@ export const useSettingsLogic = () => {
       professionalTitle: tutorProfile?.professionalTitle || '',
       qualification: tutorProfile?.qualification || '',
       hourlyRate: tutorProfile?.hourlyRate ?? 0,
+      halfHourlyRate: tutorProfile?.halfHourlyRate ?? undefined,
+      allowedSessionDurations: tutorProfile?.allowedSessionDurations || [30, 60],
+      offdays: tutorProfile?.offdays || [],
       experienceYears: tutorProfile?.experienceYears ?? 0,
       expertiseSubjects: tutorProfile?.expertiseSubjects || [],
       skills: tutorProfile?.skills || [],
@@ -171,6 +180,9 @@ export const useSettingsLogic = () => {
       const skills = settings.skills.map((item) => item.trim()).filter(Boolean);
       const languages = parseCommaList(settings.languages);
       const hourlyRate = parseNumericInput(settings.hourlyRate);
+      const halfHourlyRate = parseNumericInput(settings.halfHourlyRate);
+      const allowedSessionDurations = settings.allowedSessionDurations || [30, 60];
+      const offdays = settings.offdays || [];
       const experienceYears = parseNumericInput(settings.experienceYears);
       const teachingMode = settings.teachingMode || undefined;
 
@@ -200,6 +212,9 @@ export const useSettingsLogic = () => {
       if (user?.roles?.includes('tutor')) {
         payload.availableDays = availability.days;
         payload.availableTimeSlots = availableTimeSlots;
+        payload.allowedSessionDurations = allowedSessionDurations;
+        payload.offdays = offdays;
+        if (halfHourlyRate !== undefined) payload.halfHourlyRate = halfHourlyRate;
       }
 
       const res = await updateUser(payload).unwrap();

@@ -58,6 +58,15 @@ const chatSchema = new mongoose.Schema({
   lastActivity: {
     type: Date,
     default: Date.now
+  },
+  isLockedUntil: {
+    type: Date,
+    description: "The date-time until which this chat remains locked. Null if never locked."
+  },
+  session: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
+    description: "Reference to the tutoring session that triggered this chat"
   }
 }, {
   timestamps: true
