@@ -119,6 +119,8 @@ const ChatWindow = () => {
     return () => clearInterval(interval);
   }, [selectedChat?.isLockedUntil, refreshChats]);
 
+
+
   const formatLockTime = (ms: number) => {
     const totalSecs = Math.floor(ms / 1000);
     const days = Math.floor(totalSecs / 86400);
@@ -301,6 +303,43 @@ const ChatWindow = () => {
       stagedFiles.forEach((s) => URL.revokeObjectURL(s.preview));
     };
   }, [stagedFiles]);
+  const openOfferModal = (mode: 'create' | 'edit' = 'create', assignmentToEdit?: any) => {
+    setOfferModalMode(mode);
+    if (mode === 'edit' && assignmentToEdit) {
+      setOfferTitle(assignmentToEdit.title || '');
+      setOfferDescription(assignmentToEdit.description || '');
+      setOfferBudget(
+        assignmentToEdit.budget?.toString() || assignmentToEdit.estimatedCost?.toString() || ''
+      );
+      setOfferDeadline(
+        assignmentToEdit.deadline
+          ? new Date(assignmentToEdit.deadline).toISOString().split('T')[0]
+          : ''
+      );
+      setSelectedAssignmentForEdit(assignmentToEdit);
+    } else {
+      setOfferTitle('');
+      setOfferDescription('');
+      setOfferBudget('');
+      setOfferDeadline('');
+      setSelectedAssignmentForEdit(null);
+    }
+    setOfferNote('');
+    setOfferError('');
+    setOfferModalOpen(true);
+  };
+
+  // Listen to open-edit-offer event from the right sidebar
+  useEffect(() => {
+    const handleOpenEdit = (e: Event) => {
+      const assignment = (e as CustomEvent).detail;
+      if (assignment) {
+        openOfferModal('edit', assignment);
+      }
+    };
+    window.addEventListener('open-edit-offer', handleOpenEdit);
+    return () => window.removeEventListener('open-edit-offer', handleOpenEdit);
+  }, []);
 
   if (!selectedChat) {
     return (
@@ -332,9 +371,11 @@ const ChatWindow = () => {
   const typingList = typingUsers[selectedChat._id] || [];
 
   const getChatName = () => {
-    if (selectedChat.name) return selectedChat.name;
-    const otherParticipant = selectedChat.participants.find((p: any) => p._id !== currentUserId);
-    return otherParticipant?.name || 'Unknown User';
+    if (selectedChat.type === 'direct') {
+      const otherParticipant = selectedChat.participants.find((p: any) => p._id !== currentUserId);
+      return otherParticipant?.name || 'Unknown User';
+    }
+    return selectedChat.name || 'Group Chat';
   };
 
   const isUserOnline = () => {
@@ -343,31 +384,6 @@ const ChatWindow = () => {
     return otherParticipant && onlineUsers.some((u) => u._id === otherParticipant._id);
   };
 
-  const openOfferModal = (mode: 'create' | 'edit' = 'create', assignmentToEdit?: any) => {
-    setOfferModalMode(mode);
-    if (mode === 'edit' && assignmentToEdit) {
-      setOfferTitle(assignmentToEdit.title || '');
-      setOfferDescription(assignmentToEdit.description || '');
-      setOfferBudget(
-        assignmentToEdit.budget?.toString() || assignmentToEdit.estimatedCost?.toString() || ''
-      );
-      setOfferDeadline(
-        assignmentToEdit.deadline
-          ? new Date(assignmentToEdit.deadline).toISOString().split('T')[0]
-          : ''
-      );
-      setSelectedAssignmentForEdit(assignmentToEdit);
-    } else {
-      setOfferTitle('');
-      setOfferDescription('');
-      setOfferBudget('');
-      setOfferDeadline('');
-      setSelectedAssignmentForEdit(null);
-    }
-    setOfferNote('');
-    setOfferError('');
-    setOfferModalOpen(true);
-  };
 
   const handleOfferSubmit = async () => {
     if (!selectedChat) return;
@@ -513,21 +529,15 @@ const ChatWindow = () => {
         </div>
         <div className="flex items-center gap-2 text-gray-400">
           {isTutor && (
-            <button
-              onClick={() => openOfferModal('create')}
+          <button
+            onClick={() => openOfferModal('create')}
               disabled={tutorBlocked || Boolean(activeOffer) || lockTimeRemaining > 0}
-              className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              <BadgeDollarSign className="h-4 w-4" />
+            className="inline-flex items-center gap-2 cursor-pointer text-nowrap rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            <BadgeDollarSign className="h-4 w-4" />
               Send Custom Offer
-            </button>
+          </button>
           )}
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Search size={18} />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Phone size={18} />
-          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -543,57 +553,35 @@ const ChatWindow = () => {
         </div>
       </div>
 
-      {/* Ongoing Assignments Bar */}
+      {/* Unified Status Bar */}
       {activeAssignments.length > 0 ? (
-        <div
-          onClick={() => setTasksModalOpen(true)}
-          className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors group"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 group-hover:scale-110 transition-transform">
-                <Clipboard size={14} />
-              </div>
-              <span className="text-sm font-semibold text-gray-900">
-                {activeAssignments.length === 1
-                  ? activeAssignments[0].title
-                  : `${activeAssignments.length} Ongoing Assignments`}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                  {activeAssignments.length === 1 ? 'Details' : 'Latest Deadline'}
-                </span>
-                <span className="text-[11px] font-semibold text-indigo-600">
-                  {activeAssignments.length === 1
-                    ? `${formatAmount(activeAssignments[0].budget || activeAssignments[0].estimatedCost)} • ${format(new Date(activeAssignments[0].deadline), 'MMM dd')}`
-                    : format(
-                        new Date(
-                          Math.max(
-                            ...activeAssignments.map((a: any) => new Date(a.deadline).getTime())
-                          )
-                        ),
-                        'MMM dd, yyyy'
-                      )}
-                </span>
-              </div>
-              <ChevronDown
-                size={16}
-                className="text-gray-400 group-hover:text-indigo-600 transition-colors"
-              />
-            </div>
+        <div className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              In Progress
+            </span>
+            <span className="text-xs text-gray-500 font-medium">
+              {activeAssignments.length} {activeAssignments.length === 1 ? 'Assignment' : 'Assignments'} Active
+            </span>
           </div>
+          {(() => {
+            const latestDeadlineTime = Math.max(...activeAssignments.map((a: any) => a.deadline ? new Date(a.deadline).getTime() : 0));
+            const latestDeadlineDate = latestDeadlineTime > 0 ? new Date(latestDeadlineTime) : null;
+            return latestDeadlineDate && (
+              <div className="text-[11px] text-gray-500 font-semibold bg-white border border-gray-100 px-2.5 py-1 rounded-lg">
+                Latest Deadline:{' '}
+                <span className="text-indigo-600 font-bold">
+                  {format(latestDeadlineDate, 'MMM dd, yyyy')}
+                </span>
+              </div>
+            );
+          })()}
         </div>
       ) : (
-        <div className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-gray-50 rounded-lg text-gray-400">
-              <Info size={14} />
-            </div>
-            <span className="text-xs font-medium text-gray-400 italic">No active assignments</span>
-          </div>
+        <div className="px-4 sm:px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+          <span className="text-[11px] font-medium text-gray-400 italic">No assignments active at the moment</span>
         </div>
       )}
 
@@ -949,20 +937,7 @@ const ChatWindow = () => {
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-gray-100 relative">
-        {lockTimeRemaining > 0 && (
-          <div className="absolute inset-0 z-20 bg-white/85 backdrop-blur-md flex flex-col items-center justify-center text-center p-4">
-            <div className="bg-purple-600/10 border border-purple-500/20 text-purple-700 px-6 py-4 rounded-2xl flex flex-col items-center gap-1.5 shadow-sm max-w-sm animate-in fade-in zoom-in duration-200">
-              <Calendar className="w-6 h-6 text-purple-600 animate-pulse" />
-              <span className="font-bold text-sm text-gray-900 mt-1">Chat Session Locked</span>
-              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                This room is locked until the booked session time begins. Countdown until unlock:
-              </p>
-              <div className="mt-2.5 px-4 py-1.5 bg-purple-600 text-white rounded-full font-bold text-xs shadow-md animate-bounce">
-                {formatLockTime(lockTimeRemaining)}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Chat locking overlay removed so users can always message regardless of booked sessions */}
 
         {tutorBlocked && (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
@@ -1023,7 +998,7 @@ const ChatWindow = () => {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 mb-0.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
               disabled={tutorBlocked}
             >
               <Paperclip size={20} />
@@ -1038,7 +1013,7 @@ const ChatWindow = () => {
               maxLength={MAX_MESSAGE_LENGTH}
               disabled={tutorBlocked}
               rows={1}
-              className="flex-1 bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-400 text-sm resize-none max-h-40 leading-6"
+              className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-gray-700 placeholder-gray-400 text-sm resize-none max-h-40 leading-6 p-1 py-1.5"
             />
 
             <button
@@ -1048,7 +1023,7 @@ const ChatWindow = () => {
                 newMessage.length > MAX_MESSAGE_LENGTH ||
                 tutorBlocked
               }
-              className="p-2 text-[#2563EB] hover:bg-white rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 mb-0.5 text-[#2563EB] hover:bg-white rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Send size={20} />
             </button>
@@ -1195,7 +1170,7 @@ const ChatWindow = () => {
               <Button
                 onClick={handleOfferSubmit}
                 disabled={isSendingOffer}
-                className="flex-[1.5] rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
+                className="flex-[1.5] rounded-xl text-nowrap cursor-pointer h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
               >
                 {isSendingOffer
                   ? 'Sending...'
@@ -1349,17 +1324,17 @@ const ChatWindow = () => {
                   </div>
 
                   {isTutor && assignment.status === 'proposal_accepted' && (
-                    <div className="pt-2 border-t border-gray-50">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openOfferModal('edit', assignment)}
-                        className="w-full justify-start gap-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold text-xs rounded-xl"
-                      >
-                        <Pencil size={14} />
-                        Edit Offer Terms
-                      </Button>
-                    </div>
+                  <div className="pt-2 border-t border-gray-50">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openOfferModal('edit', assignment)}
+                      className="w-full justify-start gap-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold text-xs rounded-xl"
+                    >
+                      <Pencil size={14} />
+                      Edit Offer Terms
+                    </Button>
+                  </div>
                   )}
                 </div>
               ))

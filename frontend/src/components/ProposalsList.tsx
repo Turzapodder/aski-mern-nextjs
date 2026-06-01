@@ -18,6 +18,7 @@ import {
   useAcceptProposalMutation,
   useRejectProposalMutation,
 } from '@/lib/services/proposals';
+import { useCreateChatMutation } from '@/lib/services/chat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 
@@ -45,6 +46,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
 
   const [acceptProposal] = useAcceptProposalMutation();
   const [rejectProposal] = useRejectProposalMutation();
+  const [createChat, { isLoading: isCreatingChat }] = useCreateChatMutation();
 
   const proposals = useMemo(() => proposalsData?.data?.proposals || [], [proposalsData]);
 
@@ -78,6 +80,28 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
       refetch();
     } catch (error) {
       console.error('Failed to reject proposal:', error);
+    }
+  };
+
+  const handleMessageTutor = async (tutorId: string, existingConversation?: string | any) => {
+    const conversationId = typeof existingConversation === 'string' ? existingConversation : existingConversation?._id;
+    if (conversationId) {
+      router.push(`/user/messages?chatId=${conversationId}`);
+      return;
+    }
+
+    try {
+      const response: any = await createChat({
+        type: 'direct',
+        tutorId: tutorId,
+        participants: [tutorId],
+      }).unwrap();
+
+      if (response.status === 'success' || response.chat?._id) {
+        router.push(`/user/messages?chatId=${response.chat?._id || response.data?.chat?._id}`);
+      }
+    } catch (error) {
+      console.error('Failed to create chat:', error);
     }
   };
 
@@ -287,21 +311,14 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
                     </button>
                   </>
                 )}
-                {proposal.conversation && (
+                {(isStudent || proposal.conversation) && (
                   <button
-                    onClick={() => {
-                      const conversationId =
-                        typeof proposal.conversation === 'string'
-                          ? proposal.conversation
-                          : proposal.conversation?._id;
-                      if (conversationId) {
-                        router.push(`/user/messages?chatId=${conversationId}`);
-                      }
-                    }}
-                    className="flex-1 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => handleMessageTutor(proposal.tutor._id, proposal.conversation)}
+                    disabled={isCreatingChat}
+                    className="flex-1 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
                     <MessageSquare className="h-4 w-4" />
-                    <span>Open chat</span>
+                    <span>{isCreatingChat ? 'Opening...' : 'Message'}</span>
                   </button>
                 )}
               </div>

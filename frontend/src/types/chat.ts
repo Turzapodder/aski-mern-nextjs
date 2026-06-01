@@ -42,6 +42,14 @@ export interface Chat {
   };
   unreadCount?: number;
   isLockedUntil?: string;
+  session?: {
+    _id: string;
+    subject?: string;
+    scheduledTime?: string;
+    duration?: number;
+    price?: number;
+    status?: 'scheduled' | 'completed' | 'cancelled';
+  };
   createdAt: string;
   updatedAt: string;
 }

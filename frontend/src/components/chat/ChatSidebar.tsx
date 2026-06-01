@@ -21,11 +21,24 @@ const ChatSidebar = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
+  const getChatName = (chat: any) => {
+    if (chat.type === 'direct') {
+      const otherParticipant = chat.participants.find((p: any) => p._id !== currentUserId);
+      return otherParticipant?.name || 'Unknown User';
+    }
+    return chat.name || 'Group Chat';
+  };
+
+  const getChatAvatar = (chat: any) => {
+    if (chat.avatar) return chat.avatar;
+    const otherParticipant = chat.participants.find((p: any) => p._id !== currentUserId);
+    return otherParticipant?.avatar;
+  };
+
   const filteredChats = chats.filter((chat) => {
     if (!searchTerm) return true;
     const query = searchTerm.toLowerCase();
-    const chatName =
-      chat.name || chat.participants.find((p) => p._id !== currentUserId)?.name || 'Chat';
+    const chatName = getChatName(chat);
     const lastMessage = chat.lastMessage?.content || '';
     return chatName.toLowerCase().includes(query) || lastMessage.toLowerCase().includes(query);
   });
@@ -42,17 +55,9 @@ const ChatSidebar = () => {
     return true;
   });
 
-  const getChatName = (chat: any) => {
-    if (chat.name) return chat.name;
-    const otherParticipant = chat.participants.find((p: any) => p._id !== currentUserId);
-    return otherParticipant?.name || 'Unknown User';
-  };
 
-  const getChatAvatar = (chat: any) => {
-    if (chat.avatar) return chat.avatar;
-    const otherParticipant = chat.participants.find((p: any) => p._id !== currentUserId);
-    return otherParticipant?.avatar;
-  };
+
+
 
   const getInitials = (name: string) => {
     return name
@@ -220,7 +225,7 @@ const ChatSidebar = () => {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="flex justify-between items-start mb-0.5">
                       <h3
                         className={`text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-gray-900'}`}
                       >
@@ -234,6 +239,34 @@ const ChatSidebar = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* Context Status Pills */}
+                    {(chat.assignment || chat.session) && (
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {chat.assignment && (
+                          <span
+                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                              isActive
+                                ? 'bg-white/15 text-white border border-white/10'
+                                : 'bg-indigo-50 text-indigo-600 border border-indigo-100/50'
+                            }`}
+                          >
+                            Active Task
+                          </span>
+                        )}
+                        {chat.session && (
+                          <span
+                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                              isActive
+                                ? 'bg-white/10 text-emerald-300 border border-white/10'
+                                : 'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
+                            }`}
+                          >
+                            Booking
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-end">
                       <p

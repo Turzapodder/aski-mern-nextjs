@@ -129,13 +129,13 @@ class ChatController {
       }
 
       const newChat = new ChatModel({
-        name: chatName,
-        description,
+        name: type === 'group' ? chatName : undefined,
+        description: type === 'group' ? description : undefined,
         type,
         participants: chatParticipants,
         createdBy: userId,
-        assignment: assignmentId || assignment?._id || undefined,
-        assignmentTitle: assignment?.title || undefined,
+        assignment: type === 'group' ? (assignmentId || assignment?._id || undefined) : undefined,
+        assignmentTitle: type === 'group' ? (assignment?.title || undefined) : undefined,
         isActive: true,
         lastActivity: new Date()
       });
@@ -187,6 +187,7 @@ class ChatController {
           .populate('participants.user', 'name email avatar roles')
           .populate('createdBy', 'name email avatar')
           .populate('assignment', 'title description deadline estimatedCost budget student')
+          .populate('session')
           .populate({
             path: 'lastMessage',
             populate: {
@@ -265,6 +266,7 @@ class ChatController {
       .populate('participants.user', 'name email avatar roles')
       .populate('createdBy', 'name email avatar')
       .populate('assignment', 'title description deadline estimatedCost budget student')
+      .populate('session')
       .populate({
         path: 'lastMessage',
         populate: {

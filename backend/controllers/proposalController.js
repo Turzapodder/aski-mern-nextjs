@@ -57,35 +57,7 @@ class ProposalController {
       proposal.conversation = existingChat._id;
       await proposal.save();
       await proposal.populate('conversation', 'name assignment assignmentTitle');
-      return proposal;
     }
-
-    const tutor = await UserModel.findById(proposal.tutor).select('name');
-    const student = await UserModel.findById(proposal.student).select('name');
-
-    const chatName = assignment.title
-      ? `Assignment: ${assignment.title}`
-      : `${student?.name || 'Student'} & ${tutor?.name || 'Tutor'}`;
-
-    const newChat = new ChatModel({
-      name: chatName,
-      description: assignment.description,
-      type: 'direct',
-      participants: [
-        { user: assignment.student, role: 'member' },
-        { user: proposal.tutor, role: 'member' }
-      ],
-      createdBy: proposal.tutor,
-      assignment: assignment._id,
-      assignmentTitle: assignment.title,
-      isActive: true,
-      lastActivity: new Date()
-    });
-
-    await newChat.save();
-    proposal.conversation = newChat._id;
-    await proposal.save();
-    await proposal.populate('conversation', 'name assignment assignmentTitle');
     return proposal;
   };
 
@@ -171,40 +143,12 @@ class ProposalController {
 
       // Create new proposal
       const existingChat = await ChatModel.findOne({
-        assignment: assignmentId,
         type: 'direct',
         'participants.user': { $all: [tutorId, assignment.student] },
         isActive: true
       });
 
-      let conversationId = existingChat?._id;
-
-      if (!conversationId) {
-        const tutor = await UserModel.findById(tutorId).select('name');
-        const student = await UserModel.findById(assignment.student).select('name');
-
-        const chatName = assignment.title
-          ? `Assignment: ${assignment.title}`
-          : `${student?.name || 'Student'} & ${tutor?.name || 'Tutor'}`;
-
-        const newChat = new ChatModel({
-          name: chatName,
-          description: assignment.description,
-          type: 'direct',
-          participants: [
-            { user: assignment.student, role: 'member' },
-            { user: tutorId, role: 'member' }
-          ],
-          createdBy: tutorId,
-          assignment: assignment._id,
-          assignmentTitle: assignment.title,
-          isActive: true,
-          lastActivity: new Date()
-        });
-
-        await newChat.save();
-        conversationId = newChat._id;
-      }
+      const conversationId = existingChat?._id || undefined;
 
       const proposal = new ProposalModel({
         assignment: assignmentId,
@@ -583,6 +527,36 @@ class ProposalController {
           status: 'failed',
           message: 'You cannot respond to this proposal'
         });
+      }
+
+      // Ensure a direct chat exists upon acceptance
+      let resolvedConversationId = proposal.conversation;
+      if (!resolvedConversationId) {
+        const existingChat = await ChatModel.findOne({
+          type: 'direct',
+          'participants.user': { $all: [proposal.tutor, userId] },
+          isActive: true
+        });
+
+        if (existingChat) {
+          resolvedConversationId = existingChat._id;
+        } else {
+          const newChat = new ChatModel({
+            type: 'direct',
+            participants: [
+              { user: userId, role: 'member' },
+              { user: proposal.tutor, role: 'member' }
+            ],
+            createdBy: userId,
+            isActive: true,
+            lastActivity: new Date()
+          });
+
+          await newChat.save();
+          resolvedConversationId = newChat._id;
+        }
+        
+        proposal.conversation = resolvedConversationId;
       }
 
       // Update proposal status

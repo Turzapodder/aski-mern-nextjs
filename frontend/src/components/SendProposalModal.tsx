@@ -192,9 +192,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter a compelling title for your proposal"
             />
             {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -209,9 +208,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Describe your approach to completing this assignment"
             />
             {errors.description && (
@@ -233,9 +231,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 onChange={(e) =>
                   handleInputChange('proposedPrice', parseFloat(e.target.value) || 0)
                 }
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.proposedPrice ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="0.00"
               />
               {errors.proposedPrice && (
@@ -254,9 +251,8 @@ const SendProposalModal: React.FC<SendProposalModalProps> = ({
                 onChange={(e) =>
                   handleInputChange('estimatedDeliveryTime', parseInt(e.target.value) || 0)
                 }
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.estimatedDeliveryTime ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="24"
               />
               {errors.estimatedDeliveryTime && (
