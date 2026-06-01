@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const AUTH_PAGES = [
-  '/account/login',
-  '/account/register',
-  '/account/reset-password-link',
-  '/account/reset-password-confirm',
-  '/account/verify-email',
-];
-
-const PUBLIC_PREFIXES = ['/public'];
-const PROTECTED_PREFIXES = ['/user', '/assignment'];
+const PUBLIC_PATHS = ['/login'];
 
 // Helper to decode Base64Url
 const base64UrlDecode = (str: string) => {
@@ -74,7 +65,6 @@ const verifyAndDecodeJwt = async (token?: string, isRefreshToken = false) => {
     return null;
   }
 
-  // Cryptographically check the signature
   const isValid = await verifyHs256Signature(token, secretKey);
   if (!isValid) {
     console.warn(`JWT signature validation failed for ${isRefreshToken ? 'refresh' : 'access'} token`);
@@ -86,7 +76,6 @@ const verifyAndDecodeJwt = async (token?: string, isRefreshToken = false) => {
     const payloadJson = base64UrlDecode(payloadSegment);
     const payload = JSON.parse(payloadJson);
 
-    // Verify expiration time
     if (typeof payload.exp === 'number') {
       const now = Math.floor(Date.now() / 1000);
       if (payload.exp < now) {
@@ -105,10 +94,8 @@ const getUserRoles = async (request: NextRequest) => {
   const accessToken = request.cookies.get('accessToken')?.value;
   const refreshToken = request.cookies.get('refreshToken')?.value;
 
-  // 1. Try to verify access token first
   let payload = await verifyAndDecodeJwt(accessToken, false);
 
-  // 2. If access token is invalid/expired, try verifying the refresh token as fallback
   if (!payload && refreshToken) {
     payload = await verifyAndDecodeJwt(refreshToken, true);
   }
@@ -119,70 +106,42 @@ const getUserRoles = async (request: NextRequest) => {
   return [];
 };
 
-const isPublicPath = (path: string) => {
-  if (path === '/') return true;
-  if (AUTH_PAGES.includes(path)) return true;
-  if (path.startsWith('/account/reset-password-confirm/')) return true;
-  return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
-};
-
-const isProtectedPath = (path: string) =>
-  PROTECTED_PREFIXES.some((prefix) => path.startsWith(prefix));
-
-const redirectToLogin = (request: NextRequest, role: 'user' | 'admin', nextPath?: string) => {
-  const url = new URL('/account/login', request.url);
-  url.searchParams.set('role', role);
-  if (nextPath) {
-    url.searchParams.set('next', nextPath);
-  }
-  return NextResponse.redirect(url);
-};
-
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Derive auth state from httpOnly token cookies (tamper-proof)
   const hasAccessToken = !!request.cookies.get('accessToken')?.value;
   const hasRefreshToken = !!request.cookies.get('refreshToken')?.value;
   const isAuthenticated = hasAccessToken || hasRefreshToken;
 
-  const roles = await getUserRoles(request);
-  const defaultAuthedPath = '/user/dashboard';
-
-
-  if (!isAuthenticated) {
-    if (isPublicPath(path)) {
-      return NextResponse.next();
+  // Public paths (login) — allow if not authenticated, redirect to dashboard if authenticated
+  if (PUBLIC_PATHS.includes(path)) {
+    if (isAuthenticated) {
+      const roles = await getUserRoles(request);
+      const isAdmin = roles.includes('admin');
+      if (isAdmin) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
     }
-
-    if (isProtectedPath(path)) {
-      return redirectToLogin(request, 'user', path);
-    }
-
     return NextResponse.next();
   }
 
-  // Enforce Tutor-Only Routes (e.g. tutor profile and calendar tools)
-  const isTutor = roles.includes('tutor');
-  const TUTOR_ONLY_PATHS = ['/user/tutor-profile'];
-  if (TUTOR_ONLY_PATHS.some((tutorPath) => path.startsWith(tutorPath)) && !isTutor) {
-    console.warn(`[Middleware] Non-tutor user blocked from tutor-only path: ${path}`);
-    return NextResponse.redirect(new URL('/user/dashboard', request.url));
+  // All other paths require admin authentication
+  if (!isAuthenticated) {
+    const url = new URL('/login', request.url);
+    url.searchParams.set('next', path);
+    return NextResponse.redirect(url);
   }
 
+  // Verify admin role
+  const roles = await getUserRoles(request);
+  const isAdmin = roles.includes('admin');
 
-  if (path === '/account/login') {
-    // Let OAuth callback through so the client-side syncOAuthSession logic can run.
-    const oauthParam = request.nextUrl.searchParams.get('oauth');
-    if (oauthParam === 'success') {
-      return NextResponse.next();
-    }
-
-    return NextResponse.redirect(new URL(defaultAuthedPath, request.url));
-  }
-
-  if (AUTH_PAGES.includes(path) || path === '/') {
-    return NextResponse.redirect(new URL(defaultAuthedPath, request.url));
+  if (!isAdmin) {
+    // Clear cookies and redirect to login — non-admin users can't access this app
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    return response;
   }
 
   return NextResponse.next();

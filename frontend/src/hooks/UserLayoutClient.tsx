@@ -31,8 +31,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
       user.roles.includes('tutor') &&
       user.onboardingStatus !== 'completed' &&
       user.onboardingStatus !== 'approved';
-    const isAdminRedirect = user.roles.includes('admin');
-    return isTutorRedirect || isAdminRedirect;
+    return isTutorRedirect;
   }, [userData]);
 
   useEffect(() => {
@@ -47,10 +46,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
       dispatch(setUserProfile(user));
     }
 
-    if (user.roles.includes('admin')) {
-      router.replace('/admin');
-      return;
-    }
+
 
     if (
       user.roles.includes('tutor') &&
