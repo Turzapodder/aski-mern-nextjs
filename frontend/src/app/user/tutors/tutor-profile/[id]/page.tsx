@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { TutorProfileClient } from './TutorProfileClient';
+import { TutorProfileClient } from '@/features/TutorProfile/components/TutorProfileClient';
 
 export const metadata = {
   title: 'Tutor Profile | Aski',

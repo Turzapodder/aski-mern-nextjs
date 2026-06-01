@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { CalendarClient } from './CalendarClient';
+import { CalendarClient } from '@/features/Calendar/components/CalendarClient';
 import { CalendarSkeleton } from '@/components/calendar/skeletons/calendar-skeleton';
 
 export const metadata = {

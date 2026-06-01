@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { SettingsClient } from './SettingsClient';
+import { SettingsClient } from '@/features/Settings/components/SettingsClient';
 
 export const metadata = {
   title: 'Settings | Aski',

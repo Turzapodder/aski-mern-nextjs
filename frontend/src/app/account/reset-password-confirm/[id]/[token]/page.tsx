@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResetPasswordConfirmClient } from './ResetPasswordConfirmClient';
+import { ResetPasswordConfirmClient } from '@/features/Authentication/components/ResetPasswordConfirmClient';
 
 export const metadata = {
   title: 'Set new password | Aski',

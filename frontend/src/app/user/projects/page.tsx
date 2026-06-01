@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ProjectsClient } from './ProjectsClient';
+import { ProjectsClient } from '@/features/OngoingProjects/components/ProjectsClient';
 
 export const metadata = {
   title: 'Projects | Aski',

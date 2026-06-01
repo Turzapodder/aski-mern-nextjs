@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import TutorComponent from '@/components/TutorComponent';
+import TutorComponent from '@/features/TutorProfile/components/TutorComponent';
 
 export const metadata = {
   title: 'Tutors | Aski',

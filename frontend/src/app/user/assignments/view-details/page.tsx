@@ -15,7 +15,7 @@ import { useGetAssignmentsQuery, Assignment } from '@/lib/services/assignments';
 import { useGetUserQuery } from '@/lib/services/auth';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { useGetLatestSubmissionStatusByAssignmentsQuery } from '@/lib/services/submissions';
-import SendProposalModal from '@/components/SendProposalModal';
+import SendProposalModal from '@/components/common/SendProposalModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 

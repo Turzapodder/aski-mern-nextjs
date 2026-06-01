@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserDashboardClient } from './UserDashboardClient';
+import { UserDashboardClient } from '@/features/UserDashboard/components/UserDashboardClient';
 
 export const metadata = {
   title: 'Dashboard | Aski',

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { LoginClient } from './LoginClient';
+import { LoginClient } from '@/features/Authentication/components/LoginClient';
 
 export const metadata = {
   title: 'Login | Aski',

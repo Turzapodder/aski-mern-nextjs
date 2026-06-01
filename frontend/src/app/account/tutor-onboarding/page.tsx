@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { TutorOnboardingClient } from '@/components/tutorOnboarding';
+import { TutorOnboardingClient } from '@/features/Onboarding/components/TutorOnboardingClient';
 
 export const metadata = {
   title: 'Tutor Onboarding | Aski',

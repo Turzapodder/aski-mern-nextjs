@@ -1,5 +1,5 @@
 import React from 'react';
-import { LandingClient } from './LandingClient';
+import { LandingClient } from '@/features/Landing/components/LandingClient';
 
 export const metadata = {
   title: 'Aski | The best place to learn not from Ai',

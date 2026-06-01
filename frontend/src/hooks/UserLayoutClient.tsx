@@ -4,13 +4,14 @@ import { ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'nextjs-toploader/app';
-import TopNavbar from '@/components/TopNavbar';
-import { UserShellSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import TopNavbar from '@/components/common/TopNavbar';
+
 import MainSidebar from '@/components/sidebar/MainSidebar';
 import { setUserProfile } from '@/lib/features/auth/authSlice';
 import { setMobileMenuOpen } from '@/lib/features/ui/uiSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { useGetUserQuery } from '@/lib/services/auth';
+import { UserShellSkeleton } from '@/features/UserDashboard/components/dashboard/DashboardSkeletons';
 
 const UserLayoutClient = ({ children }: { children: ReactNode }) => {
   const { data: userData, isLoading } = useGetUserQuery();
