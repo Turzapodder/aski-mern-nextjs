@@ -742,6 +742,9 @@ class AssignmentController {
           filter.status = { $in: statusList };
         }
       }
+      if (req.query.paymentStatus) {
+        filter.paymentStatus = req.query.paymentStatus;
+      }
       if (subject) filter.subject = new RegExp(subject, 'i');
       if (priority) filter.priority = priority;
 

@@ -26,7 +26,8 @@ const TutorDashboard = ({ user }: { user: any }) => {
 
   const { data: ongoingData, isLoading: ongoingLoading } = useGetAssignmentsQuery({
     status:
-      'proposal_accepted,in_progress,submission_pending,revision_requested,assigned,submitted,overdue',
+      'in_progress,submission_pending,revision_requested,assigned,submitted,overdue',
+    paymentStatus: 'paid',
     sortBy: 'updatedAt',
     sortOrder: 'desc',
     limit: 20,

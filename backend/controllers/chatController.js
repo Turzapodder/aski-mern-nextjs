@@ -480,7 +480,8 @@ class ChatController {
       const assignments = await AssignmentModel.find({
         student: { $in: participants },
         assignedTutor: { $in: participants },
-        status: { $in: ['created', 'proposal_received', 'proposal_accepted', 'assigned', 'in_progress', 'submitted'] }
+        status: { $in: ['assigned', 'in_progress', 'submission_pending', 'revision_requested', 'submitted'] },
+        paymentStatus: 'paid'
       }).sort({ deadline: 1 });
 
       res.status(200).json({

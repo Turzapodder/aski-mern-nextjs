@@ -165,6 +165,7 @@ export interface AssignmentFilters {
   page?: number;
   limit?: number;
   status?: string;
+  paymentStatus?: string;
   subject?: string;
   priority?: string;
   sortBy?: string;
