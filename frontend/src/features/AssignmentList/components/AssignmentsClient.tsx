@@ -10,7 +10,7 @@ import SendProposalModal from './SendProposalModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAssignmentsLogic } from '@/lib/hooks/useAssignmentsLogic';
 import AssignmentCard from './AssignmentCard';
-import { AdvancedFilter, FilterField } from './AdvancedFilter';
+import { AdvancedFilter, FilterField } from '@/components/common/AdvancedFilter';
 
 export const AssignmentsClient = () => {
   const {
@@ -128,8 +128,8 @@ export const AssignmentsClient = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8">
-      <div className="max-w-400 mx-auto p-6 md:p-8  pt-2 md:pt-2">
+    <div className="min-h-screen bg-gray-50/50 p-0 md:p-4 md:p-8">
+      <div className="max-w-400 mx-auto p-2 md:p-8  pt-2 md:pt-2">
         
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">Assignment Board</h1>

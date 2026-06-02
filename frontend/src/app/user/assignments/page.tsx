@@ -1,5 +1,5 @@
+import AssignmentsClient from '@/features/AssignmentList/components/AssignmentsClient';
 import React, { Suspense } from 'react';
-import AssignmentsClient from '@/components/myAssignments/AssignmentsClient';
 
 export const metadata = {
   title: 'Assignments | Aski',

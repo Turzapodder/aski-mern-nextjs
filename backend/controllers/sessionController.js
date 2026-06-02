@@ -33,6 +33,8 @@ class SessionController {
 
       const data = sessions.map((session) => ({
         id: session._id,
+        tutorId: session.tutor?._id,
+        studentId: session.student?._id,
         tutorName: session.tutor?.name || "",
         studentName: session.student?.name || "",
         scheduledTime: session.scheduledTime,
@@ -319,6 +321,108 @@ class SessionController {
         error: "Unable to complete booking",
         code: "SERVER_ERROR",
       });
+    }
+  };
+
+  static modifySession = async (req, res) => {
+    try {
+      const studentId = req.user._id;
+      const { id } = req.params;
+      const { date, slot } = req.body;
+
+      const session = await SessionModel.findOne({ _id: id, student: studentId });
+      if (!session) {
+        return res.status(404).json({ success: false, error: "Session not found" });
+      }
+
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, error: "Valid date parameter in YYYY-MM-DD format is required" });
+      }
+
+      if (!slot || !/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/.test(slot)) {
+        return res.status(400).json({ success: false, error: "Valid slot format (HH:MM-HH:MM) is required" });
+      }
+
+      const match = slot.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+      const sh = Number(match[1]);
+      const sm = Number(match[2]);
+      const eh = Number(match[3]);
+      const em = Number(match[4]);
+
+      const scheduledTime = new Date(date);
+      scheduledTime.setHours(sh, sm, 0, 0);
+
+      if (scheduledTime < new Date()) {
+        return res.status(400).json({ success: false, error: "You cannot book an appointment for a past date or time slot" });
+      }
+
+      const endTime = new Date(date);
+      endTime.setHours(eh, em, 0, 0);
+
+      const duration = (endTime - scheduledTime) / (60 * 1000);
+      if (duration <= 0) {
+        return res.status(400).json({ success: false, error: "Invalid slot time range" });
+      }
+
+      const tutorId = session.tutor;
+      const tutor = await UserModel.findOne({ _id: tutorId, roles: "tutor" }).select("tutorProfile status onboardingStatus name").lean();
+
+      if (!tutor || !isTutorApproved(tutor)) {
+        return res.status(404).json({ success: false, error: "Tutor not found or inactive" });
+      }
+
+      const tutorProfile = tutor.tutorProfile || {};
+      const { availableDays = [], availableTimeSlots = [], offdays = [] } = tutorProfile;
+
+      if (offdays.includes(date)) {
+        return res.status(400).json({ success: false, error: "Tutor is away/off on this date" });
+      }
+
+      const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayOfWeek = weekdayNames[scheduledTime.getDay()];
+
+      if (!availableDays.includes(dayOfWeek)) {
+        return res.status(400).json({ success: false, error: "Tutor does not offer sessions on this day" });
+      }
+
+      const daySlotsEntry = availableTimeSlots.find((entry) => entry && typeof entry.day === "string" && entry.day.trim() === dayOfWeek);
+      const configuredSlots = daySlotsEntry && Array.isArray(daySlotsEntry.slots) ? daySlotsEntry.slots : [];
+
+      if (!configuredSlots.includes(slot)) {
+        return res.status(400).json({ success: false, error: "Tutor is not available during this time slot" });
+      }
+
+      const existingSession = await SessionModel.findOne({
+        _id: { $ne: id },
+        tutor: tutorId,
+        slot: slot,
+        scheduledTime: scheduledTime,
+        status: { $ne: "cancelled" },
+      });
+
+      if (existingSession) {
+        return res.status(400).json({ success: false, error: "This slot has already been booked by another student" });
+      }
+
+      session.scheduledTime = scheduledTime;
+      session.endTime = endTime;
+      session.slot = slot;
+      session.duration = duration;
+      
+      await session.save();
+
+      if (session.chat) {
+        await ChatModel.updateOne({ _id: session.chat }, { $set: { isLockedUntil: scheduledTime } });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Session modified successfully!",
+        data: { sessionId: session._id, scheduledTime, slot },
+      });
+    } catch (error) {
+      console.error("Modify session error:", error);
+      return res.status(500).json({ success: false, error: "Unable to modify session" });
     }
   };
 }

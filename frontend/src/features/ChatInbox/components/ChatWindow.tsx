@@ -554,16 +554,61 @@ const ChatWindow = () => {
       </div>
 
       {/* Unified Status Bar */}
-      {activeAssignments.length > 0 ? (
+      {(activeAssignments.length > 0 || selectedChat?.session) ? (
         <div className="px-4 sm:px-6 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              In Progress
-            </span>
-            <span className="text-xs text-gray-500 font-medium">
-              {activeAssignments.length} {activeAssignments.length === 1 ? 'Assignment' : 'Assignments'} Active
-            </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeAssignments.length > 0 ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  In Progress
+                </span>
+                <span className="text-xs text-gray-500 font-medium mr-2">
+                  {activeAssignments.length} {activeAssignments.length === 1 ? 'Assignment' : 'Assignments'} Active
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                <span className="text-xs text-gray-500 font-medium mr-2">
+                  No active assignments
+                </span>
+              </>
+            )}
+            {(() => {
+              const chatSessionScheduled = selectedChat?.session?.status === 'scheduled';
+              const chatSessionCompleted = selectedChat?.session?.status === 'completed';
+              
+              const assignmentSessionRequested = activeAssignments.some((a: any) => a.requestOneToOneSession);
+              const assignmentSessionActive = activeAssignments.some((a: any) => a.requestOneToOneSession && !a.submissionDetails?.oneToOneSessionCompleted);
+              
+              const isScheduled = chatSessionScheduled || assignmentSessionActive;
+              const isCompleted = chatSessionCompleted || (assignmentSessionRequested && !assignmentSessionActive);
+              const isRequested = chatSessionScheduled || chatSessionCompleted || assignmentSessionRequested;
+
+              if (!isRequested) {
+                return (
+                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-gray-200">
+                    1:1 Session: None
+                  </span>
+                );
+              }
+              if (isScheduled) {
+                return (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-indigo-100 animate-pulse">
+                    1:1 Session: Scheduled
+                  </span>
+                );
+              }
+              if (isCompleted) {
+                return (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-emerald-100">
+                    1:1 Session: Completed
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
           {(() => {
             const latestDeadlineTime = Math.max(...activeAssignments.map((a: any) => a.deadline ? new Date(a.deadline).getTime() : 0));
@@ -1032,7 +1077,7 @@ const ChatWindow = () => {
       </div>
 
       <Dialog open={offerModalOpen} onOpenChange={setOfferModalOpen}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[650px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
           <div className="bg-indigo-600 p-6 text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1047,11 +1092,11 @@ const ChatWindow = () => {
             </DialogHeader>
           </div>
 
-          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto non-scrollbar">
+          <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto non-scrollbar">
             {/* Details Section - Collapsed for Edit mode */}
             <div className="space-y-4">
               {offerModalMode === 'edit' ? (
-                <div className="p-3 bg-gray-100 rounded-xl border border-gray-100">
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                       Active Assignment
@@ -1103,7 +1148,7 @@ const ChatWindow = () => {
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
                   <DollarSign size={14} />
@@ -1135,20 +1180,20 @@ const ChatWindow = () => {
                   className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all h-11 text-sm"
                 />
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
-                  <Pencil size={14} />
-                  Message (Optional)
-                </label>
-                <Textarea
-                  value={offerNote}
-                  onChange={(e) => setOfferNote(e.target.value)}
-                  placeholder="Anything else the student should know?"
-                  rows={3}
-                  className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all text-sm resize-none"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 ml-1">
+                <Pencil size={14} />
+                Message (Optional)
+              </label>
+              <Textarea
+                value={offerNote}
+                onChange={(e) => setOfferNote(e.target.value)}
+                placeholder="Anything else the student should know?"
+                rows={3}
+                className="bg-gray-50 border-gray-100 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 rounded-xl transition-all text-sm resize-none"
+              />
             </div>
 
             {offerError && (
@@ -1158,19 +1203,19 @@ const ChatWindow = () => {
               </div>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-2 justify-end">
               <Button
                 variant="outline"
                 onClick={() => setOfferModalOpen(false)}
                 disabled={isSendingOffer}
-                className="flex-1 rounded-xl h-11 border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all font-medium"
+                className="w-32 rounded-xl h-11 border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all font-medium"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleOfferSubmit}
                 disabled={isSendingOffer}
-                className="flex-[1.5] rounded-xl text-nowrap cursor-pointer h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
+                className="w-48 rounded-xl text-nowrap cursor-pointer h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold"
               >
                 {isSendingOffer
                   ? 'Sending...'

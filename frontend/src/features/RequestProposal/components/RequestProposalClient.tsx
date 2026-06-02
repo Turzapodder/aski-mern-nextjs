@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import UploadProjectForm from '@/components/uploadForm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRequestProposalLogic } from '../hooks/useRequestProposalLogic';
+import UploadProjectForm from '@/features/UserDashboard/components/uploadForm/UploadProjectForm';
 
 export const RequestProposalClient = () => {
   const { router, tutorId, isTutorViewer, tutor, loading } = useRequestProposalLogic();

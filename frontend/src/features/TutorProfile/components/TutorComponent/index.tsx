@@ -15,7 +15,7 @@ import {
   SortDropdown,
 } from './components';
 import { SortOption } from '@/types/TutorsList';
-import { AdvancedFilter, FilterField } from '@/features/AssignmentList/components/AdvancedFilter';
+import { AdvancedFilter, FilterField } from '@/components/common/AdvancedFilter';
 
 export const TutorComponent = () => {
   const router = useRouter();
@@ -66,7 +66,7 @@ export const TutorComponent = () => {
   };
 
   return (
-    <div className="max-w-400 mx-auto p-6 md:p-8 pt-2 md:pt-2">
+    <div className="max-w-400 mx-auto p-2 md:p-6 pt-2 md:pt-2">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-8 gap-4">
         <div>

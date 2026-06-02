@@ -70,7 +70,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
         <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-end">
           <button
             type="submit"
-            className="bg-[#1e6b52] hover:bg-[#154d3b] text-white font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm text-sm"
+            className="bg-[#1e6b52] hover:bg-[#154d3b] text-white font-bold px-4 md:px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm text-sm"
           >
             <Search className="w-4 h-4" />
             <span>Apply</span>
@@ -79,7 +79,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border shadow-sm ${
+            className={`px-4 md:px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border shadow-sm ${
               isOpen || activeFiltersCount > 0
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -97,7 +97,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
           <button
             type="button"
             onClick={onReset}
-            className="px-5 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
+            className="px-4 md:px-5 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>

@@ -15,7 +15,7 @@ interface Props {
 
 export default function SidebarMenu({ items, isCollapsed }: Props) {
   return (
-    <nav className="flex-1 overflow-hidden p-4 space-y-6">
+    <nav className={`flex-1 overflow-hidden space-y-6 ${isCollapsed ? 'p-2' : 'p-4'}`}>
       <div>
         {!isCollapsed && (
           <h3 className="text-sm text-black uppercase tracking-wider mb-3">MAIN MENU</h3>
@@ -26,7 +26,9 @@ export default function SidebarMenu({ items, isCollapsed }: Props) {
             <li key={item.name}>
               <Link
                 href={item.href}
-                className={`w-full flex items-center truncate px-3 py-4 rounded-lg transition-all duration-200 text-sm group ${
+                className={`w-full flex items-center rounded-lg transition-all duration-200 text-sm group ${
+                  isCollapsed ? 'justify-center p-3' : 'px-3 py-4 truncate'
+                } ${
                   item.active
                     ? 'bg-primary-600 text-white font-bold shadow-lg shadow-primary-100'
                     : 'text-gray-700 hover:bg-gray-200 hover:text-black'
@@ -36,10 +38,10 @@ export default function SidebarMenu({ items, isCollapsed }: Props) {
                 <Image
                   src={item.icon}
                   alt={item.name}
-                  width={30}
-                  height={30}
-                  className={`w-7.5 h-7.5 object-contain ${
-                    !isCollapsed && 'mr-3'
+                  width={24}
+                  height={24}
+                  className={`w-6 h-6 object-contain shrink-0 ${
+                    !isCollapsed ? 'mr-3' : ''
                   }`}
                 />
 

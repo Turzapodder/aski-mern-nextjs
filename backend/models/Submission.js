@@ -80,6 +80,14 @@ const submissionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    videoExplanationLink: {
+      type: String,
+      trim: true,
+    },
+    oneToOneSessionCompleted: {
+      type: Boolean,
+      default: false,
+    },
     submittedAt: {
       type: Date,
       default: Date.now,

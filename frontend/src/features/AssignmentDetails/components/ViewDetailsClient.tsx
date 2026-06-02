@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Clock,
   Star,
@@ -12,6 +12,9 @@ import {
   Award,
   AlertCircle,
   User as UserIcon,
+  MoreVertical,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import SendProposalModal from '@/components/common/SendProposalModal';
 import ProposalsList from './ProposalsList';
@@ -22,6 +25,25 @@ import ReportModal from '@/components/common/ReportModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewDetailsLogic, getWorkflowStep } from '../hooks/useViewDetailsLogic';
 import CompletionFeedback from './completionFeedback/CompletionFeedback';
+import { useDeleteAssignmentMutation } from '@/lib/services/assignments';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+
 
 export const ViewDetailsClient = () => {
   const {
@@ -46,6 +68,19 @@ export const ViewDetailsClient = () => {
     handleRequestedTutorProfile,
   } = useViewDetailsLogic();
 
+  const [deleteAssignment, { isLoading: isDeleting }] = useDeleteAssignmentMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleDelete = async () => {
+    if (!assignmentData?.data?._id) return;
+    try {
+      await deleteAssignment(assignmentData.data._id).unwrap();
+      setIsDeleteDialogOpen(false);
+      router.push('/user/assignments');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to delete assignment');
+    }
+  };
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -212,12 +247,31 @@ export const ViewDetailsClient = () => {
     <div className="w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Top Header - full width, outside grid */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-gray-400 mb-1">Assignment Details</p>
-          <h1 className="text-2xl sm:text-3xl font-bold italic text-gray-900 mb-2">{assignment.title}</h1>
-          <p className="text-sm text-gray-500 max-w-2xl leading-relaxed">
-            {assignment.description ? assignment.description.substring(0, 160) + (assignment.description.length > 160 ? '...' : '') : ''}
-          </p>
+        <div className="flex-1 flex justify-between items-start gap-4">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-gray-400 mb-1">Assignment Details</p>
+            <h1 className="text-2xl sm:text-3xl font-bold  text-gray-900 mb-2">{assignment.title}</h1>
+          </div>
+          {isAssignmentStudent && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="p-2 rounded-md hover:bg-gray-200 transition-colors focus:outline-none">
+                <MoreVertical className="w-5 h-5 text-gray-500" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem className="cursor-pointer text-gray-700 font-medium">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 font-medium"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         <span className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm capitalize">
           <span className="w-2 h-2 rounded-full bg-primary-500"></span>
@@ -309,7 +363,7 @@ export const ViewDetailsClient = () => {
           {/* Project Activity */}
           <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100">
             <h3 className="text-base font-bold text-gray-900 mb-5">Project Activity</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border border-gray-100 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
                   <Star size={16} className="text-gray-500" />
@@ -478,6 +532,34 @@ export const ViewDetailsClient = () => {
             </div>
           </div>
 
+          {/* Required Deliverables Card */}
+          {(assignment.requestOneToOneSession || assignment.videoExplanation) && (
+            <div className="bg-primary-50 rounded-2xl p-6 shadow-sm border border-primary-100">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle size={15} className="text-primary-600" />
+                <h4 className="text-sm font-bold text-primary-900">Required Deliverables</h4>
+              </div>
+              <div className="space-y-3">
+                {assignment.requestOneToOneSession && (
+                  <div className="flex items-start gap-2 text-sm text-primary-800 font-medium">
+                    <div className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-primary-200 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-600"></div>
+                    </div>
+                    <span>1:1 Session with Student</span>
+                  </div>
+                )}
+                {assignment.videoExplanation && (
+                  <div className="flex items-start gap-2 text-sm text-primary-800 font-medium">
+                    <div className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-primary-200 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-600"></div>
+                    </div>
+                    <span>Video Explanation</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Resources Card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-5">
@@ -561,6 +643,28 @@ export const ViewDetailsClient = () => {
           reportedId={assignment.student._id}
         />
       )}
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              assignment and withdraw any pending proposals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

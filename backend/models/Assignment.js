@@ -137,7 +137,15 @@ const assignmentSchema = new mongoose.Schema({
       label: { type: String, trim: true },
       addedAt: { type: Date, default: Date.now }
     }],
-    submissionNotes: String
+    submissionNotes: String,
+    videoExplanationLink: {
+      type: String,
+      trim: true
+    },
+    oneToOneSessionCompleted: {
+      type: Boolean,
+      default: false
+    }
   },
 
   submissionHistory: [
@@ -172,6 +180,14 @@ const assignmentSchema = new mongoose.Schema({
         addedAt: { type: Date, default: Date.now }
       }],
       submissionNotes: String,
+      videoExplanationLink: {
+        type: String,
+        trim: true
+      },
+      oneToOneSessionCompleted: {
+        type: Boolean,
+        default: false
+      },
       revisionIndex: { type: Number, default: 0 }
     }
   ],

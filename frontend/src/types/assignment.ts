@@ -53,6 +53,8 @@ export interface Assignment {
       addedAt?: string;
     }>;
     submissionNotes?: string;
+    videoExplanationLink?: string;
+    oneToOneSessionCompleted?: boolean;
   };
   submissionHistory?: Array<{
     submissionId?: string;
@@ -73,6 +75,8 @@ export interface Assignment {
       addedAt?: string;
     }>;
     submissionNotes?: string;
+    videoExplanationLink?: string;
+    oneToOneSessionCompleted?: boolean;
     revisionIndex?: number;
   }>;
   revisionRequests?: Array<{

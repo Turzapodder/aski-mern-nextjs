@@ -10,5 +10,6 @@ router.use(checkUserAuth);
 
 router.get("/upcoming", SessionController.getUpcomingSessions);
 router.post("/book", SessionController.bookSession);
+router.put("/:id", SessionController.modifySession);
 
 export default router;

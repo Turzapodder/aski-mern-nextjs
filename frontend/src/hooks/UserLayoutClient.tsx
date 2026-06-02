@@ -87,7 +87,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
     <div className="flex h-screen bg-gray-100 font-sans">
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/10 backdrop-blur-xs md:hidden"
           onClick={closeMobileSidebar}
         />
       )}
@@ -97,7 +97,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300
         ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0
-        ${sidebarCollapsed ? 'w-16' : 'w-64'}
+        ${sidebarCollapsed ? 'md:w-16 w-64' : 'w-64'}
       `}
       >
         <MainSidebar activeItem={activeItem} />

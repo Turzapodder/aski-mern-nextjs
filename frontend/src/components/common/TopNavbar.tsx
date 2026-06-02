@@ -61,8 +61,10 @@ const TopNavbar = ({
       const incoming = payload?.notification || payload;
       if (!incoming?._id) return;
 
+      const isProposalReceived = incoming.type === 'proposal_received';
+
       toast(incoming.title || 'New notification', {
-        description: incoming.message,
+        description: isProposalReceived ? 'A new proposal has been received.' : incoming.message,
         action: incoming.link
           ? {
             label: 'View',

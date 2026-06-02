@@ -53,6 +53,9 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment,
   const [notes, setNotes] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [videoExplanationFile, setVideoExplanationFile] = useState<File | null>(null);
+  const [videoExplanationLink, setVideoExplanationLink] = useState('');
+  const [oneToOneSessionCompleted, setOneToOneSessionCompleted] = useState(false);
 
   const apiBaseUrl =
     process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -137,8 +140,20 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment,
       toast.error(fileErrors[0]);
       return;
     }
+    
+    if (assignment.videoExplanation) {
+      if (!videoExplanationFile && !videoExplanationLink.trim()) {
+        toast.error('Video explanation is required. Please upload a video or provide a link.');
+        return;
+      }
+      if (videoExplanationLink.trim() && !isValidUrl(videoExplanationLink.trim())) {
+        toast.error('Please provide a valid video explanation link.');
+        return;
+      }
+    }
 
-    if (files.length === 0 && validLinks.length === 0 && !trimmedNotes) {
+    const hasAnyContent = files.length > 0 || validLinks.length > 0 || !!trimmedNotes || !!videoExplanationFile || !!videoExplanationLink.trim() || oneToOneSessionCompleted;
+    if (!hasAnyContent) {
       toast.error('Please add files, links, or notes before submitting.');
       return;
     }
@@ -154,6 +169,14 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment,
     }
     if (validLinks.length > 0) {
       formData.append('submissionLinks', JSON.stringify(validLinks));
+    }
+    if (videoExplanationFile) {
+      formData.append('videoExplanationFile', videoExplanationFile);
+    } else if (videoExplanationLink.trim()) {
+      formData.append('videoExplanationLink', videoExplanationLink.trim());
+    }
+    if (assignment.requestOneToOneSession) {
+      formData.append('oneToOneSessionCompleted', String(oneToOneSessionCompleted));
     }
 
     try {
@@ -181,6 +204,9 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment,
       setFiles([]);
       setLinks([]);
       setNotes('');
+      setVideoExplanationFile(null);
+      setVideoExplanationLink('');
+      setOneToOneSessionCompleted(false);
       setUploadProgress(0);
       if (result?.data && onSubmitted) {
         onSubmitted(result.data);
@@ -324,6 +350,75 @@ const TutorSubmissionPanel: React.FC<TutorSubmissionPanelProps> = ({ assignment,
             ))}
           </div>
         </div>
+
+        {(assignment.videoExplanation || assignment.requestOneToOneSession) && (
+          <div className="space-y-4 rounded-xl border border-primary-100 bg-primary-50/50 p-4">
+            <h3 className="font-medium text-primary-900">Required Deliverables</h3>
+            
+            {assignment.requestOneToOneSession && (
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-primary-50 transition-colors">
+                <div className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${oneToOneSessionCompleted ? 'bg-primary-500 border-primary-500' : 'border-gray-300 bg-white'}`}>
+                  {oneToOneSessionCompleted && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+                <span className="text-sm text-gray-700">I have completed the 1:1 session with the student</span>
+                <input type="checkbox" className="hidden" checked={oneToOneSessionCompleted} onChange={(e) => setOneToOneSessionCompleted(e.target.checked)} />
+              </label>
+            )}
+
+            {assignment.videoExplanation && (
+              <div className="space-y-2 p-2">
+                <label className="block text-sm font-medium text-gray-700">Video Explanation</label>
+                <p className="text-xs text-gray-500 mb-2">Upload a video or provide an external secure link.</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex-1 relative">
+                    <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={videoExplanationLink}
+                      onChange={(e) => setVideoExplanationLink(e.target.value)}
+                      placeholder="https://youtu.be/..."
+                      disabled={!!videoExplanationFile}
+                      className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-gray-400 text-center uppercase">OR</span>
+                  <div className="flex-1">
+                     <input
+                        type="file"
+                        accept="video/*"
+                        disabled={!!videoExplanationLink}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > maxFileSize) {
+                              toast.error(`Video exceeds the 50MB limit.`);
+                              e.target.value = '';
+                              return;
+                            }
+                            setVideoExplanationFile(file);
+                          } else {
+                            setVideoExplanationFile(null);
+                          }
+                        }}
+                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 disabled:opacity-50 cursor-pointer"
+                     />
+                  </div>
+                </div>
+                {(videoExplanationFile || videoExplanationLink) && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setVideoExplanationFile(null);
+                      setVideoExplanationLink('');
+                    }}
+                    className="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1 mt-1"
+                  >
+                    <Trash2 className="h-3 w-3" /> Clear video
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>

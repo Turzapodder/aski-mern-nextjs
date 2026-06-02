@@ -9,7 +9,7 @@ interface Props {
 export default function SidebarHeader({ isCollapsed, onToggle }: Props) {
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <Image
             src="/assets/main-logo.svg"

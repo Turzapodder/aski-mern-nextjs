@@ -1047,6 +1047,41 @@ class AssignmentController {
       assignment.status = 'cancelled';
       await assignment.save();
 
+      // Find all pending proposals for this assignment and mark them withdrawn
+      const pendingProposals = await ProposalModel.find({
+        assignment: id,
+        status: 'pending'
+      });
+
+      for (const proposal of pendingProposals) {
+        proposal.status = 'withdrawn';
+        await proposal.save();
+
+        // Create database notification for tutor
+        const notification = await NotificationModel.create({
+          user: proposal.tutor,
+          type: 'proposal_withdrawn',
+          title: 'Assignment Cancelled',
+          message: `The assignment "${assignment.title}" has been deleted/cancelled by the student. Your proposal was withdrawn.`,
+          link: '/user/assignments',
+          data: {
+            assignmentId: id,
+            proposalId: proposal._id
+          }
+        });
+
+        // Emit socket events
+        const socketManager = req.app.get('socketManager');
+        if (socketManager) {
+          socketManager.emitToUser(String(proposal.tutor), 'notification', { notification });
+          socketManager.emitToUser(String(proposal.tutor), 'proposal_updated', {
+            assignmentId: id,
+            proposalId: proposal._id,
+            status: 'withdrawn'
+          });
+        }
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Assignment deleted successfully'
@@ -1129,6 +1164,8 @@ class AssignmentController {
         submissionDescription,
         title,
         description,
+        videoExplanationLink,
+        oneToOneSessionCompleted,
       } = req.body;
       const tutorId = req.user._id;
 
@@ -1189,7 +1226,16 @@ class AssignmentController {
 
       // Process submission files
       let submissionFiles = [];
-      if (req.files && req.files.length > 0) {
+      if (req.files && req.files.submissionFiles && req.files.submissionFiles.length > 0) {
+        submissionFiles = req.files.submissionFiles.map(file => ({
+          filename: file.key,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          url: file.location
+        }));
+      } else if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        // Fallback
         submissionFiles = req.files.map(file => ({
           filename: file.key,
           originalName: file.originalname,
@@ -1198,6 +1244,12 @@ class AssignmentController {
           url: file.location
         }));
       }
+
+      let finalVideoLink = videoExplanationLink ? sanitizeText(videoExplanationLink) : undefined;
+      if (req.files && req.files.videoExplanationFile && req.files.videoExplanationFile.length > 0) {
+        finalVideoLink = req.files.videoExplanationFile[0].location;
+      }
+
 
       let parsedLinks = submissionLinks;
       if (typeof parsedLinks === "string") {
@@ -1230,6 +1282,8 @@ class AssignmentController {
         submissionFiles,
         submissionLinks: normalizedLinks,
         submissionNotes: sanitizedNotes || undefined,
+        videoExplanationLink: finalVideoLink,
+        oneToOneSessionCompleted: oneToOneSessionCompleted === 'true' || oneToOneSessionCompleted === true,
         revisionIndex,
         submittedAt: new Date(),
         status: "submitted",
@@ -1243,34 +1297,26 @@ class AssignmentController {
         submittedAt: new Date(),
         submissionFiles,
         submissionLinks: normalizedLinks,
-        submissionNotes: sanitizedNotes
+        submissionNotes: sanitizedNotes,
+        videoExplanationLink: finalVideoLink,
+        oneToOneSessionCompleted: oneToOneSessionCompleted === 'true' || oneToOneSessionCompleted === true,
       };
+      const newHistoryItem = {
+        submissionId: submissionRecord._id,
+        title: sanitizedTitle,
+        description: sanitizedDescription,
+        submittedAt: new Date(),
+        submissionFiles,
+        submissionLinks: normalizedLinks,
+        submissionNotes: sanitizedNotes,
+        videoExplanationLink: finalVideoLink,
+        oneToOneSessionCompleted: oneToOneSessionCompleted === 'true' || oneToOneSessionCompleted === true,
+        revisionIndex
+      };
+      
       assignment.submissionHistory = Array.isArray(assignment.submissionHistory)
-        ? [
-            ...assignment.submissionHistory,
-            {
-              submissionId: submissionRecord._id,
-              title: sanitizedTitle,
-              description: sanitizedDescription,
-              submittedAt: new Date(),
-              submissionFiles,
-              submissionLinks: normalizedLinks,
-              submissionNotes: sanitizedNotes,
-              revisionIndex
-            }
-          ]
-        : [
-            {
-              submissionId: submissionRecord._id,
-              title: sanitizedTitle,
-              description: sanitizedDescription,
-              submittedAt: new Date(),
-              submissionFiles,
-              submissionLinks: normalizedLinks,
-              submissionNotes: sanitizedNotes,
-              revisionIndex
-            }
-          ];
+        ? [...assignment.submissionHistory, newHistoryItem]
+        : [newHistoryItem];
       assignment.status = 'submitted';
 
       await assignment.save();

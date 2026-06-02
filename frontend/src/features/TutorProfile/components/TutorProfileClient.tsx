@@ -23,6 +23,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import ReportModal from '@/components/common/ReportModal';
 import { toast } from 'sonner';
 import { useTutorProfileLogic } from '../hooks/useTutorProfileLogic';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export const TutorProfileClient = () => {
   const {
@@ -59,6 +68,9 @@ export const TutorProfileClient = () => {
   const [selectedSlots, setSelectedSlots] = React.useState<any[]>([]);
   const [selectedDuration, setSelectedDuration] = React.useState<number>(60);
   const [isBooking, setIsBooking] = React.useState(false);
+  const [conflictAlertOpen, setConflictAlertOpen] = React.useState(false);
+  const [existingSessionToModify, setExistingSessionToModify] = React.useState<any>(null);
+  const [isModifyingSession, setIsModifyingSession] = React.useState(false);
 
   // Fetch slot availability when selectedDate shifts
   React.useEffect(() => {
@@ -96,7 +108,7 @@ export const TutorProfileClient = () => {
     fetchSlots();
   }, [selectedDate, tutor?._id]);
 
-  const handleOpenBooking = () => {
+  const handleOpenBooking = async () => {
     if (!viewer) {
       router.push('/login');
       return;
@@ -109,6 +121,26 @@ export const TutorProfileClient = () => {
       toast.error('Only students can book tutor appointments.');
       return;
     }
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/sessions/upcoming`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const existing = data.data?.find((s: any) => s.tutorId === tutor?._id && s.status === 'scheduled');
+        if (existing) {
+          setExistingSessionToModify(existing);
+          setConflictAlertOpen(true);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    
+    setIsModifyingSession(false);
     setBookingOpen(true);
   };
 
@@ -523,6 +555,50 @@ export const TutorProfileClient = () => {
         />
       )}
 
+      {/* Conflict Alert Modal */}
+      <Dialog open={conflictAlertOpen} onOpenChange={setConflictAlertOpen}>
+        <DialogContent className="sm:max-w-[500px] p-6 rounded-3xl border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">Session Already Booked</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              You already have a scheduled session with this tutor on{' '}
+              {existingSessionToModify ? new Date(existingSessionToModify.scheduledTime).toLocaleDateString(undefined, { dateStyle: 'long' }) : ''}. 
+              Would you like to book another separate session or modify the date/time of your existing session?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2.5 mt-6 justify-end">
+            <Button 
+              variant="outline"
+              onClick={() => setConflictAlertOpen(false)}
+              className="w-full sm:w-28 rounded-xl h-11 border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="secondary"
+              onClick={() => {
+                setConflictAlertOpen(false);
+                setIsModifyingSession(true);
+                setBookingOpen(true);
+              }}
+              className="w-full sm:w-36 rounded-xl h-11 bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold border-none"
+            >
+              Modify Existing
+            </Button>
+            <Button 
+              onClick={() => {
+                setConflictAlertOpen(false);
+                setIsModifyingSession(false);
+                setBookingOpen(true);
+              }}
+              className="w-full sm:w-36 rounded-xl h-11 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+            >
+              Book Another
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Premium Booking Calendar Checkout Modal */}
       {bookingOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
@@ -778,52 +854,82 @@ export const TutorProfileClient = () => {
                       <button
                         onClick={async () => {
                           if (!selectedDate || selectedSlots.length === 0) return;
+                          
                           setIsBooking(true);
                           try {
                             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-                            // Book each slot sequentially
-                            let successCount = 0;
-
-                            for (const item of selectedSlots) {
-                              const res = await fetch(`${baseUrl}/api/sessions/book`, {
-                                method: 'POST',
+                            if (isModifyingSession && existingSessionToModify) {
+                              if (selectedSlots.length > 1) {
+                                toast.error('You can only modify one session at a time.');
+                                setIsBooking(false);
+                                return;
+                              }
+                              const res = await fetch(`${baseUrl}/api/sessions/${existingSessionToModify.id}`, {
+                                method: 'PUT',
                                 headers: {
                                   'Content-Type': 'application/json',
                                 },
                                 body: JSON.stringify({
-                                  tutorId: tutor?._id,
                                   date: selectedDate,
-                                  slot: item.slot,
-                                  duration: selectedSlots.length > 1 ? 60 : selectedDuration,
-                                  subject: '1:1 Live Mentorship Session',
+                                  slot: selectedSlots[0].slot,
                                 }),
                                 credentials: 'include',
                               });
                               const data = await res.json();
                               if (res.ok && (data.status === 'success' || data.success === true)) {
-                                successCount++;
+                                toast.success('Session modified successfully!');
+                                setBookingOpen(false);
+                                setTimeout(() => {
+                                  router.push('/user/messages');
+                                }, 1500);
+                              } else {
+                                toast.error(data.error || 'Failed to modify session. Please try again.');
                               }
-                            }
-
-                            if (successCount === selectedSlots.length) {
-                              toast.success(
-                                selectedSlots.length > 1
-                                  ? `Successfully booked ${successCount} session slots! Direct checkout complete.`
-                                  : 'Appointment booked successfully! Direct checkout complete.'
-                              );
-                              setBookingOpen(false);
-                              setTimeout(() => {
-                                router.push('/user/messages');
-                              }, 1500);
-                            } else if (successCount > 0) {
-                              toast.success(`Successfully booked ${successCount} of ${selectedSlots.length} slots. Direct checkout complete.`);
-                              setBookingOpen(false);
-                              setTimeout(() => {
-                                router.push('/user/messages');
-                              }, 1500);
                             } else {
-                              toast.error('Failed to complete direct checkout booking. Please try again.');
+                              // Book each slot sequentially
+                              let successCount = 0;
+
+                              for (const item of selectedSlots) {
+                                const res = await fetch(`${baseUrl}/api/sessions/book`, {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                  body: JSON.stringify({
+                                    tutorId: tutor?._id,
+                                    date: selectedDate,
+                                    slot: item.slot,
+                                    duration: selectedSlots.length > 1 ? 60 : selectedDuration,
+                                    subject: '1:1 Live Mentorship Session',
+                                  }),
+                                  credentials: 'include',
+                                });
+                                const data = await res.json();
+                                if (res.ok && (data.status === 'success' || data.success === true)) {
+                                  successCount++;
+                                }
+                              }
+
+                              if (successCount === selectedSlots.length) {
+                                toast.success(
+                                  selectedSlots.length > 1
+                                    ? `Successfully booked ${successCount} session slots! Direct checkout complete.`
+                                    : 'Appointment booked successfully! Direct checkout complete.'
+                                );
+                                setBookingOpen(false);
+                                setTimeout(() => {
+                                  router.push('/user/messages');
+                                }, 1500);
+                              } else if (successCount > 0) {
+                                toast.success(`Successfully booked ${successCount} of ${selectedSlots.length} slots. Direct checkout complete.`);
+                                setBookingOpen(false);
+                                setTimeout(() => {
+                                  router.push('/user/messages');
+                                }, 1500);
+                              } else {
+                                toast.error('Failed to complete direct checkout booking. Please try again.');
+                              }
                             }
                           } catch (err: any) {
                             console.error(err);

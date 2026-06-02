@@ -30,6 +30,8 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
   const submissionNotes = latestSubmission?.submissionNotes;
   const submissionTitle = latestSubmission?.title;
   const submissionDescription = latestSubmission?.description;
+  const videoExplanationLink = latestSubmission?.videoExplanationLink;
+  const oneToOneSessionCompleted = latestSubmission?.oneToOneSessionCompleted;
   const feedback = assignment.feedback;
   const ratingValue = feedback?.rating ?? 0;
 
@@ -140,6 +142,38 @@ const SubmissionReviewSummary: React.FC<SubmissionReviewSummaryProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-700 mb-2">Tutor notes</p>
               <p className="text-sm text-gray-600 whitespace-pre-line">{submissionNotes}</p>
+            </div>
+          )}
+
+          {(videoExplanationLink || oneToOneSessionCompleted) && (
+            <div className="rounded-lg border border-primary-100 bg-primary-50/50 p-4 mt-2">
+              <h3 className="text-sm font-medium text-primary-900 mb-3">Required Deliverables</h3>
+              <div className="space-y-3">
+                {oneToOneSessionCompleted && (
+                  <div className="flex items-center gap-2 text-sm text-primary-800">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-500">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span>1:1 Session Completed</span>
+                  </div>
+                )}
+                {videoExplanationLink && (
+                  <div className="flex items-center gap-2 text-sm text-primary-800">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-500">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span>Video Explanation:</span>
+                    <a
+                      href={resolveFileUrl(videoExplanationLink)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary-600 hover:underline inline-flex items-center gap-1"
+                    >
+                      <LinkIcon className="h-3 w-3" /> View Video
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
