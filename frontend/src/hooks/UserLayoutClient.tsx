@@ -4,13 +4,14 @@ import { ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'nextjs-toploader/app';
-import TopNavbar from '@/components/TopNavbar';
-import { UserShellSkeleton } from '@/components/dashboard/DashboardSkeletons';
+import TopNavbar from '@/components/common/TopNavbar';
+
 import MainSidebar from '@/components/sidebar/MainSidebar';
 import { setUserProfile } from '@/lib/features/auth/authSlice';
 import { setMobileMenuOpen } from '@/lib/features/ui/uiSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { useGetUserQuery } from '@/lib/services/auth';
+import { UserShellSkeleton } from '@/features/UserDashboard/components/dashboard/DashboardSkeletons';
 
 const UserLayoutClient = ({ children }: { children: ReactNode }) => {
   const { data: userData, isLoading } = useGetUserQuery();
@@ -86,7 +87,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
     <div className="flex h-screen bg-gray-100 font-sans">
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/10 backdrop-blur-xs md:hidden"
           onClick={closeMobileSidebar}
         />
       )}
@@ -96,7 +97,7 @@ const UserLayoutClient = ({ children }: { children: ReactNode }) => {
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300
         ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0
-        ${sidebarCollapsed ? 'w-16' : 'w-64'}
+        ${sidebarCollapsed ? 'md:w-16 w-64' : 'w-64'}
       `}
       >
         <MainSidebar activeItem={activeItem} />

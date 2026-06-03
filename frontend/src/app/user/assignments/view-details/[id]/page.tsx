@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ViewDetailsClient } from './ViewDetailsClient';
+import { ViewDetailsClient } from '@/features/AssignmentDetails/components/ViewDetailsClient';
 
 export const metadata = {
   title: 'Assignment Details | Aski',

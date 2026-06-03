@@ -56,7 +56,7 @@ router.patch('/:id/assign-tutor', AssignmentController.assignTutor);
 router.post('/:id/payment', AssignmentController.processPayment);
 
 // Submit work (by tutor)
-router.post('/:id/submit', uploadAssignment.array('submissionFiles', 10), AssignmentController.submitWork);
+router.post('/:id/submit', uploadAssignment.fields([{ name: 'submissionFiles', maxCount: 10 }, { name: 'videoExplanationFile', maxCount: 1 }]), AssignmentController.submitWork);
 
 // Request revision (student)
 router.post('/:id/request-revision', AssignmentController.requestRevision);

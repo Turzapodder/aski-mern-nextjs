@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import TutorComponent from '@/components/TutorComponent';
+import TutorComponent from '@/features/TutorProfile/components/TutorComponent';
 
 export const metadata = {
   title: 'Tutors | Aski',
@@ -8,7 +8,7 @@ export const metadata = {
 
 const TutorsPage = () => {
   return (
-    <div className="min-h-screen bg-[#f6f6f6] p-6">
+    <div className="min-h-screen bg-[#f6f6f6] p-0 lg:p-6">
       <Suspense fallback={<div>Loading tutors...</div>}>
         <TutorComponent />
       </Suspense>

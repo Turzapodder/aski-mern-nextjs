@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { WalletClient } from './WalletClient';
+import { WalletClient } from '@/features/Wallet/components/WalletClient';
 
 export const metadata = {
   title: 'Wallet | Aski',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResetPasswordLinkClient } from './ResetPasswordLinkClient';
+import { ResetPasswordLinkClient } from '@/features/Authentication/components/ResetPasswordLinkClient';
 
 export const metadata = {
   title: 'Reset Password | Aski',

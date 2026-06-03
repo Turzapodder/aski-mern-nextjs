@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { MessagesClient } from './MessagesClient';
+import { MessagesClient } from '@/features/ChatInbox/components/MessagesClient';
 
 export const metadata = {
   title: 'Messages | Aski',

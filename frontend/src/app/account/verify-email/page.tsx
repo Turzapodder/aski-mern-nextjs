@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { VerifyEmailClient } from './VerifyEmailClient';
+import { VerifyEmailClient } from '@/features/Authentication/components/VerifyEmailClient';
 
 export const metadata = {
   title: 'Verify Email | Aski',

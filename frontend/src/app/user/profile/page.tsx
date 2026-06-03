@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ProfileClient } from './ProfileClient';
+import { ProfileClient } from '@/features/Profile/components/ProfileClient';
 
 export const metadata = {
   title: 'Profile | Aski',

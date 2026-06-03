@@ -3,7 +3,7 @@ import StoreProvider from './StoreProvider';
 import './globals.css';
 import { Poppins, Orbitron, Dancing_Script, Space_Grotesk } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
-import GlobalModal from '@/components/GlobalModal';
+import GlobalModal from '@/components/common/GlobalModal';
 
 const poppins = Poppins({
   subsets: ['latin'],

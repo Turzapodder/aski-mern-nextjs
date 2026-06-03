@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { RegisterClient } from './RegisterClient';
+import { RegisterClient } from '@/features/Authentication/components/RegisterClient';
 
 export const metadata = {
   title: 'Register | Aski',

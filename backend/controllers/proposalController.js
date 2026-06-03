@@ -579,15 +579,38 @@ class ProposalController {
         estimatedCost: proposal.proposedPrice
       });
 
-      // Reject all other proposals for this assignment
-      await ProposalModel.updateMany(
-        {
-          assignment: proposal.assignment,
-          _id: { $ne: proposalId },
-          status: 'pending'
-        },
-        { status: 'rejected' }
-      );
+      // Reject all other proposals for this assignment and notify other tutors
+      const otherPendingProposals = await ProposalModel.find({
+        assignment: proposal.assignment,
+        _id: { $ne: proposalId },
+        status: 'pending'
+      });
+
+      for (const otherProposal of otherPendingProposals) {
+        otherProposal.status = 'rejected';
+        otherProposal.studentResponse = {
+          message: 'Another proposal was accepted for this assignment.',
+          respondedAt: new Date()
+        };
+        await otherProposal.save();
+
+        const otherTutorId = otherProposal.tutor?._id || otherProposal.tutor;
+        const otherConversationId =
+          typeof otherProposal.conversation === "string"
+            ? otherProposal.conversation
+            : otherProposal.conversation?._id?.toString();
+
+        await emitProposalRealtimeUpdate({
+          req,
+          userId: otherTutorId,
+          type: "proposal_rejected",
+          title: "Proposal rejected",
+          message: `Another proposal was accepted for "${proposal.assignment?.title || "an assignment"}". Your proposal was rejected.`,
+          assignmentId: proposal.assignment?._id || proposal.assignment,
+          proposalId: otherProposal._id,
+          conversationId: otherConversationId,
+        });
+      }
 
       await proposal.populate([
         { path: 'tutor', select: 'name email profileImage tutorProfile publicStats' },

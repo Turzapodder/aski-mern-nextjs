@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { RequestProposalClient } from './RequestProposalClient';
+import { RequestProposalClient } from '@/features/RequestProposal/components/RequestProposalClient';
 
 export const metadata = {
   title: 'Request Proposal | Aski',
