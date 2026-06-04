@@ -156,6 +156,9 @@ const getFrontendBaseUrl = () => {
 
 const getBackendBaseUrl = (req) => {
   const configured = sanitizeText(process.env.BACKEND_PUBLIC_URL || process.env.BACKEND_HOST || "");
+  if (process.env.NODE_ENV === "production" && (!configured || isLocalHostValue(configured))) {
+    throw new Error("BACKEND_PUBLIC_URL must be set to a public URL in production");
+  }
   const forwardedProto = sanitizeText(req.headers["x-forwarded-proto"]);
   const protocol = forwardedProto || req.protocol || "http";
   const host = sanitizeText(req.get("host"));
@@ -848,11 +851,10 @@ class AssignmentController {
       if (userRoles.includes('admin')) {
         // Admin can see all assignments
       } else if (userRoles.includes('tutor')) {
-        // Tutors can see assigned assignments and unassigned ones
-        // Overdue assignments are excluded from the general board;
-        // tutors access them via "My Work Hub" instead.
         filter.$or = [
-          { assignedTutor: userId, status: { $ne: 'overdue' } },
+          status
+            ? { assignedTutor: userId }
+            : { assignedTutor: userId, status: { $ne: 'overdue' } },
           {
             assignedTutor: null,
             status: { $in: ['pending', 'created', 'proposal_received'] },
@@ -2411,9 +2413,8 @@ class AssignmentController {
         });
       }
 
-      const newDeadline = new Date(
-        (assignment.deadline?.getTime() || Date.now()) + hours * 60 * 60 * 1000
-      );
+      const extensionBase = Math.max(assignment.deadline?.getTime() || 0, Date.now());
+      const newDeadline = new Date(extensionBase + hours * 60 * 60 * 1000);
 
       assignment.overdueExtension = {
         requestedBy: userId,
@@ -2592,20 +2593,25 @@ class AssignmentController {
         });
       }
 
+      let finalAssignment = null;
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
-          // Cancel the assignment
-          assignment.status = 'cancelled';
-          assignment.isActive = false;
-          await assignment.save({ session });
+          const transitioned = await AssignmentModel.findOneAndUpdate(
+            { _id: id, status: 'overdue' },
+            { $set: { status: 'cancelled', isActive: false } },
+            { new: true, session }
+          );
 
-          // Refund to student wallet if paid
-          if (assignment.paymentStatus === 'paid' && assignment.paymentAmount > 0) {
-            const refundAmount = assignment.paymentAmount;
+          if (!transitioned) {
+            return;
+          }
 
-            await UserModel.updateOne(
-              { _id: assignment.student },
+          if (transitioned.paymentStatus === 'paid' && transitioned.paymentAmount > 0) {
+            const refundAmount = transitioned.paymentAmount;
+
+            const debit = await UserModel.updateOne(
+              { _id: transitioned.student, 'wallet.escrowBalance': { $gte: refundAmount } },
               {
                 $inc: {
                   'wallet.escrowBalance': -refundAmount,
@@ -2615,70 +2621,85 @@ class AssignmentController {
               { session }
             );
 
+            if (debit.modifiedCount !== 1) {
+              throw new Error('OVERDUE_REFUND_INSUFFICIENT_ESCROW');
+            }
+
             await TransactionModel.create(
               [
                 {
-                  userId: assignment.student,
+                  userId: transitioned.student,
                   type: 'refund',
                   amount: refundAmount,
                   status: 'completed',
-                  relatedTo: { model: 'Assignment', id: assignment._id },
+                  relatedTo: { model: 'Assignment', id: transitioned._id },
                   metadata: {
                     reason: 'overdue_cancellation',
-                    originalPaymentAmount: assignment.paymentAmount,
+                    originalPaymentAmount: refundAmount,
                   },
                 },
               ],
               { session }
             );
 
-            assignment.paymentStatus = 'refunded';
-            assignment.paymentGateway = {
-              ...assignment.paymentGateway,
-              refundedAt: new Date(),
-              refundReference: `OVERDUE-CANCEL-${assignment._id}`,
-            };
-            await assignment.save({ session });
+            await AssignmentModel.updateOne(
+              { _id: transitioned._id },
+              {
+                $set: {
+                  paymentStatus: 'refunded',
+                  'paymentGateway.refundedAt': new Date(),
+                  'paymentGateway.refundReference': `OVERDUE-CANCEL-${transitioned._id}`,
+                },
+              },
+              { session }
+            );
+            transitioned.paymentStatus = 'refunded';
           }
 
-          // Withdraw any pending proposals
           await ProposalModel.updateMany(
-            { assignment: assignment._id, status: 'pending' },
+            { assignment: transitioned._id, status: 'pending' },
             { $set: { status: 'withdrawn' } },
             { session }
           );
+
+          finalAssignment = transitioned;
         });
       } finally {
         session.endSession();
       }
 
-      // Notify tutor
-      if (assignment.assignedTutor) {
-        const studentUser = await UserModel.findById(assignment.student).select('name').lean();
+      if (!finalAssignment) {
+        return res.status(409).json({
+          status: 'failed',
+          message: 'Assignment is no longer overdue or was already cancelled',
+        });
+      }
+
+      if (finalAssignment.assignedTutor) {
+        const studentUser = await UserModel.findById(finalAssignment.student).select('name').lean();
         const notification = await NotificationModel.create({
-          user: assignment.assignedTutor,
+          user: finalAssignment.assignedTutor,
           type: 'assignment_cancelled_overdue',
           title: 'Assignment cancelled (overdue)',
-          message: `${studentUser?.name || 'The student'} cancelled "${assignment.title}" because it was overdue.`,
+          message: `${studentUser?.name || 'The student'} cancelled "${finalAssignment.title}" because it was overdue.`,
           link: '/user/assignments',
-          data: { assignmentId: assignment._id },
+          data: { assignmentId: finalAssignment._id },
         });
 
         const socketManager = req.app.get('socketManager');
         if (socketManager) {
-          socketManager.emitToUser(String(assignment.assignedTutor), 'notification', {
+          socketManager.emitToUser(String(finalAssignment.assignedTutor), 'notification', {
             notification,
           });
         }
 
-        // Recalculate tutor's on-time delivery rate
-        await recalculateTutorDeliveryRate(assignment.assignedTutor);
+        await recalculateTutorDeliveryRate(finalAssignment.assignedTutor);
       }
 
       return res.status(200).json({
         status: 'success',
         message: 'Assignment cancelled and refund processed',
-        data: assignment,
+        data: finalAssignment,
       });
     } catch (error) {
       console.error('Cancel overdue assignment error:', error);

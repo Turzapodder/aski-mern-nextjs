@@ -3,11 +3,12 @@ import SessionController from "../controllers/sessionController.js";
 import SessionPaymentController from "../controllers/sessionPaymentController.js";
 import AccessTokenAutoRefresh from "../middlewares/setAuthHeader.js";
 import checkUserAuth from "../middlewares/auth-middleware.js";
+import { isUddoktaMockModeEnabled } from "../utils/uddoktaPay.js";
 
 const router = express.Router();
 
 // Public payment routes (gateway callbacks/webhooks)
-if (process.env.NODE_ENV !== "production") {
+if (isUddoktaMockModeEnabled()) {
   router.get("/payment/mock", SessionPaymentController.handleSessionMockGateway);
   router.get("/payment/mock-complete", SessionPaymentController.handleSessionMockComplete);
 }

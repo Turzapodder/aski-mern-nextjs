@@ -66,7 +66,7 @@ router.post("/reports/:reportId/action", ReportController.takeAction);
 
 // Settings
 router.get("/settings", AdminSettingsController.getSettings);
-router.put("/settings", AdminSettingsController.updateSettings);
+router.put("/settings", requirePrivilege("canManagePayments"), AdminSettingsController.updateSettings);
 
 // Quiz management
 router.get("/quiz/questions", AdminQuizController.getQuestions);

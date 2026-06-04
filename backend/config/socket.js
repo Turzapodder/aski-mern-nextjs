@@ -29,7 +29,12 @@ const parseCookieHeader = (header = '') =>
   header.split(';').reduce((acc, part) => {
     const [rawKey, ...rest] = part.trim().split('=');
     if (!rawKey) return acc;
-    acc[rawKey] = decodeURIComponent(rest.join('=') || '');
+    const rawValue = rest.join('=') || '';
+    try {
+      acc[rawKey] = decodeURIComponent(rawValue);
+    } catch {
+      acc[rawKey] = rawValue;
+    }
     return acc;
   }, {});
 

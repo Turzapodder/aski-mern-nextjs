@@ -69,7 +69,7 @@ GOOGLE_CLIENT_ID=              # Google OAuth
 GOOGLE_CLIENT_SECRET=
 ```
 
-Seed an admin account once: `node scripts/seed-admin.mjs` (set `SEED_ADMIN_PASSWORD` first; do not run against a live DB you don't intend to seed).
+Seed an admin account once, from the `backend/` directory: set `SEED_ADMIN_PASSWORD` (required — the script refuses to run without it) and optionally `SEED_ADMIN_EMAIL` (defaults to `admin@aski.com`), then run `node scripts/seed-admin.mjs`. **Warning:** this script also inserts demo students/tutors/transactions and clears existing quiz questions and admin logs — run it only against a fresh or staging database, never against production data you intend to keep.
 
 ---
 

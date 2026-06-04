@@ -89,6 +89,17 @@ const fetchPage = async (chatId, userId, page, limit) => {
   return res;
 };
 
+const fetchBefore = async (chatId, userId, before, limit) => {
+  const req = {
+    params: { chatId: chatId.toString() },
+    query: { before, limit },
+    user: { _id: userId },
+  };
+  const res = makeRes();
+  await MessageController.getChatMessages(req, res);
+  return res;
+};
+
 const idsOf = (res) => res.body.data.messages.map((m) => m._id.toString());
 
 const timesOf = (res) => res.body.data.messages.map((m) => new Date(m.createdAt).getTime());
@@ -244,6 +255,74 @@ test(
       const denied = await fetchPage(chat._id, outsider._id, 1, 10);
       assert.equal(denied.statusCode, 403);
       assert.equal(denied.body.status, "failed");
+    } finally {
+      await cleanup(ids);
+      if (connectedHere && mongoose.connection.readyState !== 0) await mongoose.disconnect();
+    }
+  }
+);
+
+test(
+  "cursor (before) paging walks older messages with accurate hasMore and full reconstruction",
+  { skip: !databaseUrl ? "Set DATABASE_URL to run DB integration tests" : false },
+  async () => {
+    const seed = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    let connectedHere = false;
+    let ids = {};
+    try {
+      connectedHere = await connect();
+      const { student, tutor, chat, order } = await seedChat(seed, 25);
+      ids = { student: student._id, tutor: tutor._id, chat: chat._id };
+
+      const live = await fetchPage(chat._id, student._id, 1, 10);
+      assert.deepEqual(idsOf(live), order.slice(15, 25));
+
+      const oldestLive = live.body.data.messages[0].createdAt;
+      const older1 = await fetchBefore(chat._id, student._id, new Date(oldestLive).toISOString(), 10);
+      assert.equal(older1.body.data.hasMore, true);
+      assert.deepEqual(idsOf(older1), order.slice(5, 15));
+      assert.deepEqual(timesOf(older1), [...timesOf(older1)].sort((a, b) => a - b));
+
+      const oldest1 = older1.body.data.messages[0].createdAt;
+      const older2 = await fetchBefore(chat._id, student._id, new Date(oldest1).toISOString(), 10);
+      assert.equal(older2.body.data.hasMore, false, "no more pages after the oldest 5");
+      assert.deepEqual(idsOf(older2), order.slice(0, 5));
+
+      const full = reconstruct(
+        older2.body.data.messages,
+        older1.body.data.messages,
+        live.body.data.messages
+      );
+      assert.deepEqual(full, order, "cursor pages reconstruct the complete history");
+    } finally {
+      await cleanup(ids);
+      if (connectedHere && mongoose.connection.readyState !== 0) await mongoose.disconnect();
+    }
+  }
+);
+
+test(
+  "cursor paging does not drop a boundary message when one is soft-deleted between fetches",
+  { skip: !databaseUrl ? "Set DATABASE_URL to run DB integration tests" : false },
+  async () => {
+    const seed = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    let connectedHere = false;
+    let ids = {};
+    try {
+      connectedHere = await connect();
+      const { student, tutor, chat, order } = await seedChat(seed, 25);
+      ids = { student: student._id, tutor: tutor._id, chat: chat._id };
+
+      const live = await fetchPage(chat._id, student._id, 1, 10);
+      const oldestLive = live.body.data.messages[0].createdAt;
+
+      await MessageModel.updateOne({ _id: order[20] }, { $set: { isDeleted: true } });
+
+      const older = await fetchBefore(chat._id, student._id, new Date(oldestLive).toISOString(), 10);
+      const olderIds = idsOf(older);
+
+      assert.equal(olderIds.includes(order[14]), true, "boundary message must not be skipped");
+      assert.deepEqual(olderIds, order.slice(5, 15), "cursor window is unaffected by a delete outside it");
     } finally {
       await cleanup(ids);
       if (connectedHere && mongoose.connection.readyState !== 0) await mongoose.disconnect();

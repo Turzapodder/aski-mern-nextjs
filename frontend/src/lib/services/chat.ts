@@ -56,8 +56,10 @@ export const chatApi = createApi({
 
     // Get messages for a chat
     getChatMessages: builder.query<ChatResponse, GetMessagesRequest>({
-      query: ({ chatId, page = 1, limit = 50 }) => ({
-        url: `${chatId}/messages?page=${page}&limit=${limit}`,
+      query: ({ chatId, page = 1, limit = 50, before }) => ({
+        url: before
+          ? `${chatId}/messages?limit=${limit}&before=${encodeURIComponent(before)}`
+          : `${chatId}/messages?page=${page}&limit=${limit}`,
         method: 'GET',
       }),
       providesTags: ['Message'],

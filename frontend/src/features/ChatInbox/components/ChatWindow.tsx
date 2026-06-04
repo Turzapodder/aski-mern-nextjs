@@ -224,7 +224,7 @@ const ChatWindow = () => {
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     const restore = pendingScrollRestoreRef.current;
-    if (container && restore) {
+    if (container && restore && container.scrollHeight > restore.height) {
       container.scrollTop = container.scrollHeight - restore.height + restore.top;
       pendingScrollRestoreRef.current = null;
       skipAutoScrollRef.current = true;

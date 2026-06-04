@@ -67,6 +67,9 @@ const getBackendBaseUrl = (req) => {
   const configured = sanitizeText(
     process.env.BACKEND_PUBLIC_URL || process.env.BACKEND_HOST || ""
   );
+  if (process.env.NODE_ENV === "production" && (!configured || isLocalHostValue(configured))) {
+    throw new Error("BACKEND_PUBLIC_URL must be set to a public URL in production");
+  }
   const forwardedProto = sanitizeText(req?.headers?.["x-forwarded-proto"]);
   const protocol = forwardedProto || req?.protocol || "http";
   const host = sanitizeText(req?.get?.("host"));
@@ -89,6 +92,45 @@ const sanitizePaymentSnapshot = (verifyData = {}) => ({
   senderNumber: sanitizeText(verifyData.sender_number),
   date: sanitizeText(verifyData.date),
 });
+
+const handleSessionSlotConflict = async ({ SessionRepo, TransactionRepo, sessionId, invoiceId }) => {
+  await SessionRepo.updateOne(
+    { _id: sessionId, paymentStatus: { $ne: "paid" } },
+    {
+      $set: {
+        status: "cancelled",
+        "paymentGateway.invoiceId": invoiceId,
+        "paymentGateway.status": "slot_conflict",
+        "paymentGateway.verifiedAt": new Date(),
+      },
+    }
+  );
+
+  await TransactionRepo.updateOne(
+    { type: "escrow_hold", "relatedTo.model": "Session", "relatedTo.id": sessionId },
+    {
+      $set: {
+        status: "cancelled",
+        "metadata.refundRequired": true,
+        "metadata.conflict": "slot_taken",
+        "metadata.invoiceId": invoiceId,
+      },
+    }
+  );
+
+  const conflictSession = await SessionRepo.findById(sessionId).lean();
+  if (conflictSession?.student) {
+    await NotificationModel.create({
+      user: conflictSession.student,
+      type: "session_payment_conflict",
+      title: "Session slot no longer available",
+      message:
+        "Your payment was received, but this session slot was just booked by someone else. Our team will process your refund shortly.",
+      link: "/user/calendar",
+      data: { sessionId: String(sessionId) },
+    });
+  }
+};
 
 const getMockVerificationResponse = ({ invoiceId, sessionId, amount, method, status }) => {
   const normalizedStatus = sanitizeText(status || "COMPLETED").toUpperCase();
@@ -299,7 +341,7 @@ export const verifyAndApplySessionPayment = async ({ invoiceId, source, app, dep
       if (!current) throw new Error("Session not found");
 
       const snapshot = sanitizePaymentSnapshot(verifyData);
-      const amount = parseNumber(current.price, 0);
+      const amount = parseNumber(snapshot.amount, parseNumber(current.price, 0));
       const isCompleted = paymentState === "completed";
       const existingGateway = current.paymentGateway || {};
       const gatewayUpdate = {
@@ -317,11 +359,19 @@ export const verifyAndApplySessionPayment = async ({ invoiceId, source, app, dep
       let didTransitionToPaid = false;
 
       if (isCompleted && amount > 0) {
-        const transitioned = await SessionRepo.findOneAndUpdate(
-          { _id: current._id, paymentStatus: { $ne: "paid" } },
-          { $set: { paymentStatus: "paid", status: "scheduled", paymentGateway: gatewayUpdate } },
-          { new: true, session: txnSession }
-        );
+        let transitioned;
+        try {
+          transitioned = await SessionRepo.findOneAndUpdate(
+            { _id: current._id, paymentStatus: { $ne: "paid" } },
+            { $set: { paymentStatus: "paid", status: "scheduled", paymentGateway: gatewayUpdate } },
+            { new: true, session: txnSession }
+          );
+        } catch (transitionError) {
+          if (transitionError?.code === 11000) {
+            throw new Error("SESSION_SLOT_CONFLICT");
+          }
+          throw transitionError;
+        }
         if (transitioned) {
           after = transitioned;
           didTransitionToPaid = true;
@@ -427,6 +477,25 @@ export const verifyAndApplySessionPayment = async ({ invoiceId, source, app, dep
         session: after.toObject(),
       };
     });
+  } catch (txnError) {
+    if (txnError?.message === "SESSION_SLOT_CONFLICT") {
+      await handleSessionSlotConflict({
+        SessionRepo,
+        TransactionRepo,
+        sessionId,
+        invoiceId: cleanInvoiceId,
+      });
+      result = {
+        sessionId: String(sessionId),
+        paymentState: "conflict",
+        isCompleted: false,
+        didTransitionToPaid: false,
+        slotConflict: true,
+        session: null,
+      };
+    } else {
+      throw txnError;
+    }
   } finally {
     txnSession.endSession();
   }
@@ -597,11 +666,12 @@ class SessionPaymentController {
       if (!session) {
         return res.status(404).json({ success: false, message: "Session not found" });
       }
-      const isParticipant =
-        session.student.toString() === userId.toString() ||
-        session.tutor.toString() === userId.toString();
-      if (!isParticipant && !req.user.roles?.includes("admin")) {
-        return res.status(403).json({ success: false, message: "Access denied" });
+      const isStudent = session.student.toString() === userId.toString();
+      if (!isStudent && !req.user.roles?.includes("admin")) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the student or an admin can complete the session",
+        });
       }
 
       let outcome;
@@ -642,15 +712,29 @@ class SessionPaymentController {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ success: false, message: "Invalid session ID" });
       }
-      const session = await SessionModel.findById(id).select("student tutor status");
+      const session = await SessionModel.findById(id).select(
+        "student tutor status paymentStatus endTime"
+      );
       if (!session) {
         return res.status(404).json({ success: false, message: "Session not found" });
       }
+      const isAdmin = req.user.roles?.includes("admin");
       const isParticipant =
         session.student.toString() === userId.toString() ||
         session.tutor.toString() === userId.toString();
-      if (!isParticipant && !req.user.roles?.includes("admin")) {
+      if (!isParticipant && !isAdmin) {
         return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      if (
+        !isAdmin &&
+        session.paymentStatus === "paid" &&
+        session.endTime &&
+        Date.now() >= new Date(session.endTime).getTime()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "This session has already ended and can no longer be cancelled for a refund",
+        });
       }
 
       let outcome;

@@ -73,7 +73,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [olderMessages, setOlderMessages] = useState<Message[]>([]);
-  const [olderPage, setOlderPage] = useState(1);
+  const [olderHasMore, setOlderHasMore] = useState<boolean | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
   // Get current user
@@ -490,7 +490,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       setSelectedChat(chat);
       setMessages([]);
       setOlderMessages([]);
-      setOlderPage(1);
+      setOlderHasMore(null);
 
       setChats((prev) =>
         prev.map((existing) =>
@@ -700,15 +700,21 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const loadOlderMessages = useCallback(async () => {
     if (!selectedChat || loadingOlder) return;
-    const totalPages = messagesData?.data?.totalPages || 1;
-    const nextPage = olderPage + 1;
-    if (nextPage > totalPages) return;
+    const loaded = [...olderMessages, ...messages];
+    if (!loaded.length) return;
+    const oldest = loaded.reduce(
+      (min, message) =>
+        toEpoch(message.createdAt as string) < toEpoch(min.createdAt as string) ? message : min,
+      loaded[0]
+    );
+    const cursor = oldest?.createdAt;
+    if (!cursor) return;
 
     setLoadingOlder(true);
     try {
       const res = await fetchOlderMessages({
         chatId: selectedChat._id,
-        page: nextPage,
+        before: new Date(cursor).toISOString(),
       }).unwrap();
       const older = res?.data?.messages || [];
       setOlderMessages((prev) =>
@@ -719,24 +725,25 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           (message) => toEpoch(message.createdAt as string)
         )
       );
-      setOlderPage(nextPage);
+      setOlderHasMore(Boolean(res?.data?.hasMore));
     } catch (error) {
       console.error('Failed to load older messages:', error);
       toast.error('Could not load older messages.');
     } finally {
       setLoadingOlder(false);
     }
-  }, [selectedChat, loadingOlder, messagesData, olderPage, fetchOlderMessages, normalizeId]);
+  }, [selectedChat, loadingOlder, olderMessages, messages, fetchOlderMessages, normalizeId]);
 
   const clearSelectedChat = useCallback(() => {
     setSelectedChat(null);
     setMessages([]);
     setOlderMessages([]);
-    setOlderPage(1);
+    setOlderHasMore(null);
   }, []);
 
   const totalMessagePages = messagesData?.data?.totalPages || 1;
-  const hasMoreMessages = Boolean(selectedChat) && olderPage < totalMessagePages;
+  const hasMoreMessages =
+    Boolean(selectedChat) && (olderHasMore !== null ? olderHasMore : totalMessagePages > 1);
   const visibleOlderMessages = dedupeOlderAgainstLive(olderMessages, messages, (message) =>
     normalizeId(message._id)
   );

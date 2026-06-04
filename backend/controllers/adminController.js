@@ -1288,11 +1288,14 @@ class AdminController {
           if (!gatewayRefundResult) {
             studentInc["wallet.availableBalance"] = escrowAmount;
           }
-          await UserModel.updateOne(
+          const studentDebit = await UserModel.updateOne(
             { _id: assignment.student, "wallet.escrowBalance": { $gte: escrowAmount } },
             { $inc: studentInc },
             { session }
           );
+          if (studentDebit.modifiedCount !== 1) {
+            throw new Error("FORCE_CANCEL_REFUND_INSUFFICIENT_ESCROW");
+          }
 
           await TransactionModel.create(
             [
@@ -1583,8 +1586,9 @@ class AdminController {
       const updated = await UserModel.findOneAndUpdate(
         {
           _id: user._id,
-          "wallet.withdrawalHistory.transactionId": id,
-          "wallet.withdrawalHistory.status": "PENDING",
+          "wallet.withdrawalHistory": {
+            $elemMatch: { transactionId: id, status: "PENDING" },
+          },
         },
         {
           $set: {
@@ -1711,8 +1715,9 @@ class AdminController {
           updated = await UserModel.findOneAndUpdate(
             {
               _id: user._id,
-              "wallet.withdrawalHistory.transactionId": id,
-              "wallet.withdrawalHistory.status": "PENDING",
+              "wallet.withdrawalHistory": {
+                $elemMatch: { transactionId: id, status: "PENDING" },
+              },
             },
             {
               $set: {
@@ -2058,11 +2063,14 @@ class AdminController {
           studentUpdates["wallet.availableBalance"] = studentAmount;
         }
 
-        await UserModel.updateOne(
+        const studentDebit = await UserModel.updateOne(
           { _id: student._id, "wallet.escrowBalance": { $gte: escrowAmount } },
           { $inc: studentUpdates },
           { session }
         );
+        if (escrowAmount > 0 && studentDebit.modifiedCount !== 1) {
+          throw new Error("DISPUTE_REFUND_INSUFFICIENT_ESCROW");
+        }
 
         if (tutorNet > 0) {
           await UserModel.updateOne(

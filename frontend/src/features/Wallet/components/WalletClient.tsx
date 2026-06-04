@@ -352,7 +352,7 @@ export const WalletClient = () => {
                             {formatAmount(Number(entry.amount) || 0)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Requested {formatDate(entry.requestedAt)}
+                            Requested {formatDate(entry.createdAt)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
