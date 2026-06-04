@@ -64,6 +64,16 @@ router.post('/:id/request-revision', AssignmentController.requestRevision);
 // Submit feedback and complete assignment (student)
 router.post('/:id/feedback', AssignmentController.submitFeedback);
 
+// Overdue handling routes
+// Request deadline extension (tutor or student)
+router.post('/:id/request-extension', AssignmentController.requestExtension);
+
+// Approve or reject deadline extension (the other party)
+router.post('/:id/respond-extension', AssignmentController.respondToExtension);
+
+// Cancel overdue assignment and process refund (student)
+router.post('/:id/cancel-overdue', AssignmentController.cancelOverdueAssignment);
+
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {

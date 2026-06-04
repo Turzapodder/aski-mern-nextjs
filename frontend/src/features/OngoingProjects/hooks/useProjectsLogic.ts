@@ -50,9 +50,12 @@ export const useProjectsLogic = () => {
     const active: any[] = [];
     const awaiting: any[] = [];
     const review: any[] = [];
+    const overdue: any[] = [];
 
     assignedToMe.forEach((assignment) => {
-      if (assignment.paymentStatus !== 'paid') {
+      if (assignment.status === 'overdue') {
+        overdue.push(assignment);
+      } else if (assignment.paymentStatus !== 'paid') {
         awaiting.push(assignment);
       } else if (
         ['submitted', 'submission_pending', 'revision_requested'].includes(assignment.status)
@@ -63,7 +66,7 @@ export const useProjectsLogic = () => {
       }
     });
 
-    return { active, awaiting, review };
+    return { active, awaiting, review, overdue };
   }, [assignedToMe]);
 
   const assignmentIds = useMemo(() => assignedToMe.map((a) => a._id), [assignedToMe]);

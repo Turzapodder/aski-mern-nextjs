@@ -99,6 +99,50 @@ const assignmentSchema = new mongoose.Schema({
     default: 'draft'
   },
   
+  // Overdue handling
+  overdueMarkedAt: {
+    type: Date,
+    default: null
+  },
+  gracePeriodEndsAt: {
+    type: Date,
+    default: null
+  },
+  overdueExtension: {
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'user',
+      default: null
+    },
+    requestedAt: {
+      type: Date,
+      default: null
+    },
+    extensionHours: {
+      type: Number,
+      min: 1,
+      default: null
+    },
+    reason: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected', null],
+      default: null
+    },
+    respondedAt: {
+      type: Date,
+      default: null
+    },
+    newDeadline: {
+      type: Date,
+      default: null
+    }
+  },
+  
   // Priority level
   priority: {
     type: String,
