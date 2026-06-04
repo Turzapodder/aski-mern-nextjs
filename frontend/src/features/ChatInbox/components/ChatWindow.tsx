@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   DollarSign,
   Clipboard,
   Info,
+  Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -81,6 +82,9 @@ const ChatWindow = () => {
     isConnected,
     messagesLoading,
     messagesError,
+    loadOlderMessages,
+    hasMoreMessages,
+    loadingOlderMessages,
   } = useChatContext();
   const { data: userData } = useGetUserQuery();
   const currentUser = userData?.user;
@@ -159,9 +163,13 @@ const ChatWindow = () => {
   const [selectedAssignmentForEdit, setSelectedAssignmentForEdit] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isNearBottomRef = useRef(true);
+  const skipAutoScrollRef = useRef(false);
+  const pendingScrollRestoreRef = useRef<{ height: number; top: number } | null>(null);
 
   const { data: activeOfferResponse, refetch: refetchOffer } = useGetActiveOfferQuery(
     selectedChat?._id || '',
@@ -190,13 +198,53 @@ const ChatWindow = () => {
     return `${apiBaseUrl}${url}`;
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  useEffect(() => {
-    scrollToBottom();
+  const handleMessagesScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 150;
+  };
+
+  const handleLoadOlder = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      pendingScrollRestoreRef.current = {
+        height: container.scrollHeight,
+        top: container.scrollTop,
+      };
+    }
+    loadOlderMessages();
+  };
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    const restore = pendingScrollRestoreRef.current;
+    if (container && restore) {
+      container.scrollTop = container.scrollHeight - restore.height + restore.top;
+      pendingScrollRestoreRef.current = null;
+      skipAutoScrollRef.current = true;
+      isNearBottomRef.current = false;
+    }
   }, [messages]);
+
+  useEffect(() => {
+    if (skipAutoScrollRef.current) {
+      skipAutoScrollRef.current = false;
+      return;
+    }
+    if (isNearBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    isNearBottomRef.current = true;
+  }, [selectedChat]);
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -631,7 +679,31 @@ const ChatWindow = () => {
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleMessagesScroll}
+        className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6"
+      >
+        {hasMoreMessages && !messagesLoading && (
+          <div className="flex justify-center pb-2">
+            <button
+              type="button"
+              onClick={handleLoadOlder}
+              disabled={loadingOlderMessages}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              {loadingOlderMessages ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load older messages'
+              )}
+            </button>
+          </div>
+        )}
+
         {messagesLoading && (
           <div className="space-y-4">
             {Array.from({ length: 6 }).map((_, index) => (

@@ -175,6 +175,7 @@ export const {
   useCreateChatMutation,
   useGetChatDetailsQuery,
   useGetChatMessagesQuery,
+  useLazyGetChatMessagesQuery,
   useSendMessageMutation,
   useSendFileMessageMutation,
   useMarkMessageAsReadMutation,
