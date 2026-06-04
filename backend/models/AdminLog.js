@@ -20,6 +20,7 @@ const adminLogSchema = new mongoose.Schema(
         "FORCE_CANCEL_ASSIGNMENT",
         "UPDATE_ASSIGNMENT",
         "PROCESS_WITHDRAWAL",
+        "REJECT_WITHDRAWAL",
         "RESOLVE_DISPUTE_REFUND",
         "RESOLVE_DISPUTE_RELEASE",
         "RESOLVE_DISPUTE_SPLIT",

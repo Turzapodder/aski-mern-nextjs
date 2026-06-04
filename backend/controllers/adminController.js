@@ -9,6 +9,7 @@ import ChatModel from "../models/Chat.js";
 import AdminLogModel from "../models/AdminLog.js";
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
+import { safeSearchRegex } from "../utils/escapeRegex.js";
 import {
   normalizePaymentStatus,
   refundUddoktaPayment,
@@ -258,8 +259,8 @@ class AdminController {
       }
       if (search) {
         filter.$or = [
-          { name: new RegExp(search, "i") },
-          { email: new RegExp(search, "i") },
+          { name: safeSearchRegex(search) },
+          { email: safeSearchRegex(search) },
         ];
       }
 
@@ -335,7 +336,7 @@ class AdminController {
         });
       }
 
-      const user = await UserModel.findById(id).lean();
+      const user = await UserModel.findById(id).select("-password").lean();
       if (!user) {
         return res.status(404).json({
           status: "failed",
@@ -955,7 +956,7 @@ class AdminController {
         filter.status = status;
       }
       if (subject) {
-        filter.subject = new RegExp(subject, "i");
+        filter.subject = safeSearchRegex(subject);
       }
       if (Number.isFinite(minBudget) || Number.isFinite(maxBudget)) {
         const range = {};
@@ -1283,14 +1284,13 @@ class AdminController {
         }
 
         if (escrowAmount > 0) {
+          const studentInc = { "wallet.escrowBalance": -escrowAmount };
+          if (!gatewayRefundResult) {
+            studentInc["wallet.availableBalance"] = escrowAmount;
+          }
           await UserModel.updateOne(
             { _id: assignment.student, "wallet.escrowBalance": { $gte: escrowAmount } },
-            {
-              $inc: {
-                "wallet.escrowBalance": -escrowAmount,
-                "wallet.availableBalance": escrowAmount,
-              },
-            },
+            { $inc: studentInc },
             { session }
           );
 
@@ -1668,6 +1668,110 @@ class AdminController {
     }
   };
 
+  static rejectWithdrawal = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminNote = sanitizeText(req.body?.note);
+
+      const user = await UserModel.findOne({
+        "wallet.withdrawalHistory.transactionId": id,
+      }).lean();
+
+      if (!user) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Withdrawal request not found",
+        });
+      }
+
+      const entry = user.wallet?.withdrawalHistory?.find(
+        (item) => item.transactionId === id
+      );
+
+      if (!entry) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Withdrawal request not found",
+        });
+      }
+
+      if (entry.status !== "PENDING") {
+        return res.status(400).json({
+          status: "failed",
+          message: "Withdrawal has already been processed",
+        });
+      }
+
+      const refundAmount = parseNumber(entry.amount, 0);
+      const txnSession = await mongoose.startSession();
+      let updated;
+
+      try {
+        await txnSession.withTransaction(async () => {
+          updated = await UserModel.findOneAndUpdate(
+            {
+              _id: user._id,
+              "wallet.withdrawalHistory.transactionId": id,
+              "wallet.withdrawalHistory.status": "PENDING",
+            },
+            {
+              $set: {
+                "wallet.withdrawalHistory.$.status": "FAILED",
+                "wallet.withdrawalHistory.$.completedAt": new Date(),
+                "wallet.withdrawalHistory.$.processedBy": req.user._id,
+                "wallet.withdrawalHistory.$.notes": adminNote || undefined,
+              },
+              $inc: { "wallet.availableBalance": refundAmount },
+            },
+            { new: true, session: txnSession }
+          ).lean();
+
+          if (!updated) {
+            throw new Error("WITHDRAWAL_REJECT_FAILED");
+          }
+
+          await TransactionModel.updateOne(
+            { gatewayId: entry.transactionId, type: "withdrawal" },
+            {
+              $set: {
+                status: "failed",
+                "metadata.processedBy": req.user._id,
+                "metadata.rejectionNote": adminNote || "",
+                "metadata.rejectedAt": new Date().toISOString(),
+              },
+            },
+            { session: txnSession }
+          );
+        });
+      } finally {
+        txnSession.endSession();
+      }
+
+      try {
+        await AdminLogModel.create({
+          adminId: req.user._id,
+          actionType: "REJECT_WITHDRAWAL",
+          targetId: user._id,
+          targetType: "User",
+          metadata: { transactionId: entry.transactionId, amount: refundAmount },
+        });
+      } catch (logError) {
+        console.error("Admin log error (reject withdrawal):", logError?.message);
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Withdrawal rejected and balance refunded",
+        data: { transactionId: id, refundedAmount: refundAmount },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to reject withdrawal",
+      });
+    }
+  };
+
   static getDisputes = async (req, res) => {
     try {
       const disputes = await AssignmentModel.find({ status: "disputed" })
@@ -1949,10 +2053,10 @@ class AdminController {
           }
         }
 
-        const studentUpdates = {
-          "wallet.escrowBalance": -escrowAmount,
-          "wallet.availableBalance": studentAmount,
-        };
+        const studentUpdates = { "wallet.escrowBalance": -escrowAmount };
+        if (!gatewayRefundResult && studentAmount > 0) {
+          studentUpdates["wallet.availableBalance"] = studentAmount;
+        }
 
         await UserModel.updateOne(
           { _id: student._id, "wallet.escrowBalance": { $gte: escrowAmount } },

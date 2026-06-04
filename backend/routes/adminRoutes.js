@@ -1,7 +1,7 @@
 import express from "express";
 import AccessTokenAutoRefresh from "../middlewares/setAuthHeader.js";
 import checkUserAuth from "../middlewares/auth-middleware.js";
-import verifyAdmin from "../middlewares/admin-middleware.js";
+import verifyAdmin, { requireSuperAdmin, requirePrivilege } from "../middlewares/admin-middleware.js";
 import AdminController from "../controllers/adminController.js";
 import AdminSettingsController from "../controllers/adminSettingsController.js";
 import AdminQuizController from "../controllers/adminQuizController.js";
@@ -30,9 +30,9 @@ router.get("/users/:id", AdminController.getUserDetails);
 router.post("/users/:id/ban", AdminController.banUser);
 router.post("/users/:id/unban", AdminController.unbanUser);
 router.get("/admins", AdminController.getAdmins);
-router.post("/admins", AdminController.addAdmin);
-router.patch("/admins/:id", AdminController.updateAdminRole);
-router.delete("/admins/:id", AdminController.revokeAdmin);
+router.post("/admins", requireSuperAdmin, AdminController.addAdmin);
+router.patch("/admins/:id", requireSuperAdmin, AdminController.updateAdminRole);
+router.delete("/admins/:id", requireSuperAdmin, AdminController.revokeAdmin);
 
 // Tutor Management
 router.get("/tutors/pending", AdminController.getPendingTutors);
@@ -46,18 +46,19 @@ router.get("/assignments", AdminController.getAssignments);
 router.get("/assignments/:id", AdminController.getAssignmentDetails);
 router.put("/assignments/:id", AdminController.updateAssignment);
 router.post("/assignments/:id/delete", AdminController.deleteAssignment);
-router.post("/assignments/:id/force-cancel", AdminController.forceCancelAssignment);
+router.post("/assignments/:id/force-cancel", requirePrivilege("canManagePayments"), AdminController.forceCancelAssignment);
 
 // Finance
 router.get("/finance/summary", AdminController.getFinanceSummary);
 router.get("/transactions", AdminController.getTransactions);
 router.get("/withdrawals", AdminController.getWithdrawalRequests);
-router.post("/withdrawals/:id/process", AdminController.processWithdrawal);
+router.post("/withdrawals/:id/process", requirePrivilege("canManagePayments"), AdminController.processWithdrawal);
+router.post("/withdrawals/:id/reject", requirePrivilege("canManagePayments"), AdminController.rejectWithdrawal);
 
 // Disputes
 router.get("/disputes", AdminController.getDisputes);
 router.get("/disputes/:id", AdminController.getDisputeDetails);
-router.post("/disputes/:id/resolve", AdminController.resolveDispute);
+router.post("/disputes/:id/resolve", requirePrivilege("canManagePayments"), AdminController.resolveDispute);
 
 // Reports
 router.get("/reports", ReportController.getReports);

@@ -110,7 +110,7 @@ export const TutorProfileClient = () => {
 
   const handleOpenBooking = async () => {
     if (!viewer) {
-      router.push('/login');
+      router.push('/account/login?role=user');
       return;
     }
     if (isOwner) {
@@ -887,48 +887,29 @@ export const TutorProfileClient = () => {
                                 toast.error(data.error || 'Failed to modify session. Please try again.');
                               }
                             } else {
-                              // Book each slot sequentially
-                              let successCount = 0;
-
-                              for (const item of selectedSlots) {
-                                const res = await fetch(`${baseUrl}/api/sessions/book`, {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                  },
-                                  body: JSON.stringify({
-                                    tutorId: tutor?._id,
-                                    date: selectedDate,
-                                    slot: item.slot,
-                                    duration: selectedSlots.length > 1 ? 60 : selectedDuration,
-                                    subject: '1:1 Live Mentorship Session',
-                                  }),
-                                  credentials: 'include',
-                                });
-                                const data = await res.json();
-                                if (res.ok && (data.status === 'success' || data.success === true)) {
-                                  successCount++;
+                              const slotToBook = selectedSlots[0];
+                              const res = await fetch(`${baseUrl}/api/sessions/book`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  tutorId: tutor?._id,
+                                  date: selectedDate,
+                                  slot: slotToBook.slot,
+                                  subject: '1:1 Live Mentorship Session',
+                                }),
+                                credentials: 'include',
+                              });
+                              const data = await res.json();
+                              const checkoutUrl = data?.data?.checkoutUrl;
+                              if (res.ok && (data.status === 'success' || data.success === true) && checkoutUrl) {
+                                if (selectedSlots.length > 1) {
+                                  toast.message('Sessions are paid one at a time — redirecting to payment for the first slot.');
                                 }
-                              }
-
-                              if (successCount === selectedSlots.length) {
-                                toast.success(
-                                  selectedSlots.length > 1
-                                    ? `Successfully booked ${successCount} session slots! Direct checkout complete.`
-                                    : 'Appointment booked successfully! Direct checkout complete.'
-                                );
-                                setBookingOpen(false);
-                                setTimeout(() => {
-                                  router.push('/user/messages');
-                                }, 1500);
-                              } else if (successCount > 0) {
-                                toast.success(`Successfully booked ${successCount} of ${selectedSlots.length} slots. Direct checkout complete.`);
-                                setBookingOpen(false);
-                                setTimeout(() => {
-                                  router.push('/user/messages');
-                                }, 1500);
+                                window.location.href = checkoutUrl;
                               } else {
-                                toast.error('Failed to complete direct checkout booking. Please try again.');
+                                toast.error(data.error || data.message || 'Failed to start checkout. Please try again.');
                               }
                             }
                           } catch (err: any) {

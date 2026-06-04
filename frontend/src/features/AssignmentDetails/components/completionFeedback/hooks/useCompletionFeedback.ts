@@ -62,12 +62,16 @@ export function useCompletionFeedback(assignment: any, onCompleted?: any) {
       return;
     }
 
-    await requestRevision({
+    const result = await requestRevision({
       id: assignment._id,
       note: revisionNote.trim(),
     }).unwrap();
 
     setRevisionNote('');
+    toast.success('Revision requested.');
+    if (result?.data && onCompleted) {
+      onCompleted(result.data);
+    }
   };
 
   return {

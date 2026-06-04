@@ -5,6 +5,7 @@ import ProposalModel from '../models/Proposal.js';
 import NotificationModel from '../models/Notification.js';
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
+import { safeSearchRegex } from "../utils/escapeRegex.js";
 import mongoose from 'mongoose';
 import {
   createUddoktaCheckout,
@@ -494,6 +495,137 @@ const verifyAndApplyAssignmentPayment = async ({
   return result;
 };
 
+const releaseEscrowForCompletion = async ({
+  assignmentId,
+  ratingValue,
+  feedbackComments,
+  deps = {},
+}) => {
+  const AssignmentRepo = deps.AssignmentModel || AssignmentModel;
+  const UserRepo = deps.UserModel || UserModel;
+  const TransactionRepo = deps.TransactionModel || TransactionModel;
+  const SubmissionRepo = deps.SubmissionModel || SubmissionModel;
+  const PlatformSettingsRepo = deps.PlatformSettingsModel || PlatformSettingsModel;
+  const mongooseRepo = deps.mongoose || mongoose;
+
+  const session = await mongooseRepo.startSession();
+  let outcome = { didComplete: false, assignment: null, paymentSummary: null };
+
+  try {
+    await session.withTransaction(async () => {
+      const transitioned = await AssignmentRepo.findOneAndUpdate(
+        { _id: assignmentId, status: { $in: ["submitted", "revision_requested"] } },
+        {
+          $set: {
+            status: "completed",
+            feedback: {
+              rating: ratingValue,
+              comments: feedbackComments || undefined,
+              feedbackDate: new Date(),
+            },
+          },
+        },
+        { new: true, session }
+      );
+
+      if (!transitioned) {
+        outcome = { didComplete: false, assignment: null, paymentSummary: null };
+        return;
+      }
+
+      let paymentSummary = null;
+      const amount = parseNumber(
+        transitioned.paymentAmount ?? transitioned.estimatedCost ?? transitioned.budget ?? 0,
+        0
+      );
+
+      if (amount > 0 && transitioned.assignedTutor) {
+        const settings = await PlatformSettingsRepo.findOne().session(session).lean();
+        const platformFeeRate = parseNumber(
+          settings?.platformFeeRate,
+          getDefaultPlatformFeeRate()
+        );
+        const minTransactionFee = parseNumber(
+          settings?.minTransactionFee,
+          getDefaultMinTransactionFee()
+        );
+        let platformFee = Math.max(0, amount * platformFeeRate);
+        if (platformFee > 0 && minTransactionFee > 0) {
+          platformFee = Math.max(platformFee, minTransactionFee);
+        }
+        const tutorNet = Math.max(0, amount - platformFee);
+
+        const debit = await UserRepo.updateOne(
+          { _id: transitioned.student, "wallet.escrowBalance": { $gte: amount } },
+          { $inc: { "wallet.escrowBalance": -amount } },
+          { session }
+        );
+        if (debit.modifiedCount !== 1) {
+          throw new Error("ESCROW_RELEASE_INSUFFICIENT_FUNDS");
+        }
+
+        if (tutorNet > 0) {
+          await UserRepo.updateOne(
+            { _id: transitioned.assignedTutor },
+            { $inc: { "wallet.availableBalance": tutorNet, "wallet.totalEarnings": tutorNet } },
+            { session }
+          );
+        }
+
+        const ledger = [];
+        if (tutorNet > 0) {
+          ledger.push({
+            userId: transitioned.assignedTutor,
+            type: "escrow_release",
+            amount: tutorNet,
+            status: "completed",
+            relatedTo: { model: "Assignment", id: transitioned._id },
+            metadata: { resolution: "completion" },
+          });
+        }
+        if (platformFee > 0) {
+          ledger.push({
+            userId: transitioned.assignedTutor,
+            type: "platform_fee",
+            amount: platformFee,
+            status: "completed",
+            relatedTo: { model: "Assignment", id: transitioned._id },
+            metadata: { resolution: "completion" },
+          });
+        }
+        if (ledger.length) {
+          await TransactionRepo.create(ledger, { session });
+        }
+
+        paymentSummary = { amount, platformFee, tutorNet };
+      }
+
+      const latestSubmission = await SubmissionRepo.findOne({ assignment: transitioned._id })
+        .sort({ createdAt: -1, submittedAt: -1 })
+        .session(session);
+      if (latestSubmission) {
+        latestSubmission.status = "completed";
+        latestSubmission.review = {
+          stars: ratingValue,
+          feedback: feedbackComments || undefined,
+          reviewedAt: new Date(),
+        };
+        await latestSubmission.save({ session });
+      }
+
+      outcome = {
+        didComplete: true,
+        assignment: transitioned.toObject(),
+        paymentSummary,
+      };
+    });
+  } finally {
+    session.endSession();
+  }
+
+  return outcome;
+};
+
 class AssignmentController {
   // Create a new assignment
   static createAssignment = async (req, res) => {
@@ -745,15 +877,15 @@ class AssignmentController {
       if (req.query.paymentStatus) {
         filter.paymentStatus = req.query.paymentStatus;
       }
-      if (subject) filter.subject = new RegExp(subject, 'i');
+      if (subject) filter.subject = safeSearchRegex(subject);
       if (priority) filter.priority = priority;
 
       // Search functionality
       if (search) {
         const searchFilter = [
-          { title: new RegExp(search, 'i') },
-          { description: new RegExp(search, 'i') },
-          { subject: new RegExp(search, 'i') }
+          { title: safeSearchRegex(search) },
+          { description: safeSearchRegex(search) },
+          { subject: safeSearchRegex(search) }
         ];
 
         if (filter.$or) {
@@ -1102,6 +1234,7 @@ class AssignmentController {
     try {
       const { id } = req.params;
       const { tutorId } = req.body;
+      const userId = req.user._id;
 
       if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(tutorId)) {
         return res.status(400).json({
@@ -1110,7 +1243,23 @@ class AssignmentController {
         });
       }
 
-      // Verify tutor exists and has tutor role
+      const existingAssignment = await AssignmentModel.findById(id).select('student');
+      if (!existingAssignment) {
+        return res.status(404).json({
+          status: 'failed',
+          message: 'Assignment not found'
+        });
+      }
+
+      const isOwner = existingAssignment.student.toString() === userId.toString();
+      const isAdmin = req.user.roles.includes('admin');
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({
+          status: 'failed',
+          message: 'Access denied'
+        });
+      }
+
       const tutor = await UserModel.findById(tutorId);
       if (!tutor || !tutor.roles.includes('tutor')) {
         return res.status(400).json({
@@ -1129,13 +1278,6 @@ class AssignmentController {
         { new: true }
       ).populate('student', 'name email')
         .populate('assignedTutor', 'name email profileImage');
-
-      if (!assignment) {
-        return res.status(404).json({
-          status: 'failed',
-          message: 'Assignment not found'
-        });
-      }
 
       res.status(200).json({
         status: 'success',
@@ -1988,7 +2130,7 @@ class AssignmentController {
         });
       }
 
-      const assignment = await AssignmentModel.findById(id);
+      let assignment = await AssignmentModel.findById(id);
       if (!assignment) {
         return res.status(404).json({
           status: "failed",
@@ -2025,94 +2167,36 @@ class AssignmentController {
       }
 
       const feedbackComments = sanitizeText(comments);
-      const latestSubmission = await SubmissionModel.findOne({ assignment: id })
-        .sort({ createdAt: -1, submittedAt: -1 })
-        .exec();
-      if (latestSubmission) {
-        latestSubmission.status = "completed";
-        latestSubmission.review = {
-          stars: ratingValue,
-          feedback: feedbackComments || undefined,
-          reviewedAt: new Date(),
-        };
-        await latestSubmission.save();
-      }
 
-      assignment.feedback = {
-        rating: ratingValue,
-        comments: feedbackComments || undefined,
-        feedbackDate: new Date(),
-      };
-      assignment.status = "completed";
-      assignment.paymentStatus = assignment.paymentStatus || "paid";
-
-      await assignment.save();
-
-      const amount = parseNumber(
-        assignment.paymentAmount ?? assignment.estimatedCost ?? assignment.budget ?? 0,
-        0
-      );
-
-      if (amount > 0 && assignment.assignedTutor) {
-        const [student, tutor, settings] = await Promise.all([
-          UserModel.findById(assignment.student),
-          UserModel.findById(assignment.assignedTutor),
-          PlatformSettingsModel.findOne().lean(),
-        ]);
-
-        if (student && tutor) {
-          const platformFeeRate = parseNumber(
-            settings?.platformFeeRate,
-            getDefaultPlatformFeeRate()
-          );
-          const minTransactionFee = parseNumber(
-            settings?.minTransactionFee,
-            getDefaultMinTransactionFee()
-          );
-          let platformFee = Math.max(0, amount * platformFeeRate);
-          if (platformFee > 0 && minTransactionFee > 0) {
-            platformFee = Math.max(platformFee, minTransactionFee);
-          }
-          const tutorNet = Math.max(0, amount - platformFee);
-
-          await UserModel.updateOne(
-            { _id: student._id, "wallet.escrowBalance": { $gte: amount } },
-            { $inc: { "wallet.escrowBalance": -amount } }
-          );
-
-          if (tutorNet > 0) {
-            await UserModel.updateOne(
-              { _id: tutor._id },
-              { $inc: { "wallet.availableBalance": tutorNet, "wallet.totalEarnings": tutorNet } }
-            );
-          }
-
-          const transactions = [];
-          if (tutorNet > 0) {
-            transactions.push({
-              userId: tutor._id,
-              type: "escrow_release",
-              amount: tutorNet,
-              status: "completed",
-              relatedTo: { model: "Assignment", id: assignment._id },
-              metadata: { resolution: "completion" },
-            });
-          }
-          if (platformFee > 0) {
-            transactions.push({
-              userId: tutor._id,
-              type: "platform_fee",
-              amount: platformFee,
-              status: "completed",
-              relatedTo: { model: "Assignment", id: assignment._id },
-              metadata: { resolution: "completion" },
-            });
-          }
-          if (transactions.length) {
-            await TransactionModel.create(transactions);
-          }
+      let outcome;
+      try {
+        outcome = await releaseEscrowForCompletion({
+          assignmentId: id,
+          ratingValue,
+          feedbackComments,
+        });
+      } catch (releaseError) {
+        if (releaseError.message === "ESCROW_RELEASE_INSUFFICIENT_FUNDS") {
+          return res.status(409).json({
+            status: "failed",
+            message: "Escrow funds are unavailable for release on this assignment",
+          });
         }
+        throw releaseError;
       }
+
+      if (!outcome.didComplete) {
+        const alreadyCompleted = await AssignmentModel.findById(id)
+          .populate("assignedTutor", "name email profileImage")
+          .populate("student", "name email");
+        return res.status(200).json({
+          status: "success",
+          message: "Assignment already completed",
+          data: alreadyCompleted,
+        });
+      }
+
+      assignment = outcome.assignment;
 
       // --- Update tutor publicStats (averageRating, totalReviews, completedProjects, successRate) ---
       if (assignment.assignedTutor) {
@@ -2271,4 +2355,5 @@ class AssignmentController {
 }
 
 export { verifyAndApplyAssignmentPayment as __verifyAndApplyAssignmentPaymentForTest };
+export { releaseEscrowForCompletion as __releaseEscrowForCompletionForTest };
 export default AssignmentController;

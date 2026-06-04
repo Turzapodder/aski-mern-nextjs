@@ -143,6 +143,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     stopTyping: socketStopTyping,
     markAsRead: socketMarkAsRead,
   } = useSocket({
+    onSocketError: (data: any) => {
+      toast.error(data?.message || 'Message could not be sent.');
+    },
     onMessageReceived: (data: any) => {
       console.log('Received new message:', data);
       const message = data.message || data;

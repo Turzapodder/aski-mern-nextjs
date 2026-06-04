@@ -651,6 +651,10 @@ const startServer = async () => {
         logger.info(`🔌 Socket.IO initialized and ready`);
         logger.info(`🆔 Process ID: ${process.pid}`);
 
+        if (typeof process.send === "function") {
+          process.send("ready");
+        }
+
         resolve(serverInstance);
       });
 
@@ -797,6 +801,10 @@ process.on("unhandledRejection", async (err, promise) => {
   logger.error(`❌ Unhandled Promise Rejection at:`, promise, `reason:`, err);
   logger.error(`Stack trace:`, err.stack);
 
+  if (process.env.pm_id !== undefined) {
+    return gracefulShutdown("unhandled_promise_rejection", 1);
+  }
+
   // Don't restart for headers already sent errors in development
   if (
     err.message &&
@@ -817,6 +825,10 @@ process.on("unhandledRejection", async (err, promise) => {
 process.on("uncaughtException", async (err) => {
   logger.error(`💥 Uncaught Exception:`, err);
   logger.error(`Stack trace:`, err.stack);
+
+  if (process.env.pm_id !== undefined) {
+    return gracefulShutdown("uncaught_exception", 1);
+  }
 
   setTimeout(() => {
     restartServer("uncaught_exception");

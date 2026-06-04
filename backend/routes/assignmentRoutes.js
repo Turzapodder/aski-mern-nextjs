@@ -10,8 +10,10 @@ const router = express.Router();
 // Local multer configuration removed in favor of S3
 
 // Public payment routes (gateway callbacks/webhooks)
-router.get('/payment/mock', AssignmentController.handleMockGateway);
-router.get('/payment/mock-complete', AssignmentController.handleMockPaymentComplete);
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/payment/mock', AssignmentController.handleMockGateway);
+  router.get('/payment/mock-complete', AssignmentController.handleMockPaymentComplete);
+}
 router.get('/payment/callback', AssignmentController.handlePaymentCallback);
 router.get('/payment/cancel', AssignmentController.handlePaymentCancel);
 router.post('/payment/webhook', AssignmentController.handlePaymentWebhook);

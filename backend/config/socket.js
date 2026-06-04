@@ -25,6 +25,31 @@ const isOriginAllowed = (origin) => {
   return allowedOrigins.has(sanitizeOrigin(origin));
 };
 
+const parseCookieHeader = (header = '') =>
+  header.split(';').reduce((acc, part) => {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (!rawKey) return acc;
+    acc[rawKey] = decodeURIComponent(rest.join('=') || '');
+    return acc;
+  }, {});
+
+export const extractSocketToken = ({ authToken, authorizationHeader, cookieHeader } = {}) => {
+  const headerToken = authorizationHeader ? authorizationHeader.split(' ')[1] : undefined;
+  const cookies = parseCookieHeader(cookieHeader || '');
+  return authToken || headerToken || cookies.accessToken || '';
+};
+
+export const verifyAccessSocketToken = (token) => {
+  if (!token) return null;
+  try {
+    return jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET_KEY, {
+      algorithms: ['HS256'],
+    });
+  } catch {
+    return null;
+  }
+};
+
 class SocketManager {
   constructor() {
     this.io = null;
@@ -100,41 +125,24 @@ class SocketManager {
     // Authentication middleware
     this.io.use(async (socket, next) => {
       try {
-        const parseCookies = (header = '') => header.split(';').reduce((acc, part) => {
-          const [rawKey, ...rest] = part.trim().split('=');
-          if (!rawKey) return acc;
-          acc[rawKey] = decodeURIComponent(rest.join('=') || '');
-          return acc;
-        }, {});
-
-        const authHeader = socket.handshake.headers.authorization;
-        const headerToken = authHeader ? authHeader.split(' ')[1] : undefined;
-        const cookieHeader = socket.handshake.headers.cookie || '';
-        const cookies = parseCookies(cookieHeader);
-        const cookieToken = cookies.accessToken || cookies.refreshToken;
-        const token = socket.handshake.auth?.token || headerToken || cookieToken;
+        const token = extractSocketToken({
+          authToken: socket.handshake.auth?.token,
+          authorizationHeader: socket.handshake.headers.authorization,
+          cookieHeader: socket.handshake.headers.cookie,
+        });
         
         if (!token) {
           logger.warn('Socket connection denied: No token provided');
           return next(new Error('Authentication token required'));
         }
 
-        // Try to decode the token - handle both userID and _id formats
-        let decoded;
-        try {
-          decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET_KEY);
-        } catch (jwtError) {
-          // Try with refresh token secret as fallback
-          try {
-            decoded = jwt.verify(token, process.env.JWT_REFRESH_TOKEN_SECRET_KEY);
-          } catch (fallbackError) {
-            logger.error('JWT verification failed:', jwtError.message);
-            return next(new Error('Invalid authentication token'));
-          }
+        const decoded = verifyAccessSocketToken(token);
+        if (!decoded) {
+          logger.error('Socket JWT verification failed');
+          return next(new Error('Invalid authentication token'));
         }
 
-        // Handle different token formats
-        const userId = decoded.userID || decoded._id || decoded.id;
+        const userId = decoded._id || decoded.userID || decoded.id;
         if (!userId) {
           logger.error('No user ID found in token:', decoded);
           return next(new Error('Invalid token: no user ID'));
@@ -145,6 +153,11 @@ class SocketManager {
         if (!user) {
           logger.warn(`User not found for ID: ${userId}`);
           return next(new Error('User not found'));
+        }
+
+        if (user.status !== 'active') {
+          logger.warn(`Socket connection denied: user ${userId} is ${user.status}`);
+          return next(new Error('Account is not active'));
         }
 
         socket.userId = user._id.toString();

@@ -17,6 +17,7 @@ export interface IEvent {
   redirectUrl?: string;
   type?: 'assignment' | 'session' | 'manual';
   status?: string;
+  refId?: string;
 }
 
 export interface ICalendarCell {

@@ -104,16 +104,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               placeholder="First Name"
             />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Last Name</label>
-            <input
-              type="text"
-              name="lastName"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors"
-              placeholder="Last Name"
-            />
-          </div>
-
           <div className="md:col-span-1">
             <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address</label>
             <input
@@ -171,15 +161,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             </div>
           </div>
 
-          <div className="md:col-span-1">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Zip Code</label>
-            <input
-              type="text"
-              name="zipCode"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors"
-              placeholder="3100"
-            />
-          </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-900 mb-2">About</label>
             <textarea

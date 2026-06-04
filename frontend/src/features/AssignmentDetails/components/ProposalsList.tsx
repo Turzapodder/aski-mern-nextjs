@@ -20,6 +20,8 @@ import {
   useRejectProposalMutation,
 } from '@/lib/services/proposals';
 import { useCreateChatMutation } from '@/lib/services/chat';
+import { assignmentsApi } from '@/lib/services/assignments';
+import { useDispatch } from 'react-redux';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency';
 import {
@@ -39,6 +41,7 @@ interface ProposalsListProps {
 
 const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps) => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const activeCurrency = currency || DEFAULT_CURRENCY;
   const formatAmount = (value?: number) => formatCurrency(value, activeCurrency);
 
@@ -80,6 +83,7 @@ const ProposalsList = ({ assignmentId, isStudent, currency }: ProposalsListProps
     try {
       await acceptProposal({ id: proposalId }).unwrap();
       refetch();
+      dispatch(assignmentsApi.util.invalidateTags([{ type: 'Assignment', id: assignmentId }]));
     } catch (error) {
       console.error('Failed to accept proposal:', error);
     }

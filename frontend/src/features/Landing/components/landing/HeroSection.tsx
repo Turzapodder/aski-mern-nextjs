@@ -1,4 +1,5 @@
 import UploadProjectForm from '@/features/UserDashboard/components/uploadForm/UploadProjectForm';
+import Link from 'next/link';
 import React from 'react';
 
 
@@ -34,9 +35,12 @@ export const HeroSection = () => {
               placeholder="What subject do you need help?"
               className="flex-1 px-4 py-2.5 sm:py-2 bg-transparent outline-none text-gray-700 placeholder:text-gray-400 text-sm sm:text-base"
             />
-            <button className="bg-black text-white px-6 py-2.5 rounded-xl sm:rounded-full font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base">
+            <Link
+              href="/account/register?role=user"
+              className="bg-black text-white px-6 py-2.5 rounded-xl sm:rounded-full font-medium hover:bg-gray-800 transition-colors text-sm sm:text-base inline-flex items-center justify-center"
+            >
               Find Tutors
-            </button>
+            </Link>
           </div>
 
           <div className="flex gap-6 sm:gap-8 items-center justify-center lg:justify-start text-sm">

@@ -24,7 +24,12 @@ const blockedExtensions = [
     ".scr",
     ".ps1",
     ".vbs",
-    ".jar"
+    ".jar",
+    ".html",
+    ".htm",
+    ".svg",
+    ".xhtml",
+    ".shtml"
 ];
 
 const blockedMimeTypes = [
@@ -35,10 +40,13 @@ const blockedMimeTypes = [
     "application/x-bat",
     "application/x-cmd",
     "application/x-msi",
-    "application/x-executable"
+    "application/x-executable",
+    "text/html",
+    "application/xhtml+xml",
+    "image/svg+xml"
 ];
 
-const assignmentFileFilter = (req, file, cb) => {
+export const assignmentFileFilter = (req, file, cb) => {
     const ext = path.extname(file.originalname || "").toLowerCase();
     if (blockedExtensions.includes(ext)) {
         return cb(new Error("Invalid file type"), false);
@@ -47,6 +55,20 @@ const assignmentFileFilter = (req, file, cb) => {
         return cb(new Error("Invalid file type"), false);
     }
     cb(null, true);
+};
+
+const allowedImageMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif"
+];
+
+export const imageFileFilter = (req, file, cb) => {
+    if (allowedImageMimeTypes.includes(file.mimetype)) {
+        return cb(null, true);
+    }
+    cb(new Error("Invalid file type. Only image uploads are allowed."), false);
 };
 
 // const fileFilter = (req, file, cb) => {
@@ -84,6 +106,7 @@ export const uploadProfile = multer({
             cb(null, `profiles/${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     }),
+    fileFilter: imageFileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 

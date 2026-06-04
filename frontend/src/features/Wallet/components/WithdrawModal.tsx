@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -147,6 +148,9 @@ export default function WithdrawModal({
           throw new Error(result?.error || 'Withdrawal failed');
         }
 
+        toast.success(
+          result?.message || 'Withdrawal request submitted. Funds are on hold pending admin approval.'
+        );
         onSuccess?.();
         onOpenChange(false);
       } catch (submitError: any) {

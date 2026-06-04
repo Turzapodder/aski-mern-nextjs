@@ -3,6 +3,7 @@ import UserModel from "../models/User.js";
 import ChatModel from "../models/Chat.js";
 import TransactionModel from "../models/Transaction.js";
 import mongoose from "mongoose";
+import { initiateSessionCheckout } from "./sessionPaymentController.js";
 
 const isTutorApproved = (tutor) => {
   if (!tutor) return false;
@@ -217,12 +218,18 @@ class SessionController {
         });
       }
 
-      // Calculate price
       const billingType = duration <= 30 ? "half_hourly" : "hourly";
       const price = duration <= 30 ? (halfHourlyRate || hourlyRate / 2) : hourlyRate;
 
-      // Verify and deduct student balance
-      const student = await UserModel.findById(studentId);
+      if (!price || price <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: "This tutor has not configured a valid rate for this slot",
+          code: "INVALID_PRICE",
+        });
+      }
+
+      const student = await UserModel.findById(studentId).select("name");
       if (!student) {
         return res.status(404).json({
           success: false,
@@ -231,36 +238,6 @@ class SessionController {
         });
       }
 
-      if (!student.wallet) {
-        student.wallet = { availableBalance: 0, escrowBalance: 0 };
-      }
-
-      // Direct checkout bypass: Automatically top-up the wallet to cover the slot price
-      if (student.wallet.availableBalance < price) {
-        student.wallet.availableBalance = price;
-      }
-
-      // Deduct available, transfer to escrow
-      student.wallet.availableBalance -= price;
-      student.wallet.escrowBalance += price;
-      await student.save();
-
-      // Record Transaction Hold
-      const transaction = new TransactionModel({
-        userId: studentId,
-        type: "escrow_hold",
-        amount: price,
-        status: "completed",
-        metadata: {
-          tutorId,
-          slot,
-          date,
-          subject,
-        },
-      });
-      await transaction.save();
-
-      // Find or Create Chat
       let chat = await ChatModel.findOne({
         type: "direct",
         "participants.user": { $all: [studentId, tutorId] },
@@ -268,7 +245,6 @@ class SessionController {
       });
 
       if (chat) {
-        chat.isLockedUntil = scheduledTime;
         chat.lastActivity = new Date();
       } else {
         chat = new ChatModel({
@@ -279,13 +255,12 @@ class SessionController {
             { user: tutorId, role: "member" },
           ],
           createdBy: studentId,
-          isLockedUntil: scheduledTime,
           isActive: true,
           lastActivity: new Date(),
         });
       }
 
-      const session = new SessionModel({
+      const newSession = new SessionModel({
         tutor: tutorId,
         student: studentId,
         subject,
@@ -296,22 +271,39 @@ class SessionController {
         price,
         billingType,
         chat: chat._id,
+        status: "pending_payment",
+        paymentStatus: "pending",
       });
 
-      chat.session = session._id;
-      
+      chat.session = newSession._id;
       await chat.save();
-      await session.save();
+      await newSession.save();
+
+      let checkout;
+      try {
+        checkout = await initiateSessionCheckout(newSession, req);
+      } catch (checkoutError) {
+        await SessionModel.deleteOne({ _id: newSession._id });
+        return res.status(502).json({
+          success: false,
+          error: checkoutError?.message || "Unable to initialize payment",
+          code: "CHECKOUT_FAILED",
+        });
+      }
 
       return res.status(201).json({
         success: true,
-        message: "Appointment booked successfully!",
+        message: "Session reserved. Complete payment to confirm.",
         data: {
-          sessionId: session._id,
+          sessionId: newSession._id,
           chatId: chat._id,
           price,
           scheduledTime,
           slot,
+          checkoutUrl: checkout.checkoutUrl,
+          invoiceId: checkout.invoiceId,
+          currency: checkout.currency,
+          paymentStatus: "pending",
         },
       });
     } catch (error) {
