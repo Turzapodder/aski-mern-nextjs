@@ -7,6 +7,7 @@ import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
 import { safeSearchRegex } from "../utils/escapeRegex.js";
 import mongoose from 'mongoose';
+import { recalculateTutorDeliveryRate } from '../utils/overdueCron.js';
 import {
   createUddoktaCheckout,
   extractInvoiceIdFromValue,
@@ -848,8 +849,10 @@ class AssignmentController {
         // Admin can see all assignments
       } else if (userRoles.includes('tutor')) {
         // Tutors can see assigned assignments and unassigned ones
+        // Overdue assignments are excluded from the general board;
+        // tutors access them via "My Work Hub" instead.
         filter.$or = [
-          { assignedTutor: userId },
+          { assignedTutor: userId, status: { $ne: 'overdue' } },
           {
             assignedTutor: null,
             status: { $in: ['pending', 'created', 'proposal_received'] },
@@ -2350,6 +2353,336 @@ class AssignmentController {
         message: 'Unable to fetch assignment statistics',
         error: error.message
       });
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Overdue handling endpoints
+  // ────────────────────────────────────────────────────────────────────────
+
+  /**
+   * POST /:id/request-extension
+   * Tutor (or student) requests more time.
+   */
+  static requestExtension = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { extensionHours, reason } = req.body;
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ status: 'failed', message: 'Invalid assignment ID' });
+      }
+
+      const hours = Number(extensionHours);
+      if (!Number.isFinite(hours) || hours < 1 || hours > 168) {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Extension must be between 1 and 168 hours (7 days)',
+        });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({ status: 'failed', message: 'Assignment not found' });
+      }
+
+      if (!['overdue', 'in_progress', 'submission_pending', 'revision_requested'].includes(assignment.status)) {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Extension can only be requested for active or overdue assignments',
+        });
+      }
+
+      // Only the assigned tutor or the student can request
+      const isAssignedTutor =
+        assignment.assignedTutor && assignment.assignedTutor.toString() === userId.toString();
+      const isStudent = assignment.student.toString() === userId.toString();
+
+      if (!isAssignedTutor && !isStudent) {
+        return res.status(403).json({ status: 'failed', message: 'Access denied' });
+      }
+
+      // Prevent duplicate pending requests
+      if (assignment.overdueExtension?.status === 'pending') {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'An extension request is already pending',
+        });
+      }
+
+      const newDeadline = new Date(
+        (assignment.deadline?.getTime() || Date.now()) + hours * 60 * 60 * 1000
+      );
+
+      assignment.overdueExtension = {
+        requestedBy: userId,
+        requestedAt: new Date(),
+        extensionHours: hours,
+        reason: (reason || '').trim().slice(0, 500),
+        status: 'pending',
+        respondedAt: null,
+        newDeadline,
+      };
+      await assignment.save();
+
+      // Notify the other party
+      const recipientId = isAssignedTutor ? assignment.student : assignment.assignedTutor;
+      if (recipientId) {
+        const requesterName = req.user?.name || (isAssignedTutor ? 'Your tutor' : 'The student');
+        const notification = await NotificationModel.create({
+          user: recipientId,
+          type: 'extension_requested',
+          title: 'Deadline extension requested',
+          message: `${requesterName} requested a ${hours}h extension for "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: { assignmentId: assignment._id },
+        });
+
+        const socketManager = req.app.get('socketManager');
+        if (socketManager) {
+          socketManager.emitToUser(String(recipientId), 'notification', { notification });
+        }
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Extension request submitted',
+        data: assignment,
+      });
+    } catch (error) {
+      console.error('Request extension error:', error);
+      return res.status(500).json({ status: 'failed', message: 'Unable to request extension' });
+    }
+  };
+
+  /**
+   * POST /:id/respond-extension
+   * The other party approves or rejects the extension.
+   */
+  static respondToExtension = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action } = req.body; // 'approve' or 'reject'
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ status: 'failed', message: 'Invalid assignment ID' });
+      }
+
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ status: 'failed', message: 'Action must be approve or reject' });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({ status: 'failed', message: 'Assignment not found' });
+      }
+
+      if (assignment.overdueExtension?.status !== 'pending') {
+        return res.status(400).json({ status: 'failed', message: 'No pending extension request' });
+      }
+
+      // The responder should be the party who did NOT request
+      const requestedBy = assignment.overdueExtension.requestedBy?.toString();
+      const isStudent = assignment.student.toString() === userId.toString();
+      const isTutor =
+        assignment.assignedTutor && assignment.assignedTutor.toString() === userId.toString();
+
+      if (requestedBy === userId.toString()) {
+        return res.status(403).json({
+          status: 'failed',
+          message: 'You cannot respond to your own extension request',
+        });
+      }
+
+      if (!isStudent && !isTutor) {
+        return res.status(403).json({ status: 'failed', message: 'Access denied' });
+      }
+
+      if (action === 'approve') {
+        assignment.deadline = assignment.overdueExtension.newDeadline;
+        assignment.overdueExtension.status = 'approved';
+        assignment.overdueExtension.respondedAt = new Date();
+
+        // If the assignment was overdue, move it back to in_progress
+        if (assignment.status === 'overdue') {
+          assignment.status = assignment.paymentStatus === 'paid' ? 'in_progress' : 'proposal_accepted';
+          assignment.overdueMarkedAt = null;
+          assignment.gracePeriodEndsAt = null;
+        }
+      } else {
+        assignment.overdueExtension.status = 'rejected';
+        assignment.overdueExtension.respondedAt = new Date();
+      }
+
+      await assignment.save();
+
+      // Notify the requester
+      const recipientId = assignment.overdueExtension.requestedBy;
+      if (recipientId) {
+        const responderName = req.user?.name || 'User';
+        const notification = await NotificationModel.create({
+          user: recipientId,
+          type: 'extension_response',
+          title: action === 'approve' ? 'Extension approved' : 'Extension rejected',
+          message:
+            action === 'approve'
+              ? `${responderName} approved the deadline extension for "${assignment.title}". New deadline: ${assignment.deadline.toLocaleDateString()}.`
+              : `${responderName} rejected the deadline extension for "${assignment.title}".`,
+          link: `/user/assignments/view-details/${assignment._id}`,
+          data: { assignmentId: assignment._id },
+        });
+
+        const socketManager = req.app.get('socketManager');
+        if (socketManager) {
+          socketManager.emitToUser(String(recipientId), 'notification', { notification });
+        }
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        message: action === 'approve' ? 'Extension approved' : 'Extension rejected',
+        data: assignment,
+      });
+    } catch (error) {
+      console.error('Respond to extension error:', error);
+      return res.status(500).json({ status: 'failed', message: 'Unable to process extension response' });
+    }
+  };
+
+  /**
+   * POST /:id/cancel-overdue
+   * Student cancels an overdue assignment and gets a refund.
+   */
+  static cancelOverdueAssignment = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ status: 'failed', message: 'Invalid assignment ID' });
+      }
+
+      const assignment = await AssignmentModel.findById(id);
+      if (!assignment) {
+        return res.status(404).json({ status: 'failed', message: 'Assignment not found' });
+      }
+
+      // Only the student can cancel
+      if (assignment.student.toString() !== userId.toString()) {
+        return res.status(403).json({ status: 'failed', message: 'Only the student can cancel' });
+      }
+
+      if (assignment.status !== 'overdue') {
+        return res.status(400).json({
+          status: 'failed',
+          message: 'Only overdue assignments can be cancelled with this action',
+        });
+      }
+
+      // Check grace period — student must wait until grace period ends
+      const now = new Date();
+      if (assignment.gracePeriodEndsAt && now < assignment.gracePeriodEndsAt) {
+        const remainingMs = assignment.gracePeriodEndsAt.getTime() - now.getTime();
+        const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+        return res.status(400).json({
+          status: 'failed',
+          message: `Please wait ${remainingHours} more hour(s) before cancelling. The tutor has a grace period to submit.`,
+        });
+      }
+
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          // Cancel the assignment
+          assignment.status = 'cancelled';
+          assignment.isActive = false;
+          await assignment.save({ session });
+
+          // Refund to student wallet if paid
+          if (assignment.paymentStatus === 'paid' && assignment.paymentAmount > 0) {
+            const refundAmount = assignment.paymentAmount;
+
+            await UserModel.updateOne(
+              { _id: assignment.student },
+              {
+                $inc: {
+                  'wallet.escrowBalance': -refundAmount,
+                  'wallet.availableBalance': refundAmount,
+                },
+              },
+              { session }
+            );
+
+            await TransactionModel.create(
+              [
+                {
+                  userId: assignment.student,
+                  type: 'refund',
+                  amount: refundAmount,
+                  status: 'completed',
+                  relatedTo: { model: 'Assignment', id: assignment._id },
+                  metadata: {
+                    reason: 'overdue_cancellation',
+                    originalPaymentAmount: assignment.paymentAmount,
+                  },
+                },
+              ],
+              { session }
+            );
+
+            assignment.paymentStatus = 'refunded';
+            assignment.paymentGateway = {
+              ...assignment.paymentGateway,
+              refundedAt: new Date(),
+              refundReference: `OVERDUE-CANCEL-${assignment._id}`,
+            };
+            await assignment.save({ session });
+          }
+
+          // Withdraw any pending proposals
+          await ProposalModel.updateMany(
+            { assignment: assignment._id, status: 'pending' },
+            { $set: { status: 'withdrawn' } },
+            { session }
+          );
+        });
+      } finally {
+        session.endSession();
+      }
+
+      // Notify tutor
+      if (assignment.assignedTutor) {
+        const studentUser = await UserModel.findById(assignment.student).select('name').lean();
+        const notification = await NotificationModel.create({
+          user: assignment.assignedTutor,
+          type: 'assignment_cancelled_overdue',
+          title: 'Assignment cancelled (overdue)',
+          message: `${studentUser?.name || 'The student'} cancelled "${assignment.title}" because it was overdue.`,
+          link: '/user/assignments',
+          data: { assignmentId: assignment._id },
+        });
+
+        const socketManager = req.app.get('socketManager');
+        if (socketManager) {
+          socketManager.emitToUser(String(assignment.assignedTutor), 'notification', {
+            notification,
+          });
+        }
+
+        // Recalculate tutor's on-time delivery rate
+        await recalculateTutorDeliveryRate(assignment.assignedTutor);
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Assignment cancelled and refund processed',
+        data: assignment,
+      });
+    } catch (error) {
+      console.error('Cancel overdue assignment error:', error);
+      return res.status(500).json({ status: 'failed', message: 'Unable to cancel assignment' });
     }
   };
 }

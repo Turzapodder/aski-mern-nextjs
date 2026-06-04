@@ -43,6 +43,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from "./middlewares/errorMiddleware.js";
+import { startOverdueCron } from "./utils/overdueCron.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -318,6 +319,9 @@ const startServer = async () => {
       // Make socket manager available to routes
       app.set("socketManager", socketManager);
       app.set("io", io);
+
+      // Start overdue assignment cron job
+      startOverdueCron(socketManager);
     } catch (socketError) {
       logger.error("Socket.IO initialization error:", socketError);
       // Don't fail the server start for socket errors in development

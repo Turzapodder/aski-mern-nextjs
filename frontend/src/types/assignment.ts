@@ -114,6 +114,19 @@ export interface Assignment {
   proposalCount?: number;
   discussionCount?: number;
   proposals?: any[];
+
+  // Overdue handling
+  overdueMarkedAt?: string;
+  gracePeriodEndsAt?: string;
+  overdueExtension?: {
+    requestedBy?: string;
+    requestedAt?: string;
+    extensionHours?: number;
+    reason?: string;
+    status?: 'pending' | 'approved' | 'rejected' | null;
+    respondedAt?: string;
+    newDeadline?: string;
+  };
 }
 
 export interface AssignmentsResponse {

@@ -25,6 +25,7 @@ import ReportModal from '@/components/common/ReportModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useViewDetailsLogic, getWorkflowStep } from '../hooks/useViewDetailsLogic';
 import CompletionFeedback from './completionFeedback/CompletionFeedback';
+import OverdueBanner from './OverdueBanner';
 import { useDeleteAssignmentMutation } from '@/lib/services/assignments';
 import {
   DropdownMenu,
@@ -315,6 +316,17 @@ export const ViewDetailsClient = () => {
               </div>
             </div>
           </div>
+
+          {/* Overdue Alert Banner */}
+          {assignment.status === 'overdue' && (
+            <OverdueBanner
+              assignment={assignment}
+              isStudent={isAssignmentStudent}
+              isTutor={isAssignmentTutor}
+              currentUserId={currentUser?._id || ''}
+              onRefetch={refetch}
+            />
+          )}
 
           {/* Description + Budget/Priority side-by-side */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -156,6 +156,7 @@ const userSchema = new mongoose.Schema(
       totalReviews: { type: Number, default: 0, min: 0 },
       responseTime: { type: Number, default: 0, min: 0 },
       successRate: { type: Number, default: 0, min: 0, max: 100 },
+      onTimeDeliveryRate: { type: Number, default: 100, min: 0, max: 100 },
       joinedDate: { type: Date, default: Date.now },
     },
 

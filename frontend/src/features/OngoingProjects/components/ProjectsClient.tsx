@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, ArrowUpRight, AlertCircle, Clock, CheckCircle2, FileText, Send, Hourglass } from 'lucide-react';
+import { Calendar, ArrowUpRight, AlertCircle, Clock, CheckCircle2, FileText, Send, Hourglass, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWithdrawProposalMutation } from '@/lib/services/proposals';
@@ -71,12 +71,14 @@ export const ProjectsClient = () => {
     { value: 'awaiting_payment', label: 'Awaiting Payment', count: categorizedProjects.awaiting.length, icon: <Hourglass className="w-4 h-4" /> },
     { value: 'proposals', label: 'Sent Proposals', count: proposals.length, icon: <Send className="w-4 h-4" /> },
     { value: 'under_review', label: 'In Review', count: categorizedProjects.review.length, icon: <CheckCircle2 className="w-4 h-4" /> },
+    { value: 'overdue', label: 'Overdue', count: categorizedProjects.overdue.length, icon: <AlertTriangle className="w-4 h-4" /> },
   ];
 
   let displayItems: any[] = [];
   if (activeTab === 'active') displayItems = categorizedProjects.active;
   if (activeTab === 'awaiting_payment') displayItems = categorizedProjects.awaiting;
   if (activeTab === 'under_review') displayItems = categorizedProjects.review;
+  if (activeTab === 'overdue') displayItems = categorizedProjects.overdue;
 
   const renderEmptyState = () => {
     return (

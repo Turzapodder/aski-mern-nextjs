@@ -158,6 +158,44 @@ export const assignmentsApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
     }),
 
+    // Request deadline extension (tutor or student)
+    requestExtension: builder.mutation<
+      AssignmentResponse,
+      { id: string; extensionHours: number; reason: string }
+    >({
+      query: ({ id, extensionHours, reason }) => ({
+        url: `/${id}/request-extension`,
+        method: 'POST',
+        body: { extensionHours, reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
+    }),
+
+    // Respond to deadline extension (approve or reject)
+    respondToExtension: builder.mutation<
+      AssignmentResponse,
+      { id: string; action: 'approve' | 'reject' }
+    >({
+      query: ({ id, action }) => ({
+        url: `/${id}/respond-extension`,
+        method: 'POST',
+        body: { action },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Assignment', id }, 'Assignments'],
+    }),
+
+    // Cancel overdue assignment with refund (student)
+    cancelOverdueAssignment: builder.mutation<
+      { status: string; message: string; data: Assignment },
+      string
+    >({
+      query: (id) => ({
+        url: `/${id}/cancel-overdue`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Assignment', id }, 'Assignments'],
+    }),
+
     // Get assignment statistics
     getAssignmentStats: builder.query<
       {
@@ -193,5 +231,9 @@ export const {
   useSubmitFeedbackMutation,
   useProcessPaymentMutation,
   useRequestRevisionMutation,
+  useRequestExtensionMutation,
+  useRespondToExtensionMutation,
+  useCancelOverdueAssignmentMutation,
   useGetAssignmentStatsQuery,
 } = assignmentsApi;
+
