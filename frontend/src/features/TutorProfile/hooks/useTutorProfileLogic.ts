@@ -62,7 +62,7 @@ export const useTutorProfileLogic = () => {
 
   const handleSendMessage = async () => {
     if (!viewer) {
-      router.push('/login');
+      router.push('/account/login?role=user');
       return;
     }
 
@@ -216,7 +216,7 @@ export const useTutorProfileLogic = () => {
     try {
       const result = await toggleBookmark(String(tutor._id));
       if (result?.requiresAuth) {
-        router.push('/login');
+        router.push('/account/login?role=user');
       }
     } catch {
       toast.error('Unable to update bookmark right now.');

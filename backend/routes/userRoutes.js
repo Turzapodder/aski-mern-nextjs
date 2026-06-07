@@ -4,16 +4,18 @@ import UserController from '../controllers/userController.js';
 import { generateQuiz } from '../controllers/quizController.js';
 import passport from 'passport';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
+import { authLimiter, quizLimiter } from '../middlewares/rateLimiters.js';
 
 const router = express.Router();
 // Public Routes
-router.post('/register', UserController.userRegistration);
-router.post('/verify-email', UserController.verifyEmail);
-router.post('/login', UserController.userLogin);
+router.post('/register', authLimiter, UserController.userRegistration);
+router.post('/verify-email', authLimiter, UserController.verifyEmail);
+router.post('/resend-otp', authLimiter, UserController.resendVerificationOtp);
+router.post('/login', authLimiter, UserController.userLogin);
 router.post('/refresh-token', UserController.getNewAccessToken);
-router.post('/reset-password-link', UserController.sendUserPasswordResetEmail);
-router.post('/reset-password/:id/:token', UserController.userPasswordReset);
-router.post('/generate-quiz', generateQuiz);
+router.post('/reset-password-link', authLimiter, UserController.sendUserPasswordResetEmail);
+router.post('/reset-password/:id/:token', authLimiter, UserController.userPasswordReset);
+router.post('/generate-quiz', quizLimiter, generateQuiz);
 
 
 //Protected Routes

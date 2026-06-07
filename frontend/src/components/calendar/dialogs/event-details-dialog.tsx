@@ -2,7 +2,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Text, User } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +35,33 @@ export function EventDetailsDialog({ event, children }: IProps) {
       toast.success('Event deleted successfully.');
     } catch {
       toast.error('Error deleting event.');
+    }
+  };
+
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleSessionAction = async (action: 'complete' | 'cancel') => {
+    if (!event.refId) return;
+    setActionLoading(true);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${baseUrl}/api/sessions/${event.refId}/${action}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        toast.success(
+          data.message || (action === 'complete' ? 'Session completed.' : 'Session cancelled.')
+        );
+        window.location.reload();
+      } else {
+        toast.error(data?.message || 'Action failed. Please try again.');
+      }
+    } catch {
+      toast.error('An unexpected error occurred.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -96,7 +123,25 @@ export function EventDetailsDialog({ event, children }: IProps) {
             </div>
           </div>
         </ScrollArea>
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          {event.type === 'session' && event.status === 'scheduled' && event.refId && (
+            <>
+              <Button
+                variant="outline"
+                disabled={actionLoading}
+                onClick={() => handleSessionAction('cancel')}
+              >
+                Cancel Session
+              </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl"
+                disabled={actionLoading}
+                onClick={() => handleSessionAction('complete')}
+              >
+                Mark Complete
+              </Button>
+            </>
+          )}
           {event.redirectUrl ? (
             <Button asChild className="bg-primary-500 hover:bg-primary-600 text-white font-bold px-4 py-2 rounded-xl transition-all">
               <a href={event.redirectUrl}>

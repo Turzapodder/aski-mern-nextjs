@@ -134,6 +134,7 @@ export const useCalendarLogic = () => {
           redirectUrl: '/user/messages',
           type: 'session',
           status: session.status || 'scheduled',
+          refId: String(session.id),
         });
       });
 

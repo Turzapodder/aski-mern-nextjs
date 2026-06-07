@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import QuizQuestionModel from "../models/QuizQuestion.js";
 import AdminLogModel from "../models/AdminLog.js";
+import { escapeRegex, safeSearchRegex } from "../utils/escapeRegex.js";
 
 const parseNumber = (value, fallback) => {
   const parsed = Number(value);
@@ -27,7 +28,7 @@ class AdminQuizController {
 
       const filter = {};
       if (category && category !== "all") {
-        filter.category = new RegExp(`^${category}$`, "i");
+        filter.category = new RegExp(`^${escapeRegex(category)}$`, "i");
       }
       if (difficulty && difficulty !== "all") {
         filter.difficulty = difficulty;
@@ -39,7 +40,7 @@ class AdminQuizController {
         filter.isActive = false;
       }
       if (search) {
-        filter.question = new RegExp(search, "i");
+        filter.question = safeSearchRegex(search);
       }
 
       const skip = (page - 1) * limit;

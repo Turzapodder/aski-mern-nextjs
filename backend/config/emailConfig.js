@@ -1,82 +1,75 @@
-import dotenv from 'dotenv'
-dotenv.config()
+import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 
-const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+dotenv.config();
 
-const getSender = () => {
-    const senderEmail = process.env.EMAIL_FROM;
-    if (!senderEmail) {
-        throw new Error('EMAIL_FROM is required for Brevo email sending.');
+let cachedTransporter = null;
+
+const getTransport = () => {
+    const host = process.env.EMAIL_HOST;
+    const user = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASSWORD;
+    const port = Number(process.env.EMAIL_PORT) || 587;
+
+    if (!host || !user || !pass) {
+        throw new Error('EMAIL_HOST, EMAIL_USER and EMAIL_PASSWORD are required for SMTP email sending.');
     }
 
-    const sender = { email: senderEmail };
-    if (process.env.EMAIL_FROM_NAME) {
-        sender.name = process.env.EMAIL_FROM_NAME;
+    if (!cachedTransporter) {
+        cachedTransporter = nodemailer.createTransport({
+            host,
+            port,
+            secure: port === 465,
+            auth: { user, pass },
+        });
     }
-    return sender;
+
+    return cachedTransporter;
+};
+
+const getFrom = () => {
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    if (!fromEmail) {
+        throw new Error('EMAIL_FROM (or EMAIL_USER) is required as the sender address.');
+    }
+    const name = process.env.EMAIL_FROM_NAME;
+    return name ? `${name} <${fromEmail}>` : fromEmail;
 };
 
 const normalizeRecipients = (to) => {
     if (!to) return [];
 
+    const toAddress = (entry) => {
+        if (typeof entry === 'string') return entry;
+        if (entry && typeof entry === 'object' && entry.email) {
+            return entry.name ? `${entry.name} <${entry.email}>` : entry.email;
+        }
+        return null;
+    };
+
     if (Array.isArray(to)) {
-        return to
-            .map((entry) => {
-                if (typeof entry === 'string') return { email: entry };
-                if (entry && typeof entry === 'object' && entry.email) {
-                    return entry.name ? { email: entry.email, name: entry.name } : { email: entry.email };
-                }
-                return null;
-            })
-            .filter(Boolean);
+        return to.map(toAddress).filter(Boolean);
     }
 
-    if (typeof to === 'string') {
-        return [{ email: to }];
-    }
-
-    if (typeof to === 'object' && to.email) {
-        return [to.name ? { email: to.email, name: to.name } : { email: to.email }];
-    }
-
-    return [];
+    const single = toAddress(to);
+    return single ? [single] : [];
 };
 
 const sendMail = async ({ to, subject, html, text }) => {
-    const apiKey = process.env.BREVO_API_KEY;
-    if (!apiKey) {
-        throw new Error('BREVO_API_KEY is required to send emails via Brevo API.');
-    }
-
     const recipients = normalizeRecipients(to);
     if (!recipients.length) {
         throw new Error('At least one recipient is required.');
     }
 
-    const payload = {
-        sender: getSender(),
+    const transport = getTransport();
+
+    return transport.sendMail({
+        from: getFrom(),
         to: recipients,
         subject,
-        ...(html ? { htmlContent: html } : {}),
-        ...(text ? { textContent: text } : {}),
-    };
-
-    const response = await fetch(BREVO_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'accept': 'application/json',
-            'api-key': apiKey,
-        },
-        body: JSON.stringify(payload),
+        ...(html ? { html } : {}),
+        ...(text ? { text } : {}),
     });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Brevo API error (${response.status}): ${errorBody}`);
-    }
-
-    return response.json();
 };
 
 // Keep transporter-like interface to minimize calling-site changes.

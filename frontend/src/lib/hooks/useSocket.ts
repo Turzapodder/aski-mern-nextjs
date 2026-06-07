@@ -32,6 +32,7 @@ interface SocketEvents {
   onOnlineUsers?: (data: { users: any[] }) => void;
   onNotification?: (data: any) => void;
   onChatUpdated?: (data: any) => void;
+  onSocketError?: (data: any) => void;
   onConnect?: () => void;
   onDisconnect?: (reason: string) => void;
 }
@@ -174,6 +175,7 @@ export const useSocket = (events: SocketEvents = {}): UseSocketReturn => {
 
     socket.on('error', (data) => {
       console.error('Socket error:', data);
+      eventsRef.current.onSocketError?.(data);
     });
 
     // Cleanup on unmount

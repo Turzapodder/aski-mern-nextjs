@@ -82,6 +82,7 @@ transactionSchema.virtual("typeLabel").get(function () {
 
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ status: 1 });
+transactionSchema.index({ type: 1, status: 1, createdAt: -1 });
 
 const TransactionModel = mongoose.model("transaction", transactionSchema);
 

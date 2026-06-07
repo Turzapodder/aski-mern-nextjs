@@ -20,10 +20,16 @@ export const LandingClient = () => {
         <HeroSection />
         <StatsSection />
         <FeaturesSection />
-        <HowItWorksSection />
+        <div id="how-it-works" className="scroll-mt-24">
+          <HowItWorksSection />
+        </div>
         <UnlockPotentialSection />
-        <FAQSection />
-        <TestimonialsSection />
+        <div id="resources" className="scroll-mt-24">
+          <FAQSection />
+        </div>
+        <div id="success-stories" className="scroll-mt-24">
+          <TestimonialsSection />
+        </div>
         <AttractTutorsSection />
       </main>
       <LandingFooter />

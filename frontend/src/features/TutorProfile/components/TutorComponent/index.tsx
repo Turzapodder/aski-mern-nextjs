@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bookmark } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,11 +21,21 @@ export const TutorComponent = () => {
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('rating-desc');
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Use custom hooks
   const [searchInput, debouncedSearch, setSearchInput] = useTutorSearch();
   const { filters, clearFilters, updateFilter } = useFilterManagement();
-  const { loading, error, tutors } = useTutorFetch(debouncedSearch, filters, sortBy);
+  const { loading, error, tutors, total, totalPages } = useTutorFetch(
+    debouncedSearch,
+    filters,
+    sortBy,
+    page
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filters, sortBy]);
   const {
     isAuthenticated,
     loadingBookmarks,
@@ -50,7 +60,7 @@ export const TutorComponent = () => {
     try {
       const result = await toggleBookmark(tutorId);
       if (result?.requiresAuth) {
-        router.push('/login');
+        router.push('/account/login?role=user');
       }
     } catch {
       // Keep UX silent here to match existing behavior patterns.
@@ -59,7 +69,7 @@ export const TutorComponent = () => {
 
   const handleToggleBookmarkedView = () => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/account/login?role=user');
       return;
     }
     setShowBookmarkedOnly((prev) => !prev);
@@ -95,7 +105,7 @@ export const TutorComponent = () => {
       {/* Sorting & Filter Summaries Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 px-1">
         <div className="text-sm font-medium text-gray-500 bg-white/60 px-3 py-1.5 rounded-xl inline-block border border-gray-100">
-          Found <span className="text-gray-900 font-bold">{teachers.length}</span> amazing teachers
+          Found <span className="text-gray-900 font-bold">{showBookmarkedOnly ? teachers.length : total}</span> amazing teachers
         </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -180,6 +190,30 @@ export const TutorComponent = () => {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {!loading && !error && !showBookmarkedOnly && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pb-8">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-500">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

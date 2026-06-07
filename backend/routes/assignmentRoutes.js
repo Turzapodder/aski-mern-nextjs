@@ -4,14 +4,17 @@ import { uploadAssignment } from '../config/s3Config.js';
 import AssignmentController from '../controllers/assignmentController.js';
 import checkUserAuth from '../middlewares/auth-middleware.js';
 import AccessTokenAutoRefresh from '../middlewares/setAuthHeader.js';
+import { isUddoktaMockModeEnabled } from '../utils/uddoktaPay.js';
 
 const router = express.Router();
 
 // Local multer configuration removed in favor of S3
 
 // Public payment routes (gateway callbacks/webhooks)
-router.get('/payment/mock', AssignmentController.handleMockGateway);
-router.get('/payment/mock-complete', AssignmentController.handleMockPaymentComplete);
+if (isUddoktaMockModeEnabled()) {
+  router.get('/payment/mock', AssignmentController.handleMockGateway);
+  router.get('/payment/mock-complete', AssignmentController.handleMockPaymentComplete);
+}
 router.get('/payment/callback', AssignmentController.handlePaymentCallback);
 router.get('/payment/cancel', AssignmentController.handlePaymentCancel);
 router.post('/payment/webhook', AssignmentController.handlePaymentWebhook);

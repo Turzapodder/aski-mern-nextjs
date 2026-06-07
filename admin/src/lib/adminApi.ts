@@ -65,16 +65,16 @@ export const adminApi = {
         params,
       }),
     getById: (id: string) =>
-      request<AdminUserDetails>({ url: `/v1/users/${id}`, method: 'GET' }),
+      request<AdminUserDetails>({ url: `/v1/admin/users/${id}`, method: 'GET' }),
     ban: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/users/${id}/ban`,
+        url: `/v1/admin/users/${id}/ban`,
         method: 'POST',
         data: { reason },
       }),
     unban: (id: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/users/${id}/unban`,
+        url: `/v1/admin/users/${id}/unban`,
         method: 'POST',
       }),
   },
@@ -105,29 +105,29 @@ export const adminApi = {
   tutors: {
     getPending: () =>
       request<Array<Record<string, unknown>>>({
-        url: '/v1/tutors/pending',
+        url: '/v1/admin/tutors/pending',
         method: 'GET',
       }),
     getActive: () =>
       request<Array<Record<string, unknown>>>({
-        url: '/v1/tutors/active',
+        url: '/v1/admin/tutors/active',
         method: 'GET',
       }),
     verify: (id: string, reviewNotes?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/tutors/${id}/verify`,
+        url: `/v1/admin/tutors/${id}/verify`,
         method: 'POST',
         data: { reviewNotes },
       }),
     reject: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/tutors/${id}/reject`,
+        url: `/v1/admin/tutors/${id}/reject`,
         method: 'POST',
         data: { reason },
       }),
     demote: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/tutors/${id}/demote`,
+        url: `/v1/admin/tutors/${id}/demote`,
         method: 'POST',
         data: { reason },
       }),
@@ -141,24 +141,24 @@ export const adminApi = {
       }),
     getById: (id: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/assignments/${id}`,
+        url: `/v1/admin/assignments/${id}`,
         method: 'GET',
       }),
     update: (id: string, payload: Record<string, unknown>) =>
       request<Record<string, unknown>>({
-        url: `/v1/assignments/${id}`,
+        url: `/v1/admin/assignments/${id}`,
         method: 'PUT',
         data: payload,
       }),
     delete: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/assignments/${id}/delete`,
+        url: `/v1/admin/assignments/${id}/delete`,
         method: 'POST',
         data: { reason },
       }),
     forceCancel: (id: string, reason?: string) =>
       request<Record<string, unknown>>({
-        url: `/v1/assignments/${id}/force-cancel`,
+        url: `/v1/admin/assignments/${id}/force-cancel`,
         method: 'POST',
         data: { reason },
       }),
@@ -166,7 +166,7 @@ export const adminApi = {
   finance: {
     getSummary: () =>
       request<FinanceSummary>({
-        url: '/v1/finance/summary',
+        url: '/v1/admin/finance/summary',
         method: 'GET',
       }),
     getTransactions: (params?: Record<string, unknown>) =>
@@ -236,7 +236,7 @@ export const adminApi = {
       }),
     takeAction: (id: string, payload: Record<string, unknown>) =>
       request<Record<string, unknown>>({
-        url: `/v1/reports/${id}/action`,
+        url: `/v1/admin/reports/${id}/action`,
         method: 'POST',
         data: payload,
       }),

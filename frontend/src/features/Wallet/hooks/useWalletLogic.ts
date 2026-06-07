@@ -12,6 +12,14 @@ export type WithdrawalEntry = {
 
 export const formatAmount = (amount: number) => `BDT ${amount.toFixed(2)}`;
 
+export const CREDIT_TX_TYPES = ['escrow_release', 'deposit', 'refund'];
+
+export const txAmountLabel = (item: any) => {
+  const isCredit = CREDIT_TX_TYPES.includes(item?.type);
+  const amount = Number(item?.amount) || 0;
+  return `${isCredit ? '+' : '-'} ${formatAmount(amount)}`;
+};
+
 export const formatDate = (value?: string) => {
   if (!value) return '-';
   const date = new Date(value);
@@ -101,7 +109,10 @@ export const useWalletLogic = () => {
   }, [currentPage, sortedHistory, totalPages]);
 
   const pendingWithdrawals = useMemo(
-    () => sortedHistory.filter((entry) => entry?.status === 'PENDING').slice(0, 3),
+    () =>
+      sortedHistory
+        .filter((entry) => entry?.status === 'PENDING' && entry?.type === 'withdrawal')
+        .slice(0, 3),
     [sortedHistory]
   );
 
@@ -131,7 +142,7 @@ export const useWalletLogic = () => {
     clamp(Math.round((amount / maxAmount) * 90), 18, 110)
   );
 
-  const canWithdraw = wallet.availableBalance > 0;
+  const canWithdraw = Boolean(isTutor) && wallet.availableBalance > 0;
   const isLoading = authLoading || loadingOverview;
 
   return {

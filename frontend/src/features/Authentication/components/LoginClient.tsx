@@ -6,7 +6,15 @@ import Link from 'next/link';
 import { useLoginLogic } from '../hooks/useLoginLogic';
 
 export const LoginClient = () => {
-  const { formik, loading, loginRole, isRoleMissing, handleGoogleLogin } = useLoginLogic();
+  const {
+    formik,
+    loading,
+    loginRole,
+    isRoleMissing,
+    handleGoogleLogin,
+    serverErrorMessage,
+    serverSuccessMessage,
+  } = useLoginLogic();
 
   const { values, errors, handleChange, handleSubmit } = formik;
 
@@ -81,6 +89,17 @@ export const LoginClient = () => {
                   </Link>
                 </div>
               </div>
+
+              {serverErrorMessage && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  {serverErrorMessage}
+                </div>
+              )}
+              {serverSuccessMessage && (
+                <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                  {serverSuccessMessage}
+                </div>
+              )}
 
               <button
                 type="submit"

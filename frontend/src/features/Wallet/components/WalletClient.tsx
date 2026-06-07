@@ -12,6 +12,7 @@ import {
   formatDate,
   statusClasses,
   weekLabels,
+  txAmountLabel,
 } from '../hooks/useWalletLogic';
 
 export const WalletClient = () => {
@@ -187,10 +188,10 @@ export const WalletClient = () => {
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
-                                  Withdrawal
+                                  {item.typeLabel || 'Transaction'}
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-gray-900">
-                                  - {formatAmount(Number(item.amount) || 0)}
+                                  {txAmountLabel(item)}
                                 </p>
                               </div>
                               <Badge
@@ -200,9 +201,8 @@ export const WalletClient = () => {
                               </Badge>
                             </div>
                             <div className="mt-3 text-xs text-gray-500">
-                              {formatDate(item.requestedAt)}
+                              {formatDate(item.createdAt)}
                             </div>
-                            <p className="mt-2 text-xs text-gray-600">Withdrawal to bank</p>
                           </div>
                         );
                       })}
@@ -227,11 +227,11 @@ export const WalletClient = () => {
                                 className="border-b border-gray-100 last:border-0"
                               >
                                 <td className="py-3 text-gray-600">
-                                  {formatDate(item.requestedAt)}
+                                  {formatDate(item.createdAt)}
                                 </td>
-                                <td className="py-3 text-gray-700">Withdrawal to bank</td>
+                                <td className="py-3 text-gray-700">{item.typeLabel || 'Transaction'}</td>
                                 <td className="py-3 text-right text-gray-900">
-                                  - {formatAmount(Number(item.amount) || 0)}
+                                  {txAmountLabel(item)}
                                 </td>
                                 <td className="py-3 text-right">
                                   <Badge
@@ -352,7 +352,7 @@ export const WalletClient = () => {
                             {formatAmount(Number(entry.amount) || 0)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Requested {formatDate(entry.requestedAt)}
+                            Requested {formatDate(entry.createdAt)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">

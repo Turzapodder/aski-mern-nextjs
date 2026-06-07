@@ -277,7 +277,7 @@ class MessageController {
   static getChatMessages = async (req, res) => {
     try {
       const { chatId } = req.params;
-      const { page = 1, limit = 50 } = req.query;
+      const { page = 1, limit = 50, before } = req.query;
       const userId = req.user._id;
 
       console.log('📥 Fetching messages for chat:', {
@@ -300,8 +300,39 @@ class MessageController {
         });
       }
 
-      const pageNumber = Number(page) || 1;
       const limitNumber = Number(limit) || 50;
+      const beforeDate = before ? new Date(before) : null;
+
+      if (beforeDate && !Number.isNaN(beforeDate.getTime())) {
+        const olderDesc = await MessageModel.find({
+          chat: chatId,
+          isDeleted: { $ne: true },
+          createdAt: { $lt: beforeDate }
+        })
+          .populate('sender', 'name email avatar')
+          .populate({
+            path: 'replyTo',
+            populate: {
+              path: 'sender',
+              select: 'name email avatar'
+            }
+          })
+          .sort({ createdAt: -1 })
+          .limit(limitNumber + 1);
+
+        const hasMore = olderDesc.length > limitNumber;
+        const pageItems = (hasMore ? olderDesc.slice(0, limitNumber) : olderDesc).reverse();
+
+        return res.status(200).json({
+          status: 'success',
+          data: {
+            messages: pageItems,
+            hasMore
+          }
+        });
+      }
+
+      const pageNumber = Number(page) || 1;
 
       const totalMessages = await MessageModel.countDocuments({
         chat: chatId,

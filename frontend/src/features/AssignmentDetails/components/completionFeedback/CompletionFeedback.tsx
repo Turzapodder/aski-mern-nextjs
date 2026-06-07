@@ -9,9 +9,13 @@ const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
     setRating,
     comments,
     setComments,
+    revisionNote,
+    setRevisionNote,
     latestSubmission,
     feedbackLoading,
+    revisionLoading,
     handleSubmitFeedback,
+    handleRequestRevision,
   } = useCompletionFeedback(assignment, onCompleted);
 
   const isCompleted = assignment.status === 'completed';
@@ -70,16 +74,36 @@ const CompletionFeedbackComponent = ({ assignment, onCompleted }: any) => {
         </div>
       )}
 
-      {/* Show feedback form only when assignment is submitted (not yet completed) */}
       {assignment.status === 'submitted' && (
-        <FeedbackActions
-          rating={rating}
-          setRating={setRating}
-          comments={comments}
-          setComments={setComments}
-          onComplete={handleSubmitFeedback}
-          loading={feedbackLoading}
-        />
+        <>
+          <FeedbackActions
+            rating={rating}
+            setRating={setRating}
+            comments={comments}
+            setComments={setComments}
+            onComplete={handleSubmitFeedback}
+            loading={feedbackLoading}
+          />
+
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <p className="text-sm font-semibold text-gray-900 mb-2">Need changes instead?</p>
+            <textarea
+              value={revisionNote}
+              onChange={(e) => setRevisionNote(e.target.value)}
+              placeholder="Describe what needs to be revised..."
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 p-3 text-sm text-gray-900 focus:ring-2 focus:ring-amber-100 focus:border-amber-400 transition-all"
+            />
+            <button
+              type="button"
+              onClick={handleRequestRevision}
+              disabled={revisionLoading}
+              className="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {revisionLoading ? 'Requesting...' : 'Request Revision'}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

@@ -110,6 +110,7 @@ export interface GetMessagesRequest {
   chatId: string;
   page?: number;
   limit?: number;
+  before?: string;
 }
 
 export interface MarkAsReadRequest {

@@ -9,6 +9,7 @@ import ChatModel from "../models/Chat.js";
 import AdminLogModel from "../models/AdminLog.js";
 import TransactionModel from "../models/Transaction.js";
 import PlatformSettingsModel from "../models/PlatformSettings.js";
+import { safeSearchRegex } from "../utils/escapeRegex.js";
 import {
   normalizePaymentStatus,
   refundUddoktaPayment,
@@ -259,8 +260,8 @@ class AdminController {
       }
       if (search) {
         filter.$or = [
-          { name: new RegExp(search, "i") },
-          { email: new RegExp(search, "i") },
+          { name: safeSearchRegex(search) },
+          { email: safeSearchRegex(search) },
         ];
       }
 
@@ -336,7 +337,7 @@ class AdminController {
         });
       }
 
-      const user = await UserModel.findById(id).lean();
+      const user = await UserModel.findById(id).select("-password").lean();
       if (!user) {
         return res.status(404).json({
           status: "failed",
@@ -972,7 +973,7 @@ class AdminController {
         filter.status = status;
       }
       if (subject) {
-        filter.subject = new RegExp(subject, "i");
+        filter.subject = safeSearchRegex(subject);
       }
       if (Number.isFinite(minBudget) || Number.isFinite(maxBudget)) {
         const range = {};
@@ -1300,16 +1301,18 @@ class AdminController {
         }
 
         if (escrowAmount > 0) {
-          await UserModel.updateOne(
+          const studentInc = { "wallet.escrowBalance": -escrowAmount };
+          if (!gatewayRefundResult) {
+            studentInc["wallet.availableBalance"] = escrowAmount;
+          }
+          const studentDebit = await UserModel.updateOne(
             { _id: assignment.student, "wallet.escrowBalance": { $gte: escrowAmount } },
-            {
-              $inc: {
-                "wallet.escrowBalance": -escrowAmount,
-                "wallet.availableBalance": escrowAmount,
-              },
-            },
+            { $inc: studentInc },
             { session }
           );
+          if (studentDebit.modifiedCount !== 1) {
+            throw new Error("FORCE_CANCEL_REFUND_INSUFFICIENT_ESCROW");
+          }
 
           await TransactionModel.create(
             [
@@ -1600,8 +1603,9 @@ class AdminController {
       const updated = await UserModel.findOneAndUpdate(
         {
           _id: user._id,
-          "wallet.withdrawalHistory.transactionId": id,
-          "wallet.withdrawalHistory.status": "PENDING",
+          "wallet.withdrawalHistory": {
+            $elemMatch: { transactionId: id, status: "PENDING" },
+          },
         },
         {
           $set: {
@@ -2300,16 +2304,19 @@ class AdminController {
           }
         }
 
-        const studentUpdates = {
-          "wallet.escrowBalance": -escrowAmount,
-          "wallet.availableBalance": studentAmount,
-        };
+        const studentUpdates = { "wallet.escrowBalance": -escrowAmount };
+        if (!gatewayRefundResult && studentAmount > 0) {
+          studentUpdates["wallet.availableBalance"] = studentAmount;
+        }
 
-        await UserModel.updateOne(
+        const studentDebit = await UserModel.updateOne(
           { _id: student._id, "wallet.escrowBalance": { $gte: escrowAmount } },
           { $inc: studentUpdates },
           { session }
         );
+        if (escrowAmount > 0 && studentDebit.modifiedCount !== 1) {
+          throw new Error("DISPUTE_REFUND_INSUFFICIENT_ESCROW");
+        }
 
         if (tutorNet > 0) {
           await UserModel.updateOne(

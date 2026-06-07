@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, DollarSign, Eye, Send, Flag, Activity, Tag, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Clock, Calendar, DollarSign, Eye, Send, Flag, Activity, Tag, MoreVertical, Trash2 } from 'lucide-react';
 import { getPriorityColor, getStatusColor, formatDate } from '@/lib/hooks/useAssignmentsLogic';
 import { useDeleteAssignmentMutation } from '@/lib/services/assignments';
 import {
@@ -131,11 +131,7 @@ const AssignmentCard = ({
                   <MoreVertical className="w-5 h-5 text-gray-500" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem className="cursor-pointer text-gray-700 font-medium">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 font-medium"
                     onClick={() => setIsDeleteDialogOpen(true)}
                   >
