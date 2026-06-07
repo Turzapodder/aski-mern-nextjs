@@ -183,7 +183,9 @@ class ProfileController {
       const updated = await UserModel.findByIdAndUpdate(userId, update, {
         new: true,
         runValidators: true,
-      }).lean();
+      })
+        .select("-password")
+        .lean();
 
       if (!updated) {
         return res.status(404).json({
@@ -477,6 +479,9 @@ class ProfileController {
       const { page = 1, limit = 10, subject, city } = req.query;
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
+      const safeCity = city
+        ? String(city).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 200)
+        : null;
 
       const matchStage = {
         $match: {
@@ -490,7 +495,7 @@ class ProfileController {
       }
 
       if (city) {
-        matchStage.$match.city = { $regex: city, $options: "i" };
+        matchStage.$match.city = { $regex: safeCity, $options: "i" };
       }
 
       const tutors = await UserModel.aggregate([
@@ -520,7 +525,7 @@ class ProfileController {
         roles: "tutor",
         "tutorProfile.verificationStatus": "Verified",
         ...(subject && { "tutorProfile.expertiseSubjects": subject }),
-        ...(city && { city: { $regex: city, $options: "i" } }),
+        ...(city && { city: { $regex: safeCity, $options: "i" } }),
       });
 
       res.status(200).json({

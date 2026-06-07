@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Lock, Bell, Briefcase, Link as LinkIcon } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface SidebarItem {
   id: string;
@@ -14,10 +14,6 @@ interface ProfileSidebarProps {
 
 const sidebarItems: SidebarItem[] = [
   { id: 'personal', label: 'Personal Info', icon: <User className="w-4 h-4" /> },
-  { id: 'security', label: 'Emails & Password', icon: <Lock className="w-4 h-4" /> },
-  { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
-  { id: 'businesses', label: 'Businesses', icon: <Briefcase className="w-4 h-4" /> },
-  { id: 'integration', label: 'Integration', icon: <LinkIcon className="w-4 h-4" /> },
 ];
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ activeTab, onTabChange }) => {

@@ -402,6 +402,10 @@ class TutorsController {
       const sortField =
         sortMap[normalizedSortBy] || "publicStats.averageRating";
 
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+      const skip = (page - 1) * limit;
+
       const tutors = await UserModel.find(query)
         .select(
           [
@@ -416,7 +420,8 @@ class TutorsController {
           ].join(" ")
         )
         .sort({ [sortField]: sortDirection, _id: 1 })
-        .limit(20)
+        .skip(skip)
+        .limit(limit)
         .lean();
 
       const total = await UserModel.countDocuments(query);
@@ -436,9 +441,10 @@ class TutorsController {
         success: true,
         data: formattedTutors,
         pagination: {
-          page: 1,
-          limit: 20,
+          page,
+          limit,
           total,
+          totalPages: Math.max(1, Math.ceil(total / limit)),
         },
       });
     } catch (error) {

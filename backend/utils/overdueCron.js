@@ -15,7 +15,6 @@ const GRACE_PERIOD_HOURS = 24;
 const OVERDUE_ELIGIBLE_STATUSES = [
   'in_progress',
   'submission_pending',
-  'revision_requested',
   'assigned',
   'proposal_accepted',
 ];
@@ -47,10 +46,23 @@ const markOverdueAssignments = async (socketManager) => {
         assignment.deadline.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000
       );
 
-      assignment.status = 'overdue';
-      assignment.overdueMarkedAt = now;
-      assignment.gracePeriodEndsAt = gracePeriodEnd;
-      await assignment.save();
+      const marked = await AssignmentModel.updateOne(
+        {
+          _id: assignment._id,
+          isActive: true,
+          deadline: { $lt: now },
+          status: { $in: OVERDUE_ELIGIBLE_STATUSES },
+        },
+        {
+          $set: {
+            status: 'overdue',
+            overdueMarkedAt: now,
+            gracePeriodEndsAt: gracePeriodEnd,
+          },
+        }
+      );
+
+      if (marked.modifiedCount !== 1) continue;
 
       // ── Notify Tutor ──────────────────────────────────────────────
       if (assignment.assignedTutor) {

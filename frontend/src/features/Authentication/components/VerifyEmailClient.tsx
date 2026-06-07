@@ -15,6 +15,8 @@ export const VerifyEmailClient = () => {
     otpValues,
     handleOtpChange,
     handleKeyDown,
+    resending,
+    handleResend,
   } = useVerifyEmailLogic();
 
   const { values, handleSubmit } = formik;
@@ -77,7 +79,14 @@ export const VerifyEmailClient = () => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Didn&apos;t receive the email?{' '}
-            <button className="text-black font-semibold hover:underline">Click to resend</button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+              className="text-black font-semibold hover:underline disabled:opacity-50"
+            >
+              {resending ? 'Sending...' : 'Click to resend'}
+            </button>
           </p>
         </div>
 

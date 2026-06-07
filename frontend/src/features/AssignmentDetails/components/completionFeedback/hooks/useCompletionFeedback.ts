@@ -45,14 +45,18 @@ export function useCompletionFeedback(assignment: any, onCompleted?: any) {
       return;
     }
 
-    const result = await submitFeedback({
-      id: assignment._id,
-      rating,
-      comments: comments.trim() || undefined,
-    }).unwrap();
+    try {
+      const result = await submitFeedback({
+        id: assignment._id,
+        rating,
+        comments: comments.trim() || undefined,
+      }).unwrap();
 
-    if (result?.data && onCompleted) {
-      onCompleted(result.data);
+      if (result?.data && onCompleted) {
+        onCompleted(result.data);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.error || error?.data?.message || 'Unable to submit feedback.');
     }
   };
 
@@ -62,12 +66,20 @@ export function useCompletionFeedback(assignment: any, onCompleted?: any) {
       return;
     }
 
-    await requestRevision({
-      id: assignment._id,
-      note: revisionNote.trim(),
-    }).unwrap();
+    try {
+      const result = await requestRevision({
+        id: assignment._id,
+        note: revisionNote.trim(),
+      }).unwrap();
 
-    setRevisionNote('');
+      setRevisionNote('');
+      toast.success('Revision requested.');
+      if (result?.data && onCompleted) {
+        onCompleted(result.data);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.error || error?.data?.message || 'Unable to request revision.');
+    }
   };
 
   return {

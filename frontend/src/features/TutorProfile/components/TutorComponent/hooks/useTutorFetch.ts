@@ -5,6 +5,8 @@ interface FetchState {
   loading: boolean;
   error: string | null;
   tutors: Tutor[];
+  total: number;
+  totalPages: number;
 }
 
 /**
@@ -17,12 +19,15 @@ interface FetchState {
 export const useTutorFetch = (
   debouncedSearch: string,
   filters: Filters,
-  sortBy: SortOption
+  sortBy: SortOption,
+  page: number = 1
 ) => {
   const [state, setState] = useState<FetchState>({
     loading: true,
     error: null,
     tutors: [],
+    total: 0,
+    totalPages: 1,
   });
 
   const fetchTutors = useCallback(async () => {
@@ -51,6 +56,7 @@ export const useTutorFetch = (
       const { sortBy: sortField, sortOrder } = sortMap[sortBy];
       params.set('sortBy', sortField);
       params.set('sortOrder', sortOrder);
+      params.set('page', String(page));
 
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const queryString = params.toString();
@@ -71,15 +77,19 @@ export const useTutorFetch = (
         loading: false,
         error: null,
         tutors: Array.isArray(result.data) ? result.data : [],
+        total: Number(result?.pagination?.total) || 0,
+        totalPages: Number(result?.pagination?.totalPages) || 1,
       });
     } catch (fetchError: any) {
       setState({
         loading: false,
         error: fetchError?.message || 'Unable to load tutors',
         tutors: [],
+        total: 0,
+        totalPages: 1,
       });
     }
-  }, [debouncedSearch, filters, sortBy]);
+  }, [debouncedSearch, filters, sortBy, page]);
 
   useEffect(() => {
     fetchTutors();

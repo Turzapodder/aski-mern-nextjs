@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   useGetUserChatsQuery,
   useGetChatMessagesQuery,
+  useLazyGetChatMessagesQuery,
   useSendMessageMutation,
   useSendFileMessageMutation,
   useMarkMessageAsReadMutation,
@@ -13,6 +14,11 @@ import {
   User,
 } from '@/lib/services/chat';
 import { useGetUserQuery } from '@/lib/services/auth';
+import {
+  mergeOlderMessages,
+  dedupeOlderAgainstLive,
+  toEpoch,
+} from '@/lib/chat/messagePagination';
 
 interface ChatContextType {
   // State
@@ -39,6 +45,9 @@ interface ChatContextType {
   refreshChats: () => void;
   refreshMessages: () => void;
   clearSelectedChat: () => void;
+  loadOlderMessages: () => void;
+  hasMoreMessages: boolean;
+  loadingOlderMessages: boolean;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -63,6 +72,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [typingUsers, setTypingUsers] = useState<{ [chatId: string]: User[] }>({});
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
+  const [olderMessages, setOlderMessages] = useState<Message[]>([]);
+  const [olderHasMore, setOlderHasMore] = useState<boolean | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // Get current user
   const { data: userData } = useGetUserQuery();
@@ -88,6 +100,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [sendMessageMutation] = useSendMessageMutation();
   const [sendFileMutation] = useSendFileMessageMutation();
   const [markAsReadMutation] = useMarkMessageAsReadMutation();
+  const [fetchOlderMessages] = useLazyGetChatMessagesQuery();
 
   const connectionRef = useRef<boolean | null>(null);
   const joinedChatsRef = useRef<Set<string>>(new Set());
@@ -143,6 +156,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     stopTyping: socketStopTyping,
     markAsRead: socketMarkAsRead,
   } = useSocket({
+    onSocketError: (data: any) => {
+      toast.error(data?.message || 'Message could not be sent.');
+    },
     onMessageReceived: (data: any) => {
       console.log('Received new message:', data);
       const message = data.message || data;
@@ -472,7 +488,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const previousChatId = selectedChat?._id;
 
       setSelectedChat(chat);
-      setMessages([]); // Clear messages when switching chats
+      setMessages([]);
+      setOlderMessages([]);
+      setOlderHasMore(null);
 
       setChats((prev) =>
         prev.map((existing) =>
@@ -680,16 +698,66 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     refetchMessages();
   }, [refetchMessages]);
 
+  const loadOlderMessages = useCallback(async () => {
+    if (!selectedChat || loadingOlder) return;
+    const loaded = [...olderMessages, ...messages];
+    if (!loaded.length) return;
+    const oldest = loaded.reduce(
+      (min, message) =>
+        toEpoch(message.createdAt as string) < toEpoch(min.createdAt as string) ? message : min,
+      loaded[0]
+    );
+    const cursor = oldest?.createdAt;
+    if (!cursor) return;
+
+    setLoadingOlder(true);
+    try {
+      const res = await fetchOlderMessages({
+        chatId: selectedChat._id,
+        before: new Date(cursor).toISOString(),
+      }).unwrap();
+      const older = res?.data?.messages || [];
+      setOlderMessages((prev) =>
+        mergeOlderMessages(
+          prev,
+          older,
+          (message) => normalizeId(message._id),
+          (message) => toEpoch(message.createdAt as string)
+        )
+      );
+      setOlderHasMore(Boolean(res?.data?.hasMore));
+    } catch (error) {
+      console.error('Failed to load older messages:', error);
+      toast.error('Could not load older messages.');
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [selectedChat, loadingOlder, olderMessages, messages, fetchOlderMessages, normalizeId]);
+
   const clearSelectedChat = useCallback(() => {
     setSelectedChat(null);
     setMessages([]);
+    setOlderMessages([]);
+    setOlderHasMore(null);
   }, []);
+
+  const totalMessagePages = messagesData?.data?.totalPages || 1;
+  const hasMoreMessages =
+    Boolean(selectedChat) && (olderHasMore !== null ? olderHasMore : totalMessagePages > 1);
+  const visibleOlderMessages = dedupeOlderAgainstLive(olderMessages, messages, (message) =>
+    normalizeId(message._id)
+  );
+  const combinedMessages = [
+    ...visibleOlderMessages,
+    ...messages,
+    ...pendingMessages.filter((pm) => pm.chat === selectedChat?._id),
+  ];
 
   const contextValue: ChatContextType = {
     // State
     selectedChat,
     chats,
-    messages: [...messages, ...pendingMessages.filter((pm) => pm.chat === selectedChat?._id)],
+    messages: combinedMessages,
     typingUsers,
     onlineUsers,
     isConnected,
@@ -710,6 +778,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     refreshChats,
     refreshMessages,
     clearSelectedChat,
+    loadOlderMessages,
+    hasMoreMessages,
+    loadingOlderMessages: loadingOlder,
   };
 
   return <ChatContext.Provider value={contextValue}>{children}</ChatContext.Provider>;

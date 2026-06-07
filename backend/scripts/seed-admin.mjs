@@ -19,6 +19,8 @@ import TransactionModel from "../models/Transaction.js";
 const DATABASE_URL = process.env.DATABASE_URL;
 const DB_NAME = process.env.DB_NAME || "aski-db";
 const SALT_ROUNDS = Number(process.env.SALT) || 10;
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || "admin@aski.com";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
 
 const daysAgo = (days) => {
     const date = new Date();
@@ -38,15 +40,18 @@ const connect = async () => {
 };
 
 const run = async () => {
+    if (!ADMIN_PASSWORD) {
+        throw new Error("SEED_ADMIN_PASSWORD is required to seed the admin account");
+    }
+
     await connect();
     console.log("Connected to DB. Starting admin seed...");
 
-    // Password for all seed users
     const passwordHash = await bcrypt.hash("Password123!", SALT_ROUNDS);
+    const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
 
-    // 1. Ensure Admin
     const admin = await UserModel.findOneAndUpdate(
-        { email: "admin@aski.com" },
+        { email: ADMIN_EMAIL },
         {
             name: "Super Admin",
             roles: ["user", "admin"],
@@ -54,7 +59,7 @@ const run = async () => {
             status: "active",
             onboardingStatus: "completed",
             is_verified: true,
-            password: passwordHash,
+            password: adminPasswordHash,
         },
         { upsert: true, new: true }
     );

@@ -116,6 +116,37 @@ export const useVerifyEmailLogic = () => {
     }
   };
 
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    const email = urlEmail || formik.values.email;
+    if (!email) {
+      setServerErrorMessage('Enter your email to resend the code.');
+      return;
+    }
+    setResending(true);
+    setServerErrorMessage('');
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${baseUrl}/api/user/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.status === 'success') {
+        setServerSuccessMessage(data.message || 'A new OTP has been sent to your email.');
+      } else {
+        setServerErrorMessage(data?.message || 'Unable to resend OTP. Please try again.');
+      }
+    } catch {
+      setServerErrorMessage('Unable to resend OTP. Please try again.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   return {
     formik,
     urlEmail,
@@ -126,5 +157,7 @@ export const useVerifyEmailLogic = () => {
     otpValues,
     handleOtpChange,
     handleKeyDown,
+    resending,
+    handleResend,
   };
 };

@@ -208,15 +208,41 @@ class UserController {
                     onboardingStatus: existingUser.onboardingStatus,
                     status: existingUser.status,
                 },
-                access_token: accessToken,
-                refresh_token: refreshToken,
-                access_token_exp: accessTokenExp,
             });
 
 
         } catch (error) {
             console.error(error);
             res.status(500).json({ status: "failed", message: "Unable to Register, please try again later" });
+        }
+    }
+
+    // Resend email verification OTP
+    static resendVerificationOtp = async (req, res) => {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ status: "failed", message: "Email is required" });
+            }
+
+            const user = await UserModel.findOne({ email: String(email) });
+            if (!user) {
+                return res.status(404).json({ status: "failed", message: "User not Registered" });
+            }
+            if (user.is_verified) {
+                return res.status(400).json({ status: "failed", message: "Account is already verified" });
+            }
+
+            try {
+                await sendEmailVerifyOTP(req, user);
+            } catch (mailError) {
+                return res.status(503).json({ status: "failed", message: "Unable to send OTP right now. Please try again shortly." });
+            }
+
+            return res.status(200).json({ status: "success", message: "A new OTP has been sent to your email" });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ status: "failed", message: "Unable to resend OTP, please try again later" });
         }
     }
 
@@ -238,7 +264,7 @@ class UserController {
             }
 
             // Find user by emai;
-            const user = await UserModel.findOne({ email });
+            const user = await UserModel.findOne({ email: String(email) });
 
             // Check if User exists
             if (!user) {
@@ -290,9 +316,6 @@ class UserController {
                 status: "success",
                 message: "Login Successful",
                 login_role: requestedRole,
-                access_token: accessToken,
-                refresh_token: refreshToken,
-                access_token_exp: accessTokenExp,
             })
 
         } catch (error) {
@@ -313,9 +336,6 @@ class UserController {
             res.status(200).json({
                 status: "success",
                 message: "New tokens generated",
-                access_token: newAccessToken,
-                refresh_token: newRefreshToken,
-                access_token_exp: newAccessTokenExp,
             });
 
         } catch (error) {
@@ -326,18 +346,18 @@ class UserController {
 
     //Profile or Logged in User
     static userProfile = async (req, res) => {
-        res.send({
-            "user": req.user,
-            access_token: req.cookies?.accessToken,
-            refresh_token: req.cookies?.refreshToken,
-        })
+        const user = req.user?.toObject ? req.user.toObject() : { ...req.user };
+        if (user.wallet) {
+            delete user.wallet.bankDetails;
+            delete user.wallet.withdrawalHistory;
+        }
+        res.send({ user });
     }
 
     //Change Password
     static changePassword = async (req,res) => {
         try {
             const {password, password_confirmation} = req.body;
-            console.log(req.body);
             if(!password || !password_confirmation){
                 return res.status(400).json({status:"failed", message:"New and Confirm Password are requried!"})
             }
@@ -346,11 +366,14 @@ class UserController {
                 return res.status(400).json({status:"failed", message:"New and Confirm Password Do not match."})
             }
 
+            if(typeof password !== "string" || password.length < 8){
+                return res.status(400).json({status:"failed", message:"Password must be at least 8 characters."})
+            }
+
             const salt = await bcrypt.genSalt(10);
             const  newHashPassword = await bcrypt.hash(password, salt);
 
             await UserModel.findByIdAndUpdate(req.user._id, {$set: { password: newHashPassword }});
-            console.log(UserModel);
             res.status(200).json({status:"success", message:"Password Changed successfully!"});
             
         } catch (error) {
@@ -417,6 +440,10 @@ class UserController {
 
             if(password !== password_confirmation){
                 return res.status(400).json({status:"failed", message:"New and Confirm Password Do not match."})
+            }
+
+            if(typeof password !== "string" || password.length < 8){
+                return res.status(400).json({status:"failed", message:"Password must be at least 8 characters."})
             }
 
             const salt = await bcrypt.genSalt(10);
@@ -624,8 +651,6 @@ class UserController {
                 onboardingStatus: req.user.onboardingStatus,
                 status: req.user.status,
             },
-            access_token: req.cookies?.accessToken,
-            refresh_token: req.cookies?.refreshToken,
         });
     }
 

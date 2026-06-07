@@ -30,6 +30,11 @@ export const isUddoktaConfigured = () => {
   return Boolean(baseUrl && apiKey);
 };
 
+export const isUddoktaMockModeEnabled = () =>
+  ["1", "true", "yes", "on"].includes(
+    String(process.env.UDDOKTAPAY_MOCK_MODE || "").trim().toLowerCase()
+  );
+
 const assertUddoktaConfig = () => {
   if (!isUddoktaConfigured()) {
     throw new Error("UddoktaPay is not configured");

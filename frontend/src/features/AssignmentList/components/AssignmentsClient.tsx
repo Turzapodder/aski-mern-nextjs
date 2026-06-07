@@ -34,6 +34,9 @@ export const AssignmentsClient = () => {
     handleViewDetails,
     handleSendProposal,
     handleProposalModalClose,
+    page,
+    setPage,
+    totalPages,
   } = useAssignmentsLogic();
 
   const [searchInput, setSearchInput] = useState(actualSearchTerm);
@@ -226,6 +229,28 @@ export const AssignmentsClient = () => {
             ))
           )}
         </div>
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-8">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedAssignment && (

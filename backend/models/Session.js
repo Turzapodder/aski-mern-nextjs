@@ -29,8 +29,24 @@ const sessionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["scheduled", "completed", "cancelled"],
+      enum: ["pending_payment", "scheduled", "completed", "cancelled"],
       default: "scheduled",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "refunded"],
+      default: "pending",
+    },
+    paymentGateway: {
+      provider: { type: String, trim: true },
+      invoiceId: { type: String, trim: true },
+      transactionId: { type: String, trim: true },
+      paymentMethod: { type: String, trim: true },
+      checkoutUrl: { type: String, trim: true },
+      status: { type: String, trim: true },
+      initiatedAt: Date,
+      verifiedAt: Date,
+      metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
     },
   },
   { timestamps: true }
@@ -39,6 +55,10 @@ const sessionSchema = new mongoose.Schema(
 sessionSchema.index({ tutor: 1, scheduledTime: 1 });
 sessionSchema.index({ student: 1, scheduledTime: 1 });
 sessionSchema.index({ scheduledTime: 1 });
+sessionSchema.index(
+  { tutor: 1, slot: 1, scheduledTime: 1 },
+  { unique: true, partialFilterExpression: { paymentStatus: "paid" } }
+);
 
 const SessionModel = mongoose.model("Session", sessionSchema);
 

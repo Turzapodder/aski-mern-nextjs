@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetAssignmentsQuery, Assignment } from '@/lib/services/assignments';
 import { useGetUserQuery } from '@/lib/services/auth';
@@ -64,6 +64,7 @@ export const useAssignmentsLogic = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Get current user data
   const { data: userData } = useGetUserQuery();
@@ -79,7 +80,7 @@ export const useAssignmentsLogic = () => {
     error,
     refetch,
   } = useGetAssignmentsQuery({
-    page: 1,
+    page,
     limit: 50,
     status: statusFilter === 'all' ? undefined : statusFilter,
     priority: priorityFilter === 'all' ? undefined : priorityFilter,
@@ -87,6 +88,11 @@ export const useAssignmentsLogic = () => {
   });
 
   const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
+  const totalPages = assignmentsData?.pagination?.totalPages || 1;
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, priorityFilter, searchTerm]);
   const assignmentIds = useMemo(
     () => assignments.map((assignment) => assignment._id),
     [assignments]
@@ -132,5 +138,8 @@ export const useAssignmentsLogic = () => {
     handleViewDetails,
     handleSendProposal,
     handleProposalModalClose,
+    page,
+    setPage,
+    totalPages,
   };
 };

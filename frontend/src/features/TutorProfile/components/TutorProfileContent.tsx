@@ -199,7 +199,7 @@ const TutorProfileContent = () => {
     try {
       const result = await toggleBookmark(String(tutor._id));
       if (result?.requiresAuth) {
-        router.push('/login');
+        router.push('/account/login?role=user');
       }
     } catch {
       // Keep profile interaction resilient without breaking page flow.

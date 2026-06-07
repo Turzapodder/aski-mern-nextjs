@@ -1,7 +1,9 @@
 'use client';
 
 import { Calendar, ArrowUpRight, AlertCircle, Clock, CheckCircle2, FileText, Send, Hourglass, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useWithdrawProposalMutation } from '@/lib/services/proposals';
 import { useProjectsLogic } from '../hooks/useProjectsLogic';
 import { TabValue } from '../types';
 import { format } from 'date-fns';
@@ -31,6 +33,17 @@ export const ProjectsClient = () => {
     proposals,
     latestStatuses,
   } = useProjectsLogic();
+
+  const [withdrawProposal, { isLoading: withdrawing }] = useWithdrawProposalMutation();
+
+  const handleWithdrawProposal = async (proposalId: string) => {
+    try {
+      await withdrawProposal({ id: proposalId }).unwrap();
+      toast.success('Proposal withdrawn.');
+    } catch {
+      toast.error('Unable to withdraw proposal. Please try again.');
+    }
+  };
 
   if (userLoading) {
     return (
@@ -164,13 +177,24 @@ export const ProjectsClient = () => {
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => router.push(`/user/assignments/view-details/${(proposal.assignment as any)._id || proposal.assignment}`)}
-                className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                View Assignment
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
+              <div className="mt-2 flex gap-2">
+                {!['accepted', 'rejected', 'withdrawn'].includes(proposal.status) && (
+                  <button
+                    onClick={() => handleWithdrawProposal(proposal._id)}
+                    disabled={withdrawing}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                  >
+                    Withdraw
+                  </button>
+                )}
+                <button
+                  onClick={() => router.push(`/user/assignments/view-details/${(proposal.assignment as any)._id || proposal.assignment}`)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  View Assignment
+                  <ArrowUpRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
 
