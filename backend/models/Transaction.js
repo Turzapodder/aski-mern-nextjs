@@ -17,6 +17,7 @@ const transactionSchema = new mongoose.Schema(
         "escrow_release",
         "platform_fee",
         "refund",
+        "admin_adjustment",
       ],
     },
     amount: {
@@ -73,6 +74,7 @@ transactionSchema.virtual("typeLabel").get(function () {
     escrow_release: "Escrow Release",
     platform_fee: "Platform Fee",
     refund: "Refund",
+    admin_adjustment: "Admin Adjustment",
   };
 
   return labels[this.type] || "Transaction";

@@ -56,6 +56,23 @@ export const useAdminWithdrawalsLogic = () => {
     }
   };
 
+  const handleReject = async () => {
+    if (!selected?.withdrawal?.transactionId) return;
+    setIsSubmitting(true);
+    try {
+      await adminApi.finance.rejectWithdrawal(selected.withdrawal.transactionId, {
+        note: note.trim(),
+      });
+      toast.success('Withdrawal rejected and refunded');
+      setConfirmOpen(false);
+      mutate();
+    } catch (submitError: any) {
+      toast.error(submitError?.message || 'Unable to reject withdrawal');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     withdrawals,
     processed,
@@ -73,6 +90,7 @@ export const useAdminWithdrawalsLogic = () => {
     setNote,
     openConfirm,
     handleProcess,
+    handleReject,
     isLoading,
     error,
   };

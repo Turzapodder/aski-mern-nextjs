@@ -32,6 +32,11 @@ export const useAdminUserDetailsLogic = () => {
   const [modalMode, setModalMode] = useState<'ban' | 'unban'>('ban');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [adjustmentAction, setAdjustmentAction] = useState<'add' | 'deduct'>('add');
+  const [adjustmentAmount, setAdjustmentAmount] = useState('');
+  const [adjustmentReason, setAdjustmentReason] = useState('');
+
   const { data, error, isLoading, mutate } = useSWR(userId ? ['admin-user', userId] : null, () =>
     adminApi.users.getById(userId)
   );
@@ -76,6 +81,37 @@ export const useAdminUserDetailsLogic = () => {
     }
   };
 
+  const handleWalletAdjustment = async () => {
+    if (!userId) return;
+    if (!adjustmentAmount || isNaN(Number(adjustmentAmount)) || Number(adjustmentAmount) <= 0) {
+      toast.error('Please enter a valid positive amount');
+      return;
+    }
+    if (!adjustmentReason.trim()) {
+      toast.error('Please enter a reason for the adjustment');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await adminApi.finance.manualWalletAdjustment({
+        userId,
+        amount: Number(adjustmentAmount),
+        action: adjustmentAction,
+        reason: adjustmentReason.trim(),
+      });
+      toast.success('Wallet adjusted successfully');
+      setWalletModalOpen(false);
+      setAdjustmentAmount('');
+      setAdjustmentReason('');
+      mutate();
+    } catch (error: any) {
+      toast.error(error?.message || 'Unable to adjust wallet');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     modalOpen,
     setModalOpen,
@@ -93,5 +129,14 @@ export const useAdminUserDetailsLogic = () => {
     handleConfirm,
     isLoading,
     error,
+    walletModalOpen,
+    setWalletModalOpen,
+    adjustmentAction,
+    setAdjustmentAction,
+    adjustmentAmount,
+    setAdjustmentAmount,
+    adjustmentReason,
+    setAdjustmentReason,
+    handleWalletAdjustment,
   };
 };

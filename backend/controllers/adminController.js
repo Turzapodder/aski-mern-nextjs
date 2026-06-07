@@ -13,6 +13,7 @@ import {
   normalizePaymentStatus,
   refundUddoktaPayment,
 } from "../utils/uddoktaPay.js";
+import NotificationModel from "../models/Notification.js";
 
 const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
 const dashboardCache = {
@@ -787,6 +788,14 @@ class AdminController {
         },
       });
 
+      await NotificationModel.create({
+        user: user._id,
+        type: "tutor_approved",
+        title: "Tutor Application Approved",
+        message: "Congratulations! Your tutor application has been approved. You can now start bidding on assignments.",
+        link: "/tutor/dashboard"
+      });
+
       return res.status(200).json({
         status: "success",
         message: "Tutor verified successfully",
@@ -848,6 +857,14 @@ class AdminController {
         metadata: {
           reason: reason || "No reason provided",
         },
+      });
+
+      await NotificationModel.create({
+        user: user._id,
+        type: "tutor_rejected",
+        title: "Tutor Application Update",
+        message: `Your tutor application has been reviewed. Status: Rejected. Reason: ${reason || "Not specified."}`,
+        link: "/user/profile"
       });
 
       return res.status(200).json({
@@ -1656,6 +1673,14 @@ class AdminController {
         },
       });
 
+      await NotificationModel.create({
+        user: user._id,
+        type: "withdrawal_processed",
+        title: "Withdrawal Successful",
+        message: `Your withdrawal request of ${entry.amount} has been successfully processed.`,
+        link: "/user/wallet"
+      });
+
       return res.status(200).json({
         status: "success",
         message: "Withdrawal processed successfully",
@@ -1664,6 +1689,332 @@ class AdminController {
       return res.status(500).json({
         status: "failed",
         message: "Unable to process withdrawal",
+      });
+    }
+  };
+
+  static rejectWithdrawal = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminNote = sanitizeText(req.body?.note) || "Details invalid or incomplete";
+
+      const user = await UserModel.findOne({
+        "wallet.withdrawalHistory.transactionId": id,
+      }).lean();
+
+      if (!user) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Withdrawal request not found",
+        });
+      }
+
+      const entry = user.wallet?.withdrawalHistory?.find(
+        (item) => item.transactionId === id
+      );
+
+      if (!entry) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Withdrawal request not found",
+        });
+      }
+
+      if (entry.status !== "PENDING") {
+        return res.status(400).json({
+          status: "failed",
+          message: "Withdrawal has already been processed or rejected",
+        });
+      }
+
+      // 1. Update the withdrawal history status to FAILED
+      // 2. Refund the amount back to availableBalance
+      const updated = await UserModel.findOneAndUpdate(
+        {
+          _id: user._id,
+          "wallet.withdrawalHistory.transactionId": id,
+          "wallet.withdrawalHistory.status": "PENDING",
+        },
+        {
+          $set: {
+            "wallet.withdrawalHistory.$.status": "FAILED",
+            "wallet.withdrawalHistory.$.completedAt": new Date(),
+            "wallet.withdrawalHistory.$.processedBy": req.user._id,
+            "wallet.withdrawalHistory.$.notes": adminNote,
+          },
+          $inc: {
+            "wallet.availableBalance": entry.amount,
+          },
+        },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Unable to reject withdrawal",
+        });
+      }
+
+      const existingTransaction = await TransactionModel.findOne({
+        gatewayId: entry.transactionId,
+        type: "withdrawal",
+      }).lean();
+
+      if (existingTransaction) {
+        await TransactionModel.updateOne(
+          { _id: existingTransaction._id },
+          {
+            $set: {
+              status: "failed",
+              "metadata.processedBy": req.user._id,
+              "metadata.note": adminNote,
+            },
+          }
+        );
+      }
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "REJECT_WITHDRAWAL",
+        targetId: user._id,
+        targetType: "User",
+        metadata: {
+          transactionId: entry.transactionId,
+          amount: entry.amount,
+          reason: adminNote,
+        },
+      });
+
+      await NotificationModel.create({
+        user: user._id,
+        type: "withdrawal_rejected",
+        title: "Withdrawal Rejected",
+        message: `Your withdrawal request of ${entry.amount} was rejected. Reason: ${adminNote}. The amount has been refunded to your wallet.`,
+        link: "/user/wallet"
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "Withdrawal rejected and funds returned to user wallet",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to reject withdrawal",
+      });
+    }
+  };
+
+  static manualWalletAdjustment = async (req, res) => {
+    try {
+      const { userId, amount, action, reason } = req.body || {};
+
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid user ID",
+        });
+      }
+
+      const adjustmentAmount = Number(amount);
+      if (!Number.isFinite(adjustmentAmount) || adjustmentAmount <= 0) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Amount must be a positive number",
+        });
+      }
+
+      if (!["add", "deduct"].includes(action)) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Invalid action. Must be 'add' or 'deduct'",
+        });
+      }
+
+      const adminNote = sanitizeText(reason);
+      if (!adminNote) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Reason for adjustment is required",
+        });
+      }
+
+      const user = await UserModel.findById(userId).lean();
+      if (!user) {
+        return res.status(404).json({
+          status: "failed",
+          message: "User not found",
+        });
+      }
+
+      if (action === "deduct" && (user.wallet?.availableBalance || 0) < adjustmentAmount) {
+        return res.status(400).json({
+          status: "failed",
+          message: "User does not have enough available balance to deduct this amount",
+        });
+      }
+
+      const incAmount = action === "add" ? adjustmentAmount : -adjustmentAmount;
+
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        {
+          $inc: { "wallet.availableBalance": incAmount },
+        },
+        { new: true }
+      ).lean();
+
+      const transaction = await TransactionModel.create({
+        userId: user._id,
+        type: "admin_adjustment",
+        amount: adjustmentAmount,
+        status: "completed",
+        relatedTo: { model: "User", id: req.user._id },
+        metadata: {
+          action,
+          reason: adminNote,
+        },
+      });
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "WALLET_ADJUSTMENT",
+        targetId: user._id,
+        targetType: "User",
+        metadata: {
+          action,
+          amount: adjustmentAmount,
+          reason: adminNote,
+          transactionId: transaction._id,
+        },
+      });
+
+      await NotificationModel.create({
+        user: user._id,
+        type: "wallet_adjustment",
+        title: "Wallet Adjusted by Admin",
+        message: `An admin has ${action === "add" ? "added" : "deducted"} ${adjustmentAmount} ${user.wallet?.currency || 'BDT'} ${action === "add" ? "to" : "from"} your wallet. Reason: ${adminNote}`,
+        link: "/user/wallet"
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: `Successfully ${action === "add" ? "added to" : "deducted from"} user wallet`,
+        data: updatedUser.wallet,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to process wallet adjustment",
+      });
+    }
+  };
+
+  static sendBroadcast = async (req, res) => {
+    try {
+      const { targetAudience, title, message, link } = req.body || {};
+
+      if (!title || !message) {
+        return res.status(400).json({
+          status: "failed",
+          message: "Title and message are required",
+        });
+      }
+
+      let query = {};
+      if (targetAudience === "tutors") {
+        query = { roles: "tutor", status: "active" };
+      } else if (targetAudience === "students") {
+        query = { roles: "student", status: "active" };
+      } else {
+        query = { status: "active" };
+      }
+
+      const users = await UserModel.find(query).select("_id").lean();
+      
+      if (users.length === 0) {
+        return res.status(404).json({
+          status: "failed",
+          message: "No users found matching the target audience",
+        });
+      }
+
+      const notifications = users.map((user) => ({
+        user: user._id,
+        type: "system_broadcast",
+        title: sanitizeText(title),
+        message: sanitizeText(message),
+        link: sanitizeText(link) || "/",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      // Using insertMany bypasses the post-save hook, 
+      // which is intentional here to prevent SMTP rate-limiting/spamming 
+      // when broadcasting to hundreds/thousands of users.
+      await NotificationModel.insertMany(notifications);
+
+      await AdminLogModel.create({
+        adminId: req.user._id,
+        actionType: "SEND_BROADCAST",
+        targetId: req.user._id,
+        targetType: "User",
+        metadata: {
+          targetAudience,
+          title,
+          userCount: users.length,
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: `Broadcast sent successfully to ${users.length} users`,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to send broadcast",
+      });
+    }
+  };
+
+  static getChatTranscript = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { page = 1, limit = 50 } = req.query;
+
+      const pageNumber = Number(page) || 1;
+      const limitNumber = Number(limit) || 50;
+
+      const totalMessages = await MessageModel.countDocuments({
+        chat: id,
+      });
+
+      const skipCount = Math.max(totalMessages - pageNumber * limitNumber, 0);
+
+      const messages = await MessageModel.find({
+        chat: id,
+      })
+        .populate("sender", "name email avatar roles")
+        .sort({ createdAt: 1 })
+        .limit(limitNumber)
+        .skip(skipCount)
+        .lean();
+
+      return res.status(200).json({
+        status: "success",
+        data: {
+          messages,
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalMessages / limitNumber),
+          totalMessages,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "failed",
+        message: "Unable to fetch chat transcript",
       });
     }
   };

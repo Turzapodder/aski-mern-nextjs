@@ -5,6 +5,14 @@ import { Ban, Mail, Phone, ShieldCheck, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import BanUserModal from '@/components/admin/BanUserModal';
 import { formatDate, statusTone, useAdminUserDetailsLogic } from '../hooks/useAdminUserDetailsLogic';
 
@@ -26,6 +34,15 @@ export const AdminUserDetailsClient = () => {
     handleConfirm,
     isLoading,
     error,
+    walletModalOpen,
+    setWalletModalOpen,
+    adjustmentAction,
+    setAdjustmentAction,
+    adjustmentAmount,
+    setAdjustmentAmount,
+    adjustmentReason,
+    setAdjustmentReason,
+    handleWalletAdjustment,
   } = useAdminUserDetailsLogic();
 
   if (isLoading) {
@@ -135,8 +152,11 @@ export const AdminUserDetailsClient = () => {
 
         <TabsContent value="wallet">
           <Card className="border border-gray-200/70 bg-white/90 shadow-sm">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">Wallet overview</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setWalletModalOpen(true)}>
+                Adjust Wallet
+              </Button>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -255,6 +275,77 @@ export const AdminUserDetailsClient = () => {
         isSubmitting={isSubmitting}
         onConfirm={handleConfirm}
       />
+
+      <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Wallet Balance</DialogTitle>
+            <DialogDescription>
+              Manually add or deduct funds from {user?.name}'s wallet. This action will be logged.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="adjustmentAction"
+                  checked={adjustmentAction === 'add'}
+                  onChange={() => setAdjustmentAction('add')}
+                />
+                <span className="text-sm font-medium text-gray-700">Add Funds</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="adjustmentAction"
+                  checked={adjustmentAction === 'deduct'}
+                  onChange={() => setAdjustmentAction('deduct')}
+                />
+                <span className="text-sm font-medium text-gray-700">Deduct Funds</span>
+              </label>
+            </div>
+            
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Amount
+              </p>
+              <input
+                type="number"
+                value={adjustmentAmount}
+                onChange={(e) => setAdjustmentAmount(e.target.value)}
+                placeholder="0.00"
+                min="0"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Reason (Required)
+              </p>
+              <textarea
+                value={adjustmentReason}
+                onChange={(e) => setAdjustmentReason(e.target.value)}
+                rows={3}
+                placeholder="e.g. Refund for assignment #1234, Bonus for bug report..."
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setWalletModalOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleWalletAdjustment} 
+              disabled={isSubmitting || !adjustmentAmount || !adjustmentReason}
+            >
+              {adjustmentAction === 'add' ? 'Add Funds' : 'Deduct Funds'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

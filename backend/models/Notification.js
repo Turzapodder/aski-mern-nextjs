@@ -40,6 +40,32 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 
+// Post-save hook to send email automatically when a notification is created
+notificationSchema.post("save", async function (doc, next) {
+  // Only send email for newly created notifications, not updates
+  if (!this.$isNew) {
+    return next();
+  }
+  
+  try {
+    const UserModel = mongoose.model("user");
+    const user = await UserModel.findById(doc.user).select("email name").lean();
+    if (user && user.email) {
+      const sendNotificationEmail = (await import("../utils/sendNotificationEmail.js")).default;
+      await sendNotificationEmail(
+        user.email,
+        user.name,
+        doc.title,
+        doc.message,
+        doc.link
+      );
+    }
+  } catch (error) {
+    console.error("Failed to send notification email in post-save hook:", error);
+  }
+  next();
+});
+
 const NotificationModel = mongoose.model("notification", notificationSchema);
 
 export default NotificationModel;

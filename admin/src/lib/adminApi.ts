@@ -190,6 +190,18 @@ export const adminApi = {
         method: 'POST',
         data: payload || {},
       }),
+    rejectWithdrawal: (id: string, payload?: { note?: string }) =>
+      request<Record<string, unknown>>({
+        url: `/v1/admin/withdrawals/${id}/reject`,
+        method: 'POST',
+        data: payload || {},
+      }),
+    manualWalletAdjustment: (payload: { userId: string; amount: number; action: 'add' | 'deduct'; reason: string }) =>
+      request<Record<string, unknown>>({
+        url: '/v1/admin/finance/adjustment',
+        method: 'POST',
+        data: payload,
+      }),
   },
   disputes: {
     getAll: () =>
@@ -207,6 +219,12 @@ export const adminApi = {
         url: `/v1/admin/disputes/${id}/resolve`,
         method: 'POST',
         data: payload,
+      }),
+    getChatTranscript: (id: string, params?: Record<string, unknown>) =>
+      request<Record<string, unknown>>({
+        url: `/v1/admin/chats/${id}/messages`,
+        method: 'GET',
+        params,
       }),
   },
   reports: {
@@ -264,6 +282,14 @@ export const adminApi = {
       request<QuizQuestion>({
         url: `/v1/admin/quiz/questions/${id}/duplicate`,
         method: 'POST',
+      }),
+  },
+  communications: {
+    sendBroadcast: (payload: { targetAudience: 'all' | 'tutors' | 'students'; title: string; message: string; link?: string }) =>
+      request<Record<string, unknown>>({
+        url: '/v1/admin/broadcast',
+        method: 'POST',
+        data: payload,
       }),
   },
 };

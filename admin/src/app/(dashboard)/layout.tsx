@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Megaphone,
   Settings,
   ShieldCheck,
   Users,
@@ -35,6 +36,7 @@ const navItems = [
   { label: 'Finance', href: '/finance', icon: DollarSign },
   { label: 'Disputes', href: '/reports', icon: AlertTriangle },
   { label: 'Reports', href: '/content-reports', icon: Flag },
+  { label: 'Broadcast', href: '/broadcast', icon: Megaphone },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
 

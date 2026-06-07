@@ -24,6 +24,9 @@ router.get("/test", (req, res) => {
 router.get("/stats", AdminController.getDashboardStats);
 router.get("/activity", AdminController.getRecentActivity);
 
+// Marketing & Communications
+router.post("/broadcast", AdminController.sendBroadcast);
+
 // User Management
 router.get("/users", AdminController.getUsers);
 router.get("/users/:id", AdminController.getUserDetails);
@@ -53,11 +56,14 @@ router.get("/finance/summary", AdminController.getFinanceSummary);
 router.get("/transactions", AdminController.getTransactions);
 router.get("/withdrawals", AdminController.getWithdrawalRequests);
 router.post("/withdrawals/:id/process", AdminController.processWithdrawal);
+router.post("/withdrawals/:id/reject", AdminController.rejectWithdrawal);
+router.post("/finance/adjustment", AdminController.manualWalletAdjustment);
 
-// Disputes
+// Disputes & Moderation
 router.get("/disputes", AdminController.getDisputes);
 router.get("/disputes/:id", AdminController.getDisputeDetails);
 router.post("/disputes/:id/resolve", AdminController.resolveDispute);
+router.get("/chats/:id/messages", AdminController.getChatTranscript);
 
 // Reports
 router.get("/reports", ReportController.getReports);

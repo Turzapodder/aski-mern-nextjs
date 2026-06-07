@@ -33,6 +33,7 @@ export const AdminWithdrawalsClient = () => {
     setNote,
     openConfirm,
     handleProcess,
+    handleReject,
     isLoading,
     error,
   } = useAdminWithdrawalsLogic();
@@ -344,6 +345,9 @@ export const AdminWithdrawalsClient = () => {
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>
               Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={isSubmitting}>
+              Reject & Refund
             </Button>
             <Button onClick={handleProcess} disabled={!checked || isSubmitting}>
               <CheckCircle2 className="h-4 w-4" />
