@@ -6,7 +6,11 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const ChatSidebar = () => {
+interface ChatSidebarProps {
+  onSelectChat?: (chat: any) => void;
+}
+
+const ChatSidebar = ({ onSelectChat }: ChatSidebarProps) => {
   const {
     chats,
     selectChat,
@@ -18,6 +22,14 @@ const ChatSidebar = () => {
     typingUsers,
     isConnected,
   } = useChatContext();
+
+  const handleChatSelect = (chat: any) => {
+    if (onSelectChat) {
+      onSelectChat(chat);
+    } else {
+      selectChat(chat);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -191,7 +203,7 @@ const ChatSidebar = () => {
             return (
               <button
                 key={chat._id}
-                onClick={() => selectChat(chat)}
+                onClick={() => handleChatSelect(chat)}
                 className={`group w-full text-left p-3 rounded-2xl cursor-pointer transition-all duration-200 ${
                   isActive
                     ? 'bg-gray-900 text-white shadow-lg shadow-black/5'

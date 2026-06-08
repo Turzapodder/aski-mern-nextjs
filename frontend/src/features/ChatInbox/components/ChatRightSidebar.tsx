@@ -16,14 +16,23 @@ import {
   ExternalLink,
   Laptop,
   Pencil,
-  Star
+  Star,
+  ArrowLeft
 } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useGetChatAssignmentsQuery } from '@/lib/services/chat';
 import { useGetUserQuery } from '@/lib/services/auth';
 import { format } from 'date-fns';
 
-const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const ChatRightSidebar = ({
+  isOpen,
+  onClose,
+  isMobileFullScreen = false,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  isMobileFullScreen?: boolean;
+}) => {
   const { selectedChat, currentUserId, onlineUsers, messages } = useChatContext();
   const [expandedSection, setExpandedSection] = useState<string | null>('photos');
   const [expandedAssignmentId, setExpandedAssignmentId] = useState<string | null>(null);
@@ -187,16 +196,32 @@ const ChatRightSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   );
 
   return (
-    <div className="w-80 bg-white border-l border-gray-100 flex flex-col h-full shadow-sm">
+    <div
+      className={`${
+        isMobileFullScreen ? 'w-full' : 'w-80'
+      } bg-white border-l border-gray-100 flex flex-col h-full shadow-sm`}
+    >
       {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-100">
-        <h3 className="text-sm font-bold text-gray-900">User Profile & Context</h3>
-        <button
-          onClick={onClose}
-          className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-3">
+          {isMobileFullScreen && (
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
+          <h3 className="text-sm font-bold text-gray-900">User Profile & Context</h3>
+        </div>
+        {!isMobileFullScreen && (
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
