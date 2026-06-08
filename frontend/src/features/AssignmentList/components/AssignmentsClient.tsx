@@ -31,6 +31,7 @@ export const AssignmentsClient = () => {
     refetch,
     assignments,
     latestStatuses,
+    statusCounts,
     handleViewDetails,
     handleSendProposal,
     handleProposalModalClose,
@@ -43,26 +44,6 @@ export const AssignmentsClient = () => {
   const [sortOrder, setSortOrder] = useState('newest');
 
   const filterFields: FilterField[] = [
-    {
-      id: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { value: 'created', label: 'Created' },
-        { value: 'proposal_received', label: 'Proposal Received' },
-        { value: 'proposal_accepted', label: 'Proposal Accepted' },
-        { value: 'in_progress', label: 'In Progress' },
-        { value: 'submission_pending', label: 'Submission Pending' },
-        { value: 'revision_requested', label: 'Revision Requested' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'assigned', label: 'Assigned' },
-        { value: 'submitted', label: 'Submitted' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' },
-        { value: 'overdue', label: 'Overdue' },
-        { value: 'disputed', label: 'Disputed' },
-      ],
-    },
     {
       id: 'priority',
       label: 'Priority',
@@ -88,11 +69,31 @@ export const AssignmentsClient = () => {
     return sorted;
   }, [assignments, sortOrder]);
 
+  const tabs = [
+    { id: 'all', label: 'All', value: 'all', count: statusCounts?.all || 0 },
+    { id: 'pending', label: 'Pending', value: 'created,proposal_received,pending,draft', count: statusCounts?.pending || 0 },
+    { id: 'approved', label: 'Approved', value: 'proposal_accepted,in_progress,assigned,submission_pending,revision_requested,submitted,overdue', count: statusCounts?.approved || 0 },
+    { id: 'rejected', label: 'Rejected', value: 'cancelled,disputed,resolved', count: statusCounts?.rejected || 0 },
+    { id: 'paid', label: 'Paid', value: 'completed', count: statusCounts?.paid || 0 },
+  ];
+
+  const activeTabId = useMemo(() => {
+    if (statusFilter === 'all') return 'all';
+    if (statusFilter.includes('created')) return 'pending';
+    if (statusFilter.includes('proposal_accepted')) return 'approved';
+    if (statusFilter.includes('cancelled')) return 'rejected';
+    if (statusFilter === 'completed') return 'paid';
+    return 'all';
+  }, [statusFilter]);
+
+  const handleTabClick = (value: string) => {
+    setStatusFilter(value);
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen p-6 bg-gray-50/50">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className=" mx-auto space-y-6">
           <Skeleton className="h-10 w-64 rounded-lg" />
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <Skeleton className="h-12 w-full rounded-lg" />
@@ -139,6 +140,35 @@ export const AssignmentsClient = () => {
           <p className="text-gray-500 text-lg">Discover and manage assignment opportunities.</p>
         </div>
 
+        {/* Status Tabs */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          {tabs.map((tab) => {
+            const isActive = activeTabId === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.value)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all duration-200 outline-none
+                  ${
+                    isActive
+                      ? 'bg-[#f0fbf7] border-teal-600 text-teal-700 shadow-sm'
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50/50'
+                  }
+                `}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200
+                    ${isActive ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}
+                  `}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="mb-6">
           <AdvancedFilter
             searchPlaceholder="Search assignments by title or topics..."
@@ -147,11 +177,9 @@ export const AssignmentsClient = () => {
             onSearchSubmit={() => setSearchTerm(searchInput)}
             fields={filterFields}
             filterValues={{
-              status: statusFilter,
               priority: priorityFilter,
             }}
             onFilterChange={(id, value) => {
-              if (id === 'status') setStatusFilter(value);
               if (id === 'priority') setPriorityFilter(value);
             }}
             onReset={() => {

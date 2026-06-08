@@ -87,8 +87,54 @@ export const useAssignmentsLogic = () => {
     search: searchTerm || undefined,
   });
 
+  // Fetch all assignments without status filter to calculate counts for tabs
+  const { data: allAssignmentsData } = useGetAssignmentsQuery({
+    limit: 1000,
+    priority: priorityFilter === 'all' ? undefined : priorityFilter,
+    search: searchTerm || undefined,
+  });
+
   const assignments = useMemo(() => assignmentsData?.data || [], [assignmentsData?.data]);
+  const allAssignments = useMemo(() => allAssignmentsData?.data || [], [allAssignmentsData?.data]);
   const totalPages = assignmentsData?.pagination?.totalPages || 1;
+
+  const statusCounts = useMemo(() => {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let paid = 0;
+
+    allAssignments.forEach((a) => {
+      const s = a.status;
+      if (['created', 'proposal_received', 'pending', 'draft'].includes(s)) {
+        pending++;
+      } else if (
+        [
+          'proposal_accepted',
+          'in_progress',
+          'assigned',
+          'submission_pending',
+          'revision_requested',
+          'submitted',
+          'overdue',
+        ].includes(s)
+      ) {
+        approved++;
+      } else if (['cancelled', 'disputed', 'resolved'].includes(s)) {
+        rejected++;
+      } else if (s === 'completed') {
+        paid++;
+      }
+    });
+
+    return {
+      all: allAssignments.length,
+      pending,
+      approved,
+      rejected,
+      paid,
+    };
+  }, [allAssignments]);
 
   useEffect(() => {
     setPage(1);
@@ -135,6 +181,7 @@ export const useAssignmentsLogic = () => {
     refetch,
     assignments,
     latestStatuses,
+    statusCounts,
     handleViewDetails,
     handleSendProposal,
     handleProposalModalClose,

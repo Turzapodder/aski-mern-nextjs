@@ -28,7 +28,7 @@ export const PublicTutorProfileClient = () => {
         </div>
       </header>
 
-      <main className="pt-20">
+      <main className="pt-20 max-w-7xl mx-auto">
         <TutorProfileContent />
       </main>
     </div>
