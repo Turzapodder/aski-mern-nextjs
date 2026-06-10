@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Clock, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { AvailabilityValue, WEEKDAYS, validateDaySlots } from '@/lib/availability';
 
 interface AvailabilityPickerProps {
@@ -10,45 +10,39 @@ interface AvailabilityPickerProps {
   variant?: 'settings' | 'profile';
 }
 
+const DAY_SHORT: Record<string, string> = {
+  Monday: 'Mon',
+  Tuesday: 'Tue',
+  Wednesday: 'Wed',
+  Thursday: 'Thu',
+  Friday: 'Fri',
+  Saturday: 'Sat',
+  Sunday: 'Sun',
+};
+
 const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
   value,
   onChange,
-  variant = 'settings',
 }) => {
   const [slotDrafts, setSlotDrafts] = useState<Record<string, string>>({});
   const [slotErrors, setSlotErrors] = useState<Record<string, string>>({});
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [genStart, setGenStart] = useState<Record<string, string>>({});
+  const [genEnd, setGenEnd] = useState<Record<string, string>>({});
+  const [genDuration, setGenDuration] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSlotDrafts((prev) => {
       const next = { ...prev };
       value.days.forEach((day) => {
-        if (!(day in next)) {
-          next[day] = '';
-        }
+        if (!(day in next)) next[day] = '';
       });
       Object.keys(next).forEach((day) => {
-        if (!value.days.includes(day)) {
-          delete next[day];
-        }
+        if (!value.days.includes(day)) delete next[day];
       });
       return next;
     });
   }, [value.days]);
-
-  const styles =
-    variant === 'profile'
-      ? {
-          selected: 'border-indigo-200 bg-indigo-50/60',
-          focus: 'focus:ring-indigo-200 focus:border-indigo-600',
-          checkbox: 'text-indigo-600 focus:ring-indigo-200',
-          button: 'border-gray-200 text-gray-700 hover:bg-gray-50',
-        }
-      : {
-          selected: 'border-primary-200 bg-primary-50',
-          focus: 'focus:ring-primary-200',
-          checkbox: 'text-primary-600 focus:ring-primary-200',
-          button: 'border-gray-200 text-gray-700 hover:bg-gray-50',
-        };
 
   const toggleDay = (day: string) => {
     const isSelected = value.days.includes(day);
@@ -59,6 +53,7 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
     const nextSlots = { ...value.slotsByDay };
     if (isSelected) {
       delete nextSlots[day];
+      if (expandedDay === day) setExpandedDay(null);
       setSlotErrors((prev) => {
         if (!prev[day]) return prev;
         const next = { ...prev };
@@ -67,16 +62,14 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
       });
     } else if (!nextSlots[day]) {
       nextSlots[day] = [];
+      setExpandedDay(day);
     }
 
-    onChange({
-      days: nextDays,
-      slotsByDay: nextSlots,
-    });
+    onChange({ days: nextDays, slotsByDay: nextSlots });
   };
 
-  const handleDraftChange = (day: string, value: string) => {
-    setSlotDrafts((prev) => ({ ...prev, [day]: value }));
+  const handleDraftChange = (day: string, val: string) => {
+    setSlotDrafts((prev) => ({ ...prev, [day]: val }));
     setSlotErrors((prev) => ({ ...prev, [day]: '' }));
   };
 
@@ -93,21 +86,13 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
     const nextSlots = [...existing, draft];
     const validationError = validateDaySlots(day, nextSlots);
     if (validationError) {
-      setSlotErrors((prev) => ({
-        ...prev,
-        [day]: validationError,
-      }));
+      setSlotErrors((prev) => ({ ...prev, [day]: validationError }));
       return;
     }
 
-    const nextSlotsByDay = {
-      ...value.slotsByDay,
-      [day]: nextSlots,
-    };
-
     onChange({
       days: value.days,
-      slotsByDay: nextSlotsByDay,
+      slotsByDay: { ...value.slotsByDay, [day]: nextSlots },
     });
 
     setSlotErrors((prev) => ({ ...prev, [day]: '' }));
@@ -116,200 +101,252 @@ const AvailabilityPicker: React.FC<AvailabilityPickerProps> = ({
 
   const handleRemoveSlot = (day: string, slot: string) => {
     const existing = value.slotsByDay[day] || [];
-    const nextSlots = existing.filter((item) => item !== slot);
+    onChange({
+      days: value.days,
+      slotsByDay: { ...value.slotsByDay, [day]: existing.filter((s) => s !== slot) },
+    });
+    setSlotErrors((prev) => ({ ...prev, [day]: '' }));
+  };
+
+  const handleAutoGenerate = (day: string) => {
+    const startVal = Number(genStart[day] || '9');
+    const endVal = Number(genEnd[day] || '17');
+    const durationVal = Number(genDuration[day] || '60');
+
+    if (startVal >= endVal) return;
+
+    const generated: string[] = [];
+    let curr = startVal * 60;
+    const limit = endVal * 60;
+
+    while (curr + durationVal <= limit) {
+      const sh = Math.floor(curr / 60).toString().padStart(2, '0');
+      const sm = (curr % 60).toString().padStart(2, '0');
+      curr += durationVal;
+      const eh = Math.floor(curr / 60).toString().padStart(2, '0');
+      const em = (curr % 60).toString().padStart(2, '0');
+      generated.push(`${sh}:${sm}-${eh}:${em}`);
+    }
 
     onChange({
       days: value.days,
-      slotsByDay: {
-        ...value.slotsByDay,
-        [day]: nextSlots,
-      },
+      slotsByDay: { ...value.slotsByDay, [day]: generated },
     });
-
-    setSlotErrors((prev) => ({ ...prev, [day]: '' }));
   };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {WEEKDAYS.map((day) => {
-          const isSelected = value.days.includes(day);
-          const slots = value.slotsByDay[day] || [];
-          const validationError = isSelected ? validateDaySlots(day, slots) : null;
-          const errorMessage = slotErrors[day] || validationError;
-          const hasError = Boolean(errorMessage);
+      {/* Day Selector Strip */}
+      <div>
+        <p className="text-[11px] font-medium text-gray-400 mb-2">
+          Tap a day to mark yourself available, then configure time slots.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {WEEKDAYS.map((day) => {
+            const isSelected = value.days.includes(day);
+            const slots = value.slotsByDay[day] || [];
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleDay(day)}
+                className={`relative flex flex-col items-center gap-0.5 px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 select-none ${
+                  isSelected
+                    ? 'bg-secondary-500 text-black shadow-md shadow-gray-200'
+                    : 'bg-gray-200 text-gray-900 hover:bg-gray-100 hover:text-gray-600 border border-gray-100'
+                }`}
+              >
+                <span className="text-sm tracking-wider">{DAY_SHORT[day]}</span>
+                {isSelected && slots.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">
+                    {slots.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-          return (
-            <div
-              key={day}
-              className={`rounded-lg border p-4 ${
-                hasError
-                  ? 'border-rose-200 bg-rose-50'
-                  : isSelected
-                    ? styles.selected
-                    : 'border-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleDay(day)}
-                    className={`h-4 w-4 rounded border-gray-300 ${styles.checkbox}`}
-                  />
-                  {day}
-                </label>
-                {isSelected && <span className="text-xs text-gray-400">Selected</span>}
-              </div>
+      {/* Selected Days Detail Panels */}
+      {value.days.length > 0 && (
+        <div className="space-y-2">
+          {value.days.map((day) => {
+            const slots = value.slotsByDay[day] || [];
+            const isExpanded = expandedDay === day;
+            const errorMessage = slotErrors[day] || (slots.length > 0 ? validateDaySlots(day, slots) : null);
 
-              {isSelected && (
-                <div className="mt-3 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {slots.length > 0 ? (
-                      slots.map((slot) => (
-                        <span
-                          key={`${day}-${slot}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200"
-                        >
-                          {slot}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSlot(day, slot)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+            return (
+              <div
+                key={day}
+                className={`rounded-2xl border overflow-hidden transition-all duration-200 ${
+                  errorMessage
+                    ? 'border-rose-200 bg-rose-50/50'
+                    : isExpanded
+                      ? 'border-gray-200 bg-white shadow-sm'
+                      : 'border-gray-100 bg-gray-50/50 hover:bg-gray-50'
+                }`}
+              >
+                {/* Day Header */}
+                <button
+                  type="button"
+                  onClick={() => setExpandedDay(isExpanded ? null : day)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center text-[11px] font-bold">
+                      {DAY_SHORT[day].slice(0, 2)}
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-gray-900">{day}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-[11px] text-gray-400">
+                          {slots.length === 0
+                            ? 'No time slots configured'
+                            : `${slots.length} slot${slots.length > 1 ? 's' : ''}`}
                         </span>
-                      ))
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Inline slot preview when collapsed */}
+                    {!isExpanded && slots.length > 0 && (
+                      <div className="hidden sm:flex flex-wrap gap-1 max-w-[300px]">
+                        {slots.slice(0, 3).map((slot) => (
+                          <span
+                            key={`${day}-preview-${slot}`}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-semibold text-gray-600"
+                          >
+                            {slot}
+                          </span>
+                        ))}
+                        {slots.length > 3 && (
+                          <span className="text-[10px] text-gray-400 font-medium self-center">
+                            +{slots.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-gray-400" />
                     ) : (
-                      <span className="text-xs text-gray-400">No slots added yet.</span>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
                     )}
                   </div>
+                </button>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-gray-500">Add time slot</label>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <input
-                        type="text"
-                        value={slotDrafts[day] || ''}
-                        onChange={(e) => handleDraftChange(day, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddSlot(day);
-                          }
-                        }}
-                        placeholder="09:00-11:00"
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 ${styles.focus}`}
-                      />
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Existing Slots */}
+                    {slots.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {slots.map((slot) => (
+                          <span
+                            key={`${day}-${slot}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-black text-white pl-2.5 pr-1.5 py-1 text-xs font-semibold"
+                          >
+                            <Clock className="w-3 h-3 opacity-60" />
+                            {slot}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSlot(day, slot)}
+                              className="p-0.5 rounded hover:bg-white/20 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Manual Add */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={slotDrafts[day] || ''}
+                          onChange={(e) => handleDraftChange(day, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddSlot(day);
+                            }
+                          }}
+                          placeholder="e.g. 09:00-11:00"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-50/50 text-sm focus:outline-none focus:border-black focus:bg-white focus:ring-2 focus:ring-black/10 transition-all placeholder-gray-400"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleAddSlot(day)}
-                        className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${styles.button}`}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-colors shrink-0"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                         Add
                       </button>
                     </div>
-                    {errorMessage && <p className="text-xs text-rose-500">{errorMessage}</p>}
-                  </div>
 
-                  {/* Dynamic Auto-Generator Wizard */}
-                  <div className="mt-3 pt-3 border-t border-gray-100/60">
-                    <details className="group">
-                      <summary className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer list-none flex items-center gap-1 select-none">
-                        <span>⚡ Auto-Generate Time Blocks</span>
-                        <span className="transition-transform group-open:rotate-180">▼</span>
-                      </summary>
-                      <div className="mt-3 p-3 rounded-lg bg-gray-50/50 border border-gray-150 space-y-3">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="text-[10px] font-medium text-gray-400 block mb-1">Start Hour</label>
-                            <select
-                              id={`gen-start-${day}`}
-                              defaultValue="09"
-                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            >
-                              {Array.from({ length: 24 }).map((_, i) => {
-                                const h = i.toString().padStart(2, '0');
-                                return <option key={h} value={h}>{h}:00</option>;
-                              })}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-medium text-gray-400 block mb-1">End Hour</label>
-                            <select
-                              id={`gen-end-${day}`}
-                              defaultValue="17"
-                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            >
-                              {Array.from({ length: 24 }).map((_, i) => {
-                                const h = i.toString().padStart(2, '0');
-                                return <option key={h} value={h}>{h}:00</option>;
-                              })}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-medium text-gray-400 block mb-1">Duration</label>
-                            <select
-                              id={`gen-size-${day}`}
-                              defaultValue="60"
-                              className="w-full text-xs p-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            >
-                              <option value="30">30 mins</option>
-                              <option value="60">60 mins</option>
-                            </select>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const startVal = Number((document.getElementById(`gen-start-${day}`) as HTMLSelectElement)?.value || '9');
-                            const endVal = Number((document.getElementById(`gen-end-${day}`) as HTMLSelectElement)?.value || '17');
-                            const durationVal = Number((document.getElementById(`gen-size-${day}`) as HTMLSelectElement)?.value || '60');
-                            
-                            if (startVal >= endVal) {
-                              alert('Start hour must be before end hour');
-                              return;
-                            }
+                    {errorMessage && (
+                      <p className="text-xs text-rose-500 font-medium">{errorMessage}</p>
+                    )}
 
-                            const generated: string[] = [];
-                            let curr = startVal * 60;
-                            const limit = endVal * 60;
-
-                            while (curr + durationVal <= limit) {
-                              const sh = Math.floor(curr / 60).toString().padStart(2, '0');
-                              const sm = (curr % 60).toString().padStart(2, '0');
-                              curr += durationVal;
-                              const eh = Math.floor(curr / 60).toString().padStart(2, '0');
-                              const em = (curr % 60).toString().padStart(2, '0');
-                              generated.push(`${sh}:${sm}-${eh}:${em}`);
-                            }
-
-                            onChange({
-                              days: value.days,
-                              slotsByDay: {
-                                ...value.slotsByDay,
-                                [day]: generated
-                              }
-                            });
-                          }}
-                          className="w-full py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm"
-                        >
-                          Auto-Generate Blocks
-                        </button>
+                    {/* Quick Generate */}
+                    <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5 text-gray-400 mr-1">
+                        <Zap className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wider">Auto-fill</span>
                       </div>
-                    </details>
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={genStart[day] || '09'}
+                          onChange={(e) => setGenStart((p) => ({ ...p, [day]: e.target.value }))}
+                          className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black/20"
+                        >
+                          {Array.from({ length: 24 }).map((_, i) => {
+                            const h = i.toString().padStart(2, '0');
+                            return <option key={h} value={h}>{h}:00</option>;
+                          })}
+                        </select>
+                        <span className="text-xs text-gray-400">→</span>
+                        <select
+                          value={genEnd[day] || '17'}
+                          onChange={(e) => setGenEnd((p) => ({ ...p, [day]: e.target.value }))}
+                          className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black/20"
+                        >
+                          {Array.from({ length: 24 }).map((_, i) => {
+                            const h = i.toString().padStart(2, '0');
+                            return <option key={h} value={h}>{h}:00</option>;
+                          })}
+                        </select>
+                        <select
+                          value={genDuration[day] || '60'}
+                          onChange={(e) => setGenDuration((p) => ({ ...p, [day]: e.target.value }))}
+                          className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black/20"
+                        >
+                          <option value="30">30m</option>
+                          <option value="60">60m</option>
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAutoGenerate(day)}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-900 text-white hover:bg-black transition-colors"
+                      >
+                        Generate
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-xs text-gray-500">
-        Use 24-hour time format (HH:MM-HH:MM). Add multiple slots per day.
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-[11px] text-gray-400">
+        Use 24-hour format (HH:MM-HH:MM). Multiple slots per day are supported.
       </p>
     </div>
   );
