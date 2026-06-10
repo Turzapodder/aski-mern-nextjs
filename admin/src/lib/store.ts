@@ -1,16 +1,18 @@
 import { configureStore, combineReducers, UnknownAction } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import { authApi } from './services/auth';
+import { submissionsApi } from './services/submissions';
 
 import authReducer from './features/auth/authSlice';
 import uiReducer from './features/ui/uiSlice';
 import { rtkToastMiddleware } from './middleware/rtkToastMiddleware';
 
-// 1. Combine all reducers (admin-only: auth + ui + authApi)
+// 1. Combine all reducers (admin-only: auth + ui + authApi + submissionsApi)
 const combinedReducer = combineReducers({
   auth: authReducer,
   ui: uiReducer,
   [authApi.reducerPath]: authApi.reducer,
+  [submissionsApi.reducerPath]: submissionsApi.reducer,
 });
 
 // 2. Define rootReducer that resets the entire Redux state on logout
@@ -26,7 +28,8 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       rtkToastMiddleware,
-      authApi.middleware
+      authApi.middleware,
+      submissionsApi.middleware
     ),
 });
 

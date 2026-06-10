@@ -56,6 +56,7 @@ const configuredFrontendOrigins = [
   ...(process.env.FRONTEND_HOSTS || "").split(","),
   "http://127.0.0.1:3000",
   "http://localhost:3000",
+  "http://localhost:3001",
 ]
   .map((origin) => sanitizeOrigin(origin || ""))
   .filter(Boolean);

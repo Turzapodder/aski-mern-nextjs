@@ -142,7 +142,7 @@ export const useWalletLogic = () => {
     clamp(Math.round((amount / maxAmount) * 90), 18, 110)
   );
 
-  const canWithdraw = Boolean(isTutor) && wallet.availableBalance > 0;
+  const canWithdraw = Boolean(isTutor) && wallet.availableBalance >= 500;
   const isLoading = authLoading || loadingOverview;
 
   return {

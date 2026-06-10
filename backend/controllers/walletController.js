@@ -38,10 +38,10 @@ class WalletController {
         });
       }
 
-      if (parsedAmount < 100) {
+      if (parsedAmount < 500) {
         return res.status(400).json({
           success: false,
-          error: "Minimum withdrawal is 100 BDT",
+          error: "Minimum withdrawal is 500 BDT",
           code: "MIN_WITHDRAWAL",
         });
       }
@@ -49,26 +49,66 @@ class WalletController {
       if (!bankDetails || typeof bankDetails !== "object") {
         return res.status(400).json({
           success: false,
-          error: "Bank details are required",
+          error: "Payout details are required",
           code: "INVALID_BANK_DETAILS",
         });
       }
 
-      const sanitizedBankDetails = REQUIRED_BANK_FIELDS.reduce((acc, field) => {
-        acc[field] = sanitizeText(bankDetails[field]);
-        return acc;
-      }, {});
-
-      const missingField = REQUIRED_BANK_FIELDS.find(
-        (field) => !sanitizedBankDetails[field]
-      );
-
-      if (missingField) {
+      const paymentMethod = bankDetails.paymentMethod || "bank";
+      if (!["bank", "mobile_banking", "card"].includes(paymentMethod)) {
         return res.status(400).json({
           success: false,
-          error: `Bank detail ${missingField} is required`,
-          code: "INVALID_BANK_DETAILS",
+          error: "Invalid payout method selection",
+          code: "INVALID_PAYMENT_METHOD",
         });
+      }
+
+      const sanitizedBankDetails = {
+        paymentMethod,
+      };
+
+      if (paymentMethod === "bank") {
+        const requiredBankFields = [
+          "accountName",
+          "accountNumber",
+          "bankName",
+          "branchName",
+          "routingNumber",
+        ];
+        for (const field of requiredBankFields) {
+          sanitizedBankDetails[field] = sanitizeText(bankDetails[field]);
+          if (!sanitizedBankDetails[field]) {
+            return res.status(400).json({
+              success: false,
+              error: `Bank detail ${field} is required`,
+              code: "INVALID_BANK_DETAILS",
+            });
+          }
+        }
+      } else if (paymentMethod === "mobile_banking") {
+        const requiredMobileFields = ["provider", "mobileNumber", "accountType"];
+        for (const field of requiredMobileFields) {
+          sanitizedBankDetails[field] = sanitizeText(bankDetails[field]);
+          if (!sanitizedBankDetails[field]) {
+            return res.status(400).json({
+              success: false,
+              error: `Mobile banking detail ${field} is required`,
+              code: "INVALID_BANK_DETAILS",
+            });
+          }
+        }
+      } else if (paymentMethod === "card") {
+        const requiredCardFields = ["cardholderName", "cardNumber", "cardType"];
+        for (const field of requiredCardFields) {
+          sanitizedBankDetails[field] = sanitizeText(bankDetails[field]);
+          if (!sanitizedBankDetails[field]) {
+            return res.status(400).json({
+              success: false,
+              error: `Card detail ${field} is required`,
+              code: "INVALID_BANK_DETAILS",
+            });
+          }
+        }
       }
 
       const walletSnapshot = await UserModel.findById(user._id).select(
@@ -138,6 +178,20 @@ class WalletController {
             throw new Error("WITHDRAWAL_FAILED");
           }
 
+          let displayName = "";
+          let last4 = "";
+
+          if (sanitizedBankDetails.paymentMethod === "bank") {
+            displayName = sanitizedBankDetails.bankName;
+            last4 = sanitizedBankDetails.accountNumber.slice(-4);
+          } else if (sanitizedBankDetails.paymentMethod === "mobile_banking") {
+            displayName = sanitizedBankDetails.provider;
+            last4 = sanitizedBankDetails.mobileNumber.slice(-4);
+          } else if (sanitizedBankDetails.paymentMethod === "card") {
+            displayName = sanitizedBankDetails.cardType;
+            last4 = sanitizedBankDetails.cardNumber.slice(-4);
+          }
+
           await TransactionModel.create(
             [
               {
@@ -148,8 +202,8 @@ class WalletController {
                 gatewayId: transactionId,
                 relatedTo: { model: "User", id: user._id },
                 metadata: {
-                  bankName: sanitizedBankDetails.bankName,
-                  accountLast4: sanitizedBankDetails.accountNumber.slice(-4),
+                  bankName: displayName,
+                  accountLast4: last4,
                 },
               },
             ],

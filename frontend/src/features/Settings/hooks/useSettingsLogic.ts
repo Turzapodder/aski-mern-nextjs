@@ -47,6 +47,20 @@ export type SettingsState = {
   autoAcceptSessions: boolean;
   maxSessionsPerDay: number;
   bufferTimeBetweenSessions: number;
+  bankDetails: {
+    paymentMethod: 'bank' | 'mobile_banking' | 'card';
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    branchName: string;
+    routingNumber: string;
+    provider: string;
+    mobileNumber: string;
+    accountType: string;
+    cardholderName: string;
+    cardNumber: string;
+    cardType: string;
+  };
 };
 
 export const useSettingsLogic = () => {
@@ -105,6 +119,22 @@ export const useSettingsLogic = () => {
     autoAcceptSessions: false,
     maxSessionsPerDay: 8,
     bufferTimeBetweenSessions: 15,
+
+    // Bank Details
+    bankDetails: {
+      paymentMethod: 'bank',
+      accountName: '',
+      accountNumber: '',
+      bankName: '',
+      branchName: '',
+      routingNumber: '',
+      provider: 'bKash',
+      mobileNumber: '',
+      accountType: 'Personal',
+      cardholderName: '',
+      cardNumber: '',
+      cardType: 'Visa',
+    },
   });
 
   const [availability, setAvailability] = useState<{
@@ -162,6 +192,20 @@ export const useSettingsLogic = () => {
       currentInstitution: tutorProfile?.currentInstitution || '',
       teachingMode: tutorProfile?.teachingMode || '',
       achievements: tutorProfile?.achievements || '',
+      bankDetails: {
+        paymentMethod: user.wallet?.bankDetails?.paymentMethod || 'bank',
+        accountName: user.wallet?.bankDetails?.accountName || '',
+        accountNumber: user.wallet?.bankDetails?.accountNumber || '',
+        bankName: user.wallet?.bankDetails?.bankName || '',
+        branchName: user.wallet?.bankDetails?.branchName || '',
+        routingNumber: user.wallet?.bankDetails?.routingNumber || '',
+        provider: user.wallet?.bankDetails?.provider || 'bKash',
+        mobileNumber: user.wallet?.bankDetails?.mobileNumber || '',
+        accountType: user.wallet?.bankDetails?.accountType || 'Personal',
+        cardholderName: user.wallet?.bankDetails?.cardholderName || '',
+        cardNumber: user.wallet?.bankDetails?.cardNumber || '',
+        cardType: user.wallet?.bankDetails?.cardType || 'Visa',
+      },
     }));
 
     setAvailability(buildAvailabilityValue(availableDays, availableTimeSlots));
@@ -215,6 +259,7 @@ export const useSettingsLogic = () => {
         payload.allowedSessionDurations = allowedSessionDurations;
         payload.offdays = offdays;
         if (halfHourlyRate !== undefined) payload.halfHourlyRate = halfHourlyRate;
+        payload.bankDetails = settings.bankDetails;
       }
 
       const res = await updateUser(payload).unwrap();

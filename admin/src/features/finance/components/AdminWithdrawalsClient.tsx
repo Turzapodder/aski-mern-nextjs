@@ -38,6 +38,21 @@ export const AdminWithdrawalsClient = () => {
     error,
   } = useAdminWithdrawalsLogic();
 
+  const renderPayoutDetailsSummary = (bankDetails: any) => {
+    if (!bankDetails) return 'N/A';
+    const method = bankDetails.paymentMethod || 'bank';
+    if (method === 'bank') {
+      return `${bankDetails.bankName || 'Bank'} (****${bankDetails.accountNumber?.slice(-4) || '----'})`;
+    }
+    if (method === 'mobile_banking') {
+      return `${bankDetails.provider || 'Mobile'} (****${bankDetails.mobileNumber?.slice(-4) || '----'})`;
+    }
+    if (method === 'card') {
+      return `${bankDetails.cardType || 'Card'} (****${bankDetails.cardNumber?.slice(-4) || '----'})`;
+    }
+    return 'N/A';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -89,7 +104,7 @@ export const AdminWithdrawalsClient = () => {
                       <th className="py-3 pr-4">Tutor</th>
                       <th className="py-3 pr-4">Amount</th>
                       <th className="py-3 pr-4">Available balance</th>
-                      <th className="py-3 pr-4">Bank</th>
+                      <th className="py-3 pr-4">Payout Details</th>
                       <th className="py-3 text-right">Action</th>
                     </tr>
                   </thead>
@@ -108,8 +123,7 @@ export const AdminWithdrawalsClient = () => {
                         <td className="py-3 pr-4 text-gray-700">{row.withdrawal?.amount || 0}</td>
                         <td className="py-3 pr-4 text-gray-700">{row.availableBalance || 0}</td>
                         <td className="py-3 pr-4 text-gray-600">
-                          {row.bankDetails?.bankName || 'N/A'} -{' '}
-                          {row.bankDetails?.accountNumber?.slice(-4) || '----'}
+                          {renderPayoutDetailsSummary(row.bankDetails)}
                         </td>
                         <td className="py-3 text-right">
                           <Button variant="secondary" onClick={() => openConfirm(row)}>
@@ -163,11 +177,10 @@ export const AdminWithdrawalsClient = () => {
                       </div>
                       <div className="col-span-2 space-y-1 border-t border-gray-50 pt-3">
                         <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
-                          Bank Details
+                          Payout Details
                         </p>
                         <p className="text-xs text-gray-600">
-                          {row.bankDetails?.bankName || 'N/A'} (****
-                          {row.bankDetails?.accountNumber?.slice(-4) || '----'})
+                          {renderPayoutDetailsSummary(row.bankDetails)}
                         </p>
                       </div>
                     </div>
@@ -283,16 +296,66 @@ export const AdminWithdrawalsClient = () => {
           <div className="space-y-3 text-sm">
             {selected && (
               <>
-                <p className="text-gray-700">
-                  Tutor: <span className="font-medium">{selected.name}</span>
+                <p className="text-gray-750">
+                  Tutor: <span className="font-semibold text-gray-900">{selected.name}</span>
                 </p>
-                <p className="text-gray-700">
-                  Amount: <span className="font-medium">{selected.withdrawal?.amount || 0}</span>
+                <p className="text-gray-750">
+                  Amount: <span className="font-semibold text-gray-900">৳{selected.withdrawal?.amount || 0}</span>
                 </p>
-                <p className="text-gray-700">
-                  Bank:{' '}
-                  <span className="font-medium">{selected.bankDetails?.bankName || 'N/A'}</span>
+                <p className="text-gray-755 border-t pt-2 mt-2 font-medium">
+                  Payout Method:{' '}
+                  <span className="font-bold text-gray-900 capitalize">
+                    {(selected.bankDetails?.paymentMethod || 'bank').replace('_', ' ')}
+                  </span>
                 </p>
+
+                {(selected.bankDetails?.paymentMethod === 'bank' || !selected.bankDetails?.paymentMethod) && (
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 space-y-1 mt-2 text-xs">
+                    <p className="text-gray-600">
+                      Bank Name: <span className="font-semibold text-gray-900">{selected.bankDetails?.bankName || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Branch Name: <span className="font-semibold text-gray-900">{selected.bankDetails?.branchName || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Account Name: <span className="font-semibold text-gray-900">{selected.bankDetails?.accountName || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Account Number: <span className="font-semibold text-gray-900">{selected.bankDetails?.accountNumber || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Routing Number: <span className="font-semibold text-gray-900">{selected.bankDetails?.routingNumber || 'N/A'}</span>
+                    </p>
+                  </div>
+                )}
+
+                {selected.bankDetails?.paymentMethod === 'mobile_banking' && (
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 space-y-1 mt-2 text-xs">
+                    <p className="text-gray-600">
+                      Provider: <span className="font-semibold text-gray-900">{selected.bankDetails?.provider || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Mobile Number: <span className="font-semibold text-gray-900">{selected.bankDetails?.mobileNumber || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Account Type: <span className="font-semibold text-gray-900">{selected.bankDetails?.accountType || 'N/A'}</span>
+                    </p>
+                  </div>
+                )}
+
+                {selected.bankDetails?.paymentMethod === 'card' && (
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-150 space-y-1 mt-2 text-xs">
+                    <p className="text-gray-600">
+                      Cardholder Name: <span className="font-semibold text-gray-900">{selected.bankDetails?.cardholderName || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Card Number: <span className="font-semibold text-gray-900">{selected.bankDetails?.cardNumber || 'N/A'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Card Type: <span className="font-semibold text-gray-900">{selected.bankDetails?.cardType || 'N/A'}</span>
+                    </p>
+                  </div>
+                )}
               </>
             )}
             <label className="flex items-center gap-2 text-gray-600">

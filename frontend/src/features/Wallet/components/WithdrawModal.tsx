@@ -8,11 +8,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type BankDetails = {
+  paymentMethod: 'bank' | 'mobile_banking' | 'card';
   accountName: string;
   accountNumber: string;
   bankName: string;
   branchName: string;
   routingNumber: string;
+  provider: string; // e.g., 'bKash', 'Nagad'
+  mobileNumber: string;
+  accountType: string; // e.g., 'Personal', 'Agent'
+  cardholderName: string;
+  cardNumber: string;
+  cardType: string; // e.g., 'Visa', 'Mastercard'
 };
 
 type WithdrawModalProps = {
@@ -23,7 +30,7 @@ type WithdrawModalProps = {
   onSuccess?: () => void;
 };
 
-const MIN_WITHDRAWAL = 100;
+const MIN_WITHDRAWAL = 500;
 
 const formatAmount = (amount: number) => `BDT ${amount.toFixed(2)}`;
 
@@ -34,11 +41,18 @@ const maskAccountNumber = (accountNumber: string) => {
 };
 
 const emptyDetails: BankDetails = {
+  paymentMethod: 'bank',
   accountName: '',
   accountNumber: '',
   bankName: '',
   branchName: '',
   routingNumber: '',
+  provider: 'bKash',
+  mobileNumber: '',
+  accountType: 'Personal',
+  cardholderName: '',
+  cardNumber: '',
+  cardType: 'Visa',
 };
 
 export default function WithdrawModal({
@@ -82,21 +96,42 @@ export default function WithdrawModal({
   };
 
   const validateBankDetails = () => {
-    const requiredFields: Array<keyof BankDetails> = [
-      'accountName',
-      'accountNumber',
-      'bankName',
-      'branchName',
-      'routingNumber',
-    ];
-
-    const missingField = requiredFields.find((field) => !details[field].trim());
-
-    if (missingField) {
-      return 'All bank details are required';
+    if (details.paymentMethod === 'bank') {
+      const requiredFields: Array<keyof BankDetails> = [
+        'accountName',
+        'accountNumber',
+        'bankName',
+        'branchName',
+        'routingNumber',
+      ];
+      const missingField = requiredFields.find((field) => !details[field]?.toString().trim());
+      if (missingField) {
+        return 'All bank details are required';
+      }
+    } else if (details.paymentMethod === 'mobile_banking') {
+      const requiredFields: Array<keyof BankDetails> = [
+        'provider',
+        'mobileNumber',
+        'accountType',
+      ];
+      const missingField = requiredFields.find((field) => !details[field]?.toString().trim());
+      if (missingField) {
+        return 'All mobile banking details are required';
+      }
+    } else if (details.paymentMethod === 'card') {
+      const requiredFields: Array<keyof BankDetails> = [
+        'cardholderName',
+        'cardNumber',
+        'cardType',
+      ];
+      const missingField = requiredFields.find((field) => !details[field]?.toString().trim());
+      if (missingField) {
+        return 'All card details are required';
+      }
     }
+
     if (!confirmBank) {
-      return 'Please confirm the bank details';
+      return 'Please confirm the payout details';
     }
     return null;
   };
@@ -172,7 +207,7 @@ export default function WithdrawModal({
         <DialogHeader>
           <DialogTitle>
             {step === 1 && 'Withdraw Balance'}
-            {step === 2 && 'Confirm Bank Details'}
+            {step === 2 && 'Confirm Payment Details'}
             {step === 3 && 'Review & Confirm'}
           </DialogTitle>
         </DialogHeader>
@@ -196,7 +231,7 @@ export default function WithdrawModal({
                 />
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Available balance: {formatAmount(availableBalance)}
+                Available balance: {formatAmount(availableBalance)} (Min. withdrawal: 500 BDT)
               </p>
             </div>
           </div>
@@ -204,81 +239,217 @@ export default function WithdrawModal({
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label htmlFor="accountName">Account Name</Label>
-                <Input
-                  id="accountName"
-                  value={details.accountName}
-                  onChange={(event) =>
-                    setDetails((prev) => ({
-                      ...prev,
-                      accountName: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="accountNumber">Account Number</Label>
-                <Input
-                  id="accountNumber"
-                  value={details.accountNumber}
-                  onChange={(event) =>
-                    setDetails((prev) => ({
-                      ...prev,
-                      accountNumber: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="bankName">Bank Name</Label>
-                <Input
-                  id="bankName"
-                  value={details.bankName}
-                  onChange={(event) =>
-                    setDetails((prev) => ({
-                      ...prev,
-                      bankName: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="branchName">Branch Name</Label>
-                <Input
-                  id="branchName"
-                  value={details.branchName}
-                  onChange={(event) =>
-                    setDetails((prev) => ({
-                      ...prev,
-                      branchName: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="routingNumber">Routing Number</Label>
-                <Input
-                  id="routingNumber"
-                  value={details.routingNumber}
-                  onChange={(event) =>
-                    setDetails((prev) => ({
-                      ...prev,
-                      routingNumber: event.target.value,
-                    }))
-                  }
-                />
+            <div>
+              <Label className="mb-2 block">Withdrawal Method</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['bank', 'mobile_banking', 'card'] as const).map((method) => (
+                  <Button
+                    key={method}
+                    type="button"
+                    variant={details.paymentMethod === method ? 'default' : 'outline'}
+                    onClick={() =>
+                      setDetails((prev) => ({
+                        ...prev,
+                        paymentMethod: method,
+                      }))
+                    }
+                    className="capitalize text-xs font-semibold py-2 h-auto"
+                  >
+                    {method.replace('_', ' ')}
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="border-t pt-4 space-y-4">
+              {details.paymentMethod === 'bank' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="accountName">Account Name</Label>
+                    <Input
+                      id="accountName"
+                      value={details.accountName}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          accountName: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      value={details.accountNumber}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          accountNumber: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 1234567890"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      value={details.bankName}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          bankName: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. Dutch Bangla Bank"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="branchName">Branch Name</Label>
+                    <Input
+                      id="branchName"
+                      value={details.branchName}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          branchName: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. Banani Branch"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="routingNumber">Routing Number</Label>
+                    <Input
+                      id="routingNumber"
+                      value={details.routingNumber}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          routingNumber: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 090261984"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {details.paymentMethod === 'mobile_banking' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="provider">Provider</Label>
+                    <select
+                      id="provider"
+                      value={details.provider}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          provider: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="bKash">bKash</option>
+                      <option value="Nagad">Nagad</option>
+                      <option value="Rocket">Rocket</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="accountType">Account Type</Label>
+                    <select
+                      id="accountType"
+                      value={details.accountType}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          accountType: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="Personal">Personal</option>
+                      <option value="Agent">Agent</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="mobileNumber">Mobile Number</Label>
+                    <Input
+                      id="mobileNumber"
+                      value={details.mobileNumber}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          mobileNumber: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 01700000000"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {details.paymentMethod === 'card' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="cardholderName">Cardholder Name</Label>
+                    <Input
+                      id="cardholderName"
+                      value={details.cardholderName}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          cardholderName: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Input
+                      id="cardNumber"
+                      value={details.cardNumber}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          cardNumber: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 4321 0987 6543 2109"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="cardType">Card Type</Label>
+                    <select
+                      id="cardType"
+                      value={details.cardType}
+                      onChange={(event) =>
+                        setDetails((prev) => ({
+                          ...prev,
+                          cardType: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="Visa">Visa</option>
+                      <option value="Mastercard">Mastercard</option>
+                      <option value="Amex">American Express</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-600 mt-4">
               <input
                 type="checkbox"
                 checked={confirmBank}
                 onChange={(event) => setConfirmBank(event.target.checked)}
               />
-              I confirm these bank details are correct
+              I confirm these details are correct
             </label>
           </div>
         )}
@@ -291,13 +462,48 @@ export default function WithdrawModal({
                 <span className="font-semibold">{formatAmount(parsedAmount || 0)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Account number</span>
-                <span className="font-semibold">{maskAccountNumber(details.accountNumber)}</span>
+                <span className="text-gray-600">Method</span>
+                <span className="font-semibold uppercase">{details.paymentMethod.replace('_', ' ')}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Bank name</span>
-                <span className="font-semibold">{details.bankName}</span>
-              </div>
+
+              {details.paymentMethod === 'bank' && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Account number</span>
+                    <span className="font-semibold">{maskAccountNumber(details.accountNumber)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Bank name</span>
+                    <span className="font-semibold">{details.bankName}</span>
+                  </div>
+                </>
+              )}
+
+              {details.paymentMethod === 'mobile_banking' && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Mobile Number</span>
+                    <span className="font-semibold">{maskAccountNumber(details.mobileNumber)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Provider</span>
+                    <span className="font-semibold">{details.provider} ({details.accountType})</span>
+                  </div>
+                </>
+              )}
+
+              {details.paymentMethod === 'card' && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Card Number</span>
+                    <span className="font-semibold">{maskAccountNumber(details.cardNumber)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Card Type</span>
+                    <span className="font-semibold">{details.cardType}</span>
+                  </div>
+                </>
+              )}
             </div>
             <p className="text-xs text-gray-500">
               This action cannot be undone. The amount will be processed within 3-5 business days.

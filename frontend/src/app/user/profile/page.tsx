@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ProfileClient } from '@/features/Profile/components/ProfileClient';
+import { SettingsClient } from '@/features/Settings/components/SettingsClient';
 
 export const metadata = {
   title: 'Profile | Aski',
@@ -9,7 +9,7 @@ export const metadata = {
 export default function ProfilePage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
-      <ProfileClient />
+      <SettingsClient />
     </Suspense>
   );
 }

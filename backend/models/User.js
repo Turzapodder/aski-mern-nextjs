@@ -121,11 +121,18 @@ const userSchema = new mongoose.Schema(
       totalEarnings: { type: Number, default: 0, min: 0 },
       currency: { type: String, default: "BDT" },
       bankDetails: {
+        paymentMethod: { type: String, enum: ["bank", "mobile_banking", "card"], default: "bank" },
         accountName: { type: String, trim: true },
         accountNumber: { type: String, trim: true },
         bankName: { type: String, trim: true },
         branchName: { type: String, trim: true },
         routingNumber: { type: String, trim: true },
+        provider: { type: String, trim: true }, // e.g. "bKash", "Nagad"
+        mobileNumber: { type: String, trim: true },
+        accountType: { type: String, trim: true }, // e.g. "Personal", "Agent"
+        cardholderName: { type: String, trim: true },
+        cardNumber: { type: String, trim: true },
+        cardType: { type: String, trim: true }, // e.g. "Visa", "Mastercard"
       },
       withdrawalHistory: [
         {

@@ -348,7 +348,6 @@ class UserController {
     static userProfile = async (req, res) => {
         const user = req.user?.toObject ? req.user.toObject() : { ...req.user };
         if (user.wallet) {
-            delete user.wallet.bankDetails;
             delete user.wallet.withdrawalHistory;
         }
         res.send({ user });
@@ -485,6 +484,7 @@ class UserController {
                 city,
                 country,
                 languages,
+                bankDetails,
             } = req.body;
 
             const user = await UserModel.findById(userId);
@@ -505,6 +505,52 @@ class UserController {
             if (country !== undefined) user.country = String(country).trim();
             if (languages !== undefined) {
                 user.languages = normalizeStringList(languages);
+            }
+
+            // Update bank details if provided
+            if (bankDetails !== undefined) {
+                if (bankDetails === null) {
+                    if (user.wallet) {
+                        user.wallet.bankDetails = undefined;
+                    }
+                } else if (typeof bankDetails === "object") {
+                    if (!user.wallet) {
+                        user.wallet = {
+                            availableBalance: 0,
+                            escrowBalance: 0,
+                            totalEarnings: 0,
+                            currency: "BDT",
+                        };
+                    }
+                    
+                    const paymentMethod = bankDetails.paymentMethod || "bank";
+                    const sanitizedBankDetails = { paymentMethod };
+
+                    if (paymentMethod === "bank") {
+                        const requiredBankFields = [
+                            "accountName",
+                            "accountNumber",
+                            "bankName",
+                            "branchName",
+                            "routingNumber",
+                        ];
+                        for (const field of requiredBankFields) {
+                            sanitizedBankDetails[field] = String(bankDetails[field] || "").trim();
+                        }
+                    } else if (paymentMethod === "mobile_banking") {
+                        const requiredMobileFields = ["provider", "mobileNumber", "accountType"];
+                        for (const field of requiredMobileFields) {
+                            sanitizedBankDetails[field] = String(bankDetails[field] || "").trim();
+                        }
+                    } else if (paymentMethod === "card") {
+                        const requiredCardFields = ["cardholderName", "cardNumber", "cardType"];
+                        for (const field of requiredCardFields) {
+                            sanitizedBankDetails[field] = String(bankDetails[field] || "").trim();
+                        }
+                    }
+
+                    user.wallet.bankDetails = sanitizedBankDetails;
+                }
             }
 
             // Update Tutor Profile specific fields if user is a tutor
@@ -607,6 +653,13 @@ class UserController {
                     city: user.city,
                     country: user.country,
                     languages: user.languages,
+                    wallet: user.wallet ? {
+                        availableBalance: user.wallet.availableBalance,
+                        escrowBalance: user.wallet.escrowBalance,
+                        totalEarnings: user.wallet.totalEarnings,
+                        currency: user.wallet.currency,
+                        bankDetails: user.wallet.bankDetails,
+                    } : undefined,
                 }
             });
 

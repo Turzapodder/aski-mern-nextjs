@@ -306,15 +306,6 @@ const TopNavbar = ({
                   <span>Profile</span>
                 </Link>
 
-                <Link
-                  href="/user/settings"
-                  className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  onClick={() => setShowProfileMenu(false)}
-                >
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </Link>
-
                 <hr className="my-2" />
 
                 <button

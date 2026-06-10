@@ -1,15 +1,5 @@
-import React, { Suspense } from 'react';
-import { SettingsClient } from '@/features/Settings/components/SettingsClient';
-
-export const metadata = {
-  title: 'Settings | Aski',
-  description: 'Manage your account preferences and settings',
-};
+import { redirect } from 'next/navigation';
 
 export default function SettingsPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
-      <SettingsClient />
-    </Suspense>
-  );
+  redirect('/user/profile');
 }

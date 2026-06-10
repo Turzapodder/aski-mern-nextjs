@@ -167,7 +167,7 @@ export function PersonalInfoStep({ formik, errorMessage, setErrorMessage }: Pers
 
       {/* Subject */}
       <div>
-        <label className="block text-sm font-medium text-gray-600 mb-2">Choose Subject*</label>
+        <label className="block text-sm font-medium text-gray-800 mb-2">Choose Subject*</label>
         <select
           name="subject"
           value={formik.values.subject}
@@ -177,7 +177,7 @@ export function PersonalInfoStep({ formik, errorMessage, setErrorMessage }: Pers
             setErrorMessage('');
           }}
           onBlur={formik.handleBlur}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-600 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 font-semibold focus:border-black focus:outline-none focus:ring-1 focus:ring-black bg-white"
         >
           <option value="">Select a subject</option>
           {Object.keys(subjectTopics).map((subject) => (
