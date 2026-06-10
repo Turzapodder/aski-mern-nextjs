@@ -303,9 +303,26 @@ class ProposalController {
       }
 
       if (assignment.student.toString() !== userId.toString()) {
-        return res.status(403).json({
-          status: 'failed',
-          message: 'You do not have permission to view proposals for this assignment'
+        // If not the student, tutors are allowed to view only their own active proposal for this assignment
+        const proposals = await ProposalModel.find({
+          assignment: assignmentId,
+          tutor: userId,
+          isActive: true
+        })
+          .populate('tutor', 'name profileImage tutorProfile publicStats')
+          .populate('conversation', 'name assignment assignmentTitle')
+          .sort({ submittedAt: -1 });
+
+        const proposalsWithConversations = await Promise.all(
+          proposals.map((proposal) => ProposalController.ensureProposalConversation(proposal, assignment))
+        );
+
+        return res.status(200).json({
+          status: 'success',
+          data: { 
+            proposals: proposalsWithConversations,
+            count: proposalsWithConversations.length
+          }
         });
       }
 

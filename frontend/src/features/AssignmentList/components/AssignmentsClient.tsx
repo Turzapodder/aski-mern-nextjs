@@ -4,7 +4,9 @@ import React, { useState, useMemo } from 'react';
 import {
   AlertCircle,
   BookOpen,
-  ArrowUpDown
+  ArrowUpDown,
+  Grid,
+  List
 } from 'lucide-react';
 import SendProposalModal from './SendProposalModal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,6 +44,7 @@ export const AssignmentsClient = () => {
 
   const [searchInput, setSearchInput] = useState(actualSearchTerm);
   const [sortOrder, setSortOrder] = useState('newest');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const filterFields: FilterField[] = [
     {
@@ -89,6 +92,17 @@ export const AssignmentsClient = () => {
   const handleTabClick = (value: string) => {
     setStatusFilter(value);
   };
+
+  // Helper to get active page range around current page
+  const getPageNumbers = (current: number, total: number) => {
+    const range = 2; // Number of pages to show before and after current
+    const pages = [];
+    for (let i = Math.max(1, current - range); i <= Math.min(total, current + range); i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+  const pageNumbers = getPageNumbers(page, totalPages);
 
   if (loading) {
     return (
@@ -151,7 +165,7 @@ export const AssignmentsClient = () => {
                 className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all duration-200 outline-none
                   ${
                     isActive
-                      ? 'bg-[#f0fbf7] border-teal-600 text-teal-700 shadow-sm'
+                      ? 'bg-black border-black text-white shadow-sm'
                       : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50/50'
                   }
                 `}
@@ -159,7 +173,7 @@ export const AssignmentsClient = () => {
                 <span>{tab.label}</span>
                 <span
                   className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold transition-all duration-200
-                    ${isActive ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}
+                    ${isActive ? 'bg-white text-black' : 'bg-gray-100 text-gray-500'}
                   `}
                 >
                   {tab.count}
@@ -197,28 +211,52 @@ export const AssignmentsClient = () => {
             Showing <span className="text-gray-900 font-bold">{assignments.length}</span> assignments
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 font-medium">Sort by:</span>
-            <div className="relative">
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="pl-3 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none text-sm text-gray-700 font-medium appearance-none cursor-pointer"
+          <div className="flex items-center gap-4">
+            {/* View Mode Switcher */}
+            <div className="flex items-center gap-1 bg-white border border-gray-200 p-1 rounded-lg shadow-sm shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-black text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                title="List View"
               >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="deadline_soon">Deadline: Ending Soon</option>
-              </select>
-              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <ArrowUpDown className="w-3.5 h-3.5" />
+                <List size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-black text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                title="Grid View"
+              >
+                <Grid size={16} />
+              </button>
+            </div>
+
+            {/* Sorting */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 font-medium hidden sm:inline">Sort by:</span>
+              <div className="relative">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="pl-3 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/20 focus:border-black transition-all outline-none text-sm text-gray-700 font-medium appearance-none cursor-pointer"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="deadline_soon">Deadline: Ending Soon</option>
+                </select>
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Layout list or grid */}
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
           {sortedAssignments.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 shadow-sm border border-gray-100 text-center">
+            <div className={`bg-white rounded-2xl p-16 shadow-sm border border-gray-100 text-center ${viewMode === 'grid' ? 'col-span-full' : ''}`}>
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <BookOpen className="h-10 w-10 text-gray-300" />
               </div>
@@ -236,7 +274,7 @@ export const AssignmentsClient = () => {
                     setStatusFilter('all');
                     setPriorityFilter('all');
                   }}
-                  className="mt-6 text-primary-600 font-medium hover:text-primary-700 hover:underline"
+                  className="mt-6 text-black font-medium hover:underline"
                 >
                   Clear all filters
                 </button>
@@ -253,29 +291,67 @@ export const AssignmentsClient = () => {
                 formatAmount={formatAmount}
                 handleViewDetails={handleViewDetails}
                 handleSendProposal={handleSendProposal}
+                viewMode={viewMode}
               />
             ))
           )}
         </div>
 
+        {/* Pagination buttons */}
         {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-8">
+          <div className="flex items-center justify-center gap-1.5 mt-10">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              title="First Page"
+            >
+              &laquo;
+            </button>
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
-              Previous
+              Prev
             </button>
-            <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+
+            {pageNumbers.map((pageNum) => {
+              const isCurrent = pageNum === page;
+              return (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setPage(pageNum)}
+                  className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 ${
+                    isCurrent
+                      ? 'bg-black text-white shadow-sm'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
             <button
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               Next
+            </button>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              title="Last Page"
+            >
+              &raquo;
             </button>
           </div>
         )}
